@@ -4384,6 +4384,73 @@ TEST_CASE_METHOD(PrinterDetectorFixture,
     REQUIRE(result.type_name == "FlashForge Adventurer 5X");
 }
 
+TEST_CASE_METHOD(PrinterDetectorFixture,
+                 "PrinterDetector: four extruders on a MIPS host do not name an AD5X",
+                 "[printer][heuristics][ad5x]") {
+    // A bare AD5X has ONE extruder: four heaters exist on that platform only
+    // through the IFS, whose own objects (zmod_ifs, ifs_materials,
+    // SET_EXTRUDER_SLOT) identify it at 95+. The Ingenic MIPS host is shared
+    // with the FlashForge Creator 5 line. Both support an AD5X identification
+    // and neither may establish one, so a 4-extruder MIPS machine with no IFS
+    // fingerprint and no FlashForge signals is not an AD5X.
+    SECTION("Four extruders and a MIPS host, nothing else") {
+        PrinterHardwareData hardware{
+            .heaters = {"extruder", "extruder1", "extruder2", "extruder3", "heater_bed"},
+            .sensors = {},
+            .fans = {},
+            .leds = {},
+            .hostname = "workbench",
+            .printer_objects = {},
+            .steppers = {},
+            .kinematics = "corexy",
+            .cpu_arch = "MIPS Ingenic X2000"};
+
+        auto result = PrinterDetector::detect(hardware);
+        CAPTURE(result.type_name, result.confidence, result.runner_up_type_name,
+                result.runner_up_confidence);
+
+        REQUIRE(result.type_name != "FlashForge Adventurer 5X");
+    }
+
+    SECTION("A MIPS host alone") {
+        PrinterHardwareData hardware{.heaters = {"extruder", "heater_bed"},
+                                     .sensors = {},
+                                     .fans = {},
+                                     .leds = {},
+                                     .hostname = "workbench",
+                                     .printer_objects = {},
+                                     .steppers = {},
+                                     .kinematics = "corexy",
+                                     .cpu_arch = "MIPS Ingenic X2000"};
+
+        auto result = PrinterDetector::detect(hardware);
+        CAPTURE(result.type_name, result.confidence, result.runner_up_type_name,
+                result.runner_up_confidence);
+
+        REQUIRE(result.type_name != "FlashForge Adventurer 5X");
+    }
+
+    SECTION("The IFS still names an AD5X on its own objects") {
+        PrinterHardwareData hardware{
+            .heaters = {"extruder", "extruder1", "extruder2", "extruder3", "heater_bed"},
+            .sensors = {},
+            .fans = {},
+            .leds = {},
+            .hostname = "workbench",
+            .printer_objects = {"zmod_ifs"},
+            .steppers = {},
+            .kinematics = "corexy",
+            .cpu_arch = "MIPS Ingenic X2600"};
+
+        auto result = PrinterDetector::detect(hardware);
+        CAPTURE(result.type_name, result.confidence, result.runner_up_type_name,
+                result.runner_up_confidence);
+
+        REQUIRE(result.detected());
+        REQUIRE(result.type_name == "FlashForge Adventurer 5X");
+    }
+}
+
 TEST_CASE_METHOD(
     PrinterDetectorFixture,
     "PrinterDetector: AD5X with chamber LED and generic hostname detects as AD5X, not AD5M Pro",

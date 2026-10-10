@@ -619,7 +619,8 @@
           "field": "heaters",
           "pattern": "tool_count_4",
           "confidence": 85,
-          "reason": "4-extruder IFS tool changer"
+          "corroborating": true,
+          "reason": "Supports an IFS identification, never establishes one: a bare AD5X has one extruder, and the four-heater form exists only through the IFS, whose own objects (zmod_ifs, ifs_materials, SET_EXTRUDER_SLOT) name the machine at 95+"
         },
         {
           "type": "sensor_match",
@@ -633,7 +634,8 @@
           "field": "cpu_arch",
           "pattern": "mips",
           "confidence": 70,
-          "reason": "MIPS host architecture (Ingenic X2600)"
+          "corroborating": true,
+          "reason": "MIPS host architecture (Ingenic X2600) - shared with the Creator 5 line (X2000), so it supports a FlashForge identification and never establishes the model"
         },
         {
           "type": "sensor_match",
