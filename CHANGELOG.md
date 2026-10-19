@@ -36,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Snapmaker U1: soft filament is saved as soft** - TPU, TPE, PEBA, PVA and Flex filament,
   including grades the printer has no entry for such as TPU-85A, TPU95A or PVA+, are now
   saved to the printer as soft filament.
+- **The AMS sidebar's Unload button keeps working after switching printers.**
 
 ## [1.0.5] - 2026-10-13
 
