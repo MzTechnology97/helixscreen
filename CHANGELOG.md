@@ -21,6 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Android settings backups** - the app keeps its rolling settings backups in its own
   storage instead of failing to write any, and an update no longer overwrites themes or
   printer database overrides you saved.
+- **Power tiles keep updating after a Klipper restart** - a power device's home tile
+  stopped following its device once Klipper restarted, until the home screen was rebuilt.
+  Tiles now keep tracking their device across restarts.
 
 ## [1.0.5] - 2026-10-13
 
