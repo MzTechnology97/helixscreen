@@ -16,6 +16,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   again on its own until the service recovers.
 - **Settings has a Printer row** - it opens the Printer Manager, which was otherwise only
   reachable from the home screen's printer image widget.
+- **Printer detection** - a four-extruder machine or a MIPS host without any IFS sign is no
+  longer named an AD5X.
+- **Android settings backups** - the app keeps its rolling settings backups in its own
+  storage instead of failing to write any, and an update no longer overwrites themes or
+  printer database overrides you saved.
 
 ## [1.0.5] - 2026-10-13
 
