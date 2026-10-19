@@ -584,9 +584,10 @@ TEST_CASE_METHOD(ControlLaneFixture,
     wm->forget("Net", [&](bool ok, const std::string&) { forgot = ok; });
 
     WiFiManagerTestAccess::fire_init_failed(*wm, /*silent=*/true, "init failed");
+    // The swap only looks for the call in progress; a timer retries it.
     const auto started = std::chrono::steady_clock::now();
     helix::ui::UpdateQueue::instance().drain();
-    CHECK(std::chrono::steady_clock::now() - started < std::chrono::milliseconds(500));
+    CHECK(std::chrono::steady_clock::now() - started < std::chrono::milliseconds(100));
 
     // The swap happens once the call in progress returns; what was queued for
     // the failed backend is answered, not sent.
@@ -647,4 +648,74 @@ TEST_CASE_METHOD(ControlLaneFixture,
     CHECK(batched.ssid == "Home");
     CHECK(probe_answered);
     CHECK(backend->statuses() == asked + 1);
+}
+
+namespace {
+
+/// Three slow status reads: the breaker opens with its first probe due
+/// `first_probe_ms` (300 ms) later.
+void trip_breaker(ControlLaneFixture& f) {
+    WiFiManagerTestAccess::set_breaker_config(*f.wm, {100, 3, 300, 5000});
+    f.backend->set_status_delay_ms(150);
+    for (int i = 0; i < 3; ++i) {
+        f.read_status();
+    }
+    REQUIRE(WiFiManagerTestAccess::breaker_open(*f.wm));
+    f.backend->set_status_delay_ms(0);
+}
+
+} // namespace
+
+TEST_CASE_METHOD(ControlLaneFixture, "a user action sent as the breaker's probe closes it",
+                 "[wifi][wifi_control_lane][wifi_breaker]") {
+    // Nothing else may be polling: the user's own action is the probe.
+    trip_breaker(*this);
+
+    std::optional<std::string> refused;
+    wm->forget("Net", [&](bool, const std::string& e) { refused = e; });
+    REQUIRE(wait_until([&] { return refused.has_value(); }, 200));
+    CHECK(*refused == "WiFi isn't responding");
+    CHECK(backend->forgets() == 0);
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(400));
+    std::optional<bool> forgot;
+    wm->forget("Net", [&](bool ok, const std::string&) { forgot = ok; });
+    REQUIRE(wait_until([&] { return forgot.has_value(); }, 2000));
+    CHECK(*forgot);
+    CHECK(backend->forgets() == 1);
+    CHECK_FALSE(WiFiManagerTestAccess::breaker_open(*wm));
+}
+
+TEST_CASE_METHOD(ControlLaneFixture,
+                 "a radio switch that answers after its deadline still refreshes what shows it",
+                 "[wifi][wifi_control_lane]") {
+    WiFiManagerTestAccess::set_user_op_timeouts(*wm, 45000, 200, 60000);
+    auto notified = std::make_shared<std::atomic<int>>(0);
+    wm->add_state_observer(guard.token(), [notified] { (*notified)++; });
+
+    backend->stall();
+    std::optional<bool> radio_ok;
+    wm->set_enabled_async(true, guard.token(), [&](bool ok, bool) { radio_ok = ok; });
+    REQUIRE(wait_until([&] { return radio_ok.has_value(); }, 2000));
+    CHECK_FALSE(*radio_ok);
+    REQUIRE(backend->radios() == 1);
+    const int before = notified->load();
+
+    backend->release();
+    REQUIRE(WiFiManagerTestAccess::settle(*wm));
+    CHECK(wait_until([&] { return notified->load() > before; }, 1000));
+}
+
+TEST_CASE_METHOD(ControlLaneFixture, "the wpa_supplicant fallback starts with the breaker closed",
+                 "[wifi][wifi_control_lane][wifi_breaker]") {
+    trip_breaker(*this);
+
+    WiFiManagerTestAccess::fire_init_failed(*wm, /*silent=*/true, "init failed");
+    helix::ui::UpdateQueue::instance().drain();
+    REQUIRE(wait_until([&] {
+        return dynamic_cast<WifiBackendWpaSupplicant*>(WiFiManagerTestAccess::backend(*wm)) !=
+               nullptr;
+    }));
+    backend = nullptr; // freed by the swap
+    CHECK_FALSE(WiFiManagerTestAccess::breaker_open(*wm));
 }

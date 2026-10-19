@@ -46,7 +46,8 @@ namespace helix {
  * (wifi_control_breaker.h) stops the periodic scans and status polls once the
  * daemon stops answering in time. A user action (connect, disconnect, forget,
  * radio) always reports: by its result, by its own deadline, or at once with
- * "WiFi isn't responding" while the lane is stalled or the breaker is open.
+ * "WiFi isn't responding" while the lane is stalled or the breaker is open
+ * with no probe due. When a probe is due, the user action goes out as it.
  * Results reach the LVGL thread through LifetimeTokens. With the pool never
  * started (ESP32, whose backend answers from memory) the lane runs each call
  * inline; once the pool has stopped, calls are dropped.
@@ -594,9 +595,12 @@ class WiFiManager {
     // Sends a user op down the lane and guarantees its caller one answer:
     // `work` runs on the lane and returns what to do on the LVGL thread with
     // its result (may be empty); `on_unanswered` runs on the LVGL thread
-    // instead when the lane is unresponsive at submit, the op is dropped unrun,
-    // or `deadline_ms` passes first. An op whose deadline passes while still
-    // queued is never sent. Nothing runs once the manager is destroyed.
+    // instead when the lane is stalled or the breaker refuses at submit, the op
+    // is dropped unrun, or `deadline_ms` passes first. While the breaker is
+    // open, the op its probe admission lets through is timed as that probe. An
+    // op whose deadline passes while still queued is never sent; one that runs
+    // but answers after it notifies the state observers instead of its caller.
+    // Nothing runs once the manager is destroyed.
     void submit_user_op(const char* tag, uint32_t deadline_ms,
                         std::function<std::function<void()>()> work,
                         std::function<void()> on_unanswered);
@@ -640,8 +644,6 @@ class WiFiManager {
     // slow-call time for a health call, user_op_timeouts_.stall_ms for a user
     // op), so anything queued behind it will wait at least that long. LVGL thread.
     bool control_stalled();
-    // control_stalled() or the breaker is open: a user op would not be answered.
-    bool control_unresponsive();
 
     // A scan trigger is queued or running on the lane. LVGL thread only.
     bool scan_trigger_inflight_ = false;

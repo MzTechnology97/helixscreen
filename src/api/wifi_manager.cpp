@@ -301,10 +301,10 @@ void WiFiManager::handle_init_failed(bool silent, const std::string& msg) {
 
 void WiFiManager::swap_to_wpa_supplicant(bool silent) {
 #if !defined(__APPLE__) && !defined(__ANDROID__) && !defined(ESP_PLATFORM)
-    // A call in progress usually returns at once. Waiting longer would hold
-    // the LVGL thread for as long as it takes, which on a wedged daemon is
-    // unbounded, so past a short bound look again later instead.
-    if (!wait_for_radio_ops_for(std::chrono::milliseconds(200))) {
+    // Waiting for a call in progress would hold the LVGL thread for as long
+    // as it takes, which on a wedged daemon is unbounded, so check without
+    // waiting and look again later.
+    if (!wait_for_radio_ops_for(std::chrono::milliseconds(0))) {
         after_ms(100, [this, silent]() { swap_to_wpa_supplicant(silent); });
         return;
     }
@@ -320,11 +320,21 @@ void WiFiManager::swap_to_wpa_supplicant(bool silent) {
     backend_.reset();
     backend_ = std::make_unique<WifiBackendWpaSupplicant>();
     backend_->set_silent(silent);
+    // The breaker measured the backend just replaced.
+    bool was_open;
+    {
+        std::lock_guard<std::mutex> lock(breaker_mutex_);
+        was_open = breaker_.open();
+        breaker_ = helix::wifi::ControlBreaker(breaker_.config());
+    }
     {
         std::lock_guard<std::mutex> lock(control_mutex_);
         control_paused_ = false;
     }
     register_backend_callbacks(silent);
+    if (was_open) {
+        notify_state_observers();
+    }
     backend_->start_async();
 #else
     (void)silent;
@@ -1294,10 +1304,6 @@ bool WiFiManager::control_stalled() {
            std::chrono::milliseconds(limit_ms);
 }
 
-bool WiFiManager::control_unresponsive() {
-    return control_stalled() || breaker_open();
-}
-
 namespace {
 constexpr const char* UNRESPONSIVE_TECHNICAL_MSG = "WiFi control call did not return in time";
 } // namespace
@@ -1318,7 +1324,16 @@ void WiFiManager::notify_unresponsive() {
 void WiFiManager::submit_user_op(const char* tag, uint32_t deadline_ms,
                                  std::function<std::function<void()>()> work,
                                  std::function<void()> on_unanswered) {
-    if (control_unresponsive()) {
+    // While the breaker is open, a probe it admits goes out as this op: with
+    // no poll running, a user acting is what finds control answering again.
+    bool admitted = false;
+    bool probe = false;
+    if (!control_stalled()) {
+        std::lock_guard<std::mutex> lock(breaker_mutex_);
+        admitted = breaker_.allow_call(monotonic_ms());
+        probe = admitted && breaker_.open();
+    }
+    if (!admitted) {
         spdlog::warn("[WiFiManager] WiFi control is not answering — '{}' not sent", tag);
         async_lifetime_.defer(tag, std::move(on_unanswered));
         return;
@@ -1344,19 +1359,37 @@ void WiFiManager::submit_user_op(const char* tag, uint32_t deadline_ms,
     auto tok = async_lifetime_.token();
     submit_control(
         tag, ControlKind::User,
-        [tok, tag, phase, work = std::move(work)]() {
+        [this, tok, tag, phase, probe, work = std::move(work)]() {
             int expected = Queued;
             if (!phase->compare_exchange_strong(expected, Running)) {
+                if (probe) {
+                    breaker_abandon_probe();
+                }
                 return; // the caller was already told it failed; do not act now
             }
+            const auto started = std::chrono::steady_clock::now();
             std::function<void()> apply = work();
-            tok.defer(tag, [phase, apply = std::move(apply)]() {
-                if (phase->exchange(Answered) != Answered && apply) {
-                    apply();
+            if (probe) {
+                record_health_call(started);
+            }
+            tok.defer(tag, [this, phase, apply = std::move(apply)]() {
+                if (phase->exchange(Answered) != Answered) {
+                    if (apply) {
+                        apply();
+                    }
+                    return;
                 }
+                // The caller was told it failed, but the op ran: whatever shows
+                // the state it changed has to read it again.
+                notify_state_observers();
             });
         },
-        [tok, tag, answer_unanswered]() { tok.defer(tag, answer_unanswered); });
+        [this, tok, tag, probe, answer_unanswered]() {
+            if (probe) {
+                breaker_abandon_probe();
+            }
+            tok.defer(tag, answer_unanswered);
+        });
 }
 
 void WiFiManager::after_ms(uint32_t ms, std::function<void()> fn) {

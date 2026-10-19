@@ -393,10 +393,10 @@ sudo nmcli device wifi connect "HiddenSSID" password "Password" hidden yes
 **What HelixScreen does meanwhile:**
 - Shows the last WiFi details and network list it got, instead of blanking them
 - Stops scanning for networks, so it doesn't pile more requests onto the stuck service
-- Checks the service again after about 15 seconds, then less often, up to every 2 minutes
-- As soon as the service answers, the message goes away and scanning starts again on its own. You don't need to do anything.
+- Checks the service again after about 15 seconds, then less often, up to every 2 minutes. It checks only while something on screen needs WiFi: the home screen's network tile showing WiFi, **Network Settings** being open, or you tapping a WiFi action
+- As soon as a check gets an answer, the message goes away and scanning starts again on its own. You don't need to do anything.
 
-Before HelixScreen notices the service is stuck, an action can take up to about 45 seconds to show the message. After that, tapping a network, **Disconnect**, **Forget** or the WiFi switch shows **WiFi isn't responding** right away. Nothing is sent to the WiFi service, so nothing changes.
+Before HelixScreen notices the service is stuck, an action can take up to about 45 seconds to show the message. After that, tapping a network, **Disconnect**, **Forget** or the WiFi switch shows **WiFi isn't responding** right away and sends nothing, except when a check is due: then that tap is sent as the check, and if the service answers, the action goes through and the message clears.
 
 **What to try:**
 
