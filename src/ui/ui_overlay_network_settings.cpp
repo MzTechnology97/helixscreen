@@ -381,6 +381,7 @@ void NetworkSettingsOverlay::hide() {
 void NetworkSettingsOverlay::on_activate() {
     // Call base class first
     OverlayBase::on_activate();
+    forget_read_pending_ = false;
 
     spdlog::debug("[NetworkSettingsOverlay] on_activate()");
 
@@ -1404,6 +1405,8 @@ void NetworkSettingsOverlay::handle_hidden_connect_clicked() {
                             lv_obj_remove_flag(error_label, LV_OBJ_FLAG_HIDDEN);
                         }
                     }
+                    // The join's start dropped any status answer in flight.
+                    update_wifi_status();
                 }
             });
         },
@@ -1446,7 +1449,6 @@ void NetworkSettingsOverlay::handle_network_item_clicked(lv_event_t* e) {
     strncpy(current_ssid_, item_data->ssid.c_str(), sizeof(current_ssid_) - 1);
     current_ssid_[sizeof(current_ssid_) - 1] = '\0';
     current_network_is_secured_ = item_data->is_secured;
-    ++status_generation_;
 
     if (item_data->is_secured) {
         // Show password modal for secured networks
@@ -1458,6 +1460,7 @@ void NetworkSettingsOverlay::handle_network_item_clicked(lv_event_t* e) {
             return;
         }
 
+        ++status_generation_;
         auto token = lifetime_.token();
         wifi_manager_->connect(
             item_data->ssid, "", [this, token](bool success, const std::string& error) {
@@ -1470,6 +1473,8 @@ void NetworkSettingsOverlay::handle_network_item_clicked(lv_event_t* e) {
                         refresh_transport_status();
                     } else {
                         spdlog::error("[NetworkSettingsOverlay] Failed to connect: {}", error);
+                        // The join's start dropped any status answer in flight.
+                        update_wifi_status();
                     }
                 });
             });
@@ -1482,11 +1487,17 @@ void NetworkSettingsOverlay::handle_network_settings_forget() {
         return;
     }
 
+    if (forget_read_pending_) {
+        return;
+    }
+    forget_read_pending_ = true;
+
     // Fresh read, not the cached connected_ssid_ subject — the confirmation
     // dialog acts on whatever is actually associated right now.
     wifi_manager_->get_status_async(
         lifetime_.token(),
         [this, gen = status_generation_](const WifiBackend::ConnectionStatus& status) {
+            forget_read_pending_ = false;
             if (gen != status_generation_) {
                 return;
             }
@@ -1725,6 +1736,7 @@ void NetworkSettingsOverlay::hide_password_modal() {
 void NetworkSettingsOverlay::handle_password_cancel_clicked() {
     spdlog::debug("[NetworkSettingsOverlay] Password cancel clicked");
     hide_password_modal();
+    update_wifi_status();
 }
 
 void NetworkSettingsOverlay::handle_password_connect_clicked() {
@@ -1814,6 +1826,8 @@ void NetworkSettingsOverlay::handle_password_connect_clicked() {
                         lv_obj_remove_flag(modal_status, LV_OBJ_FLAG_HIDDEN);
                     }
                 }
+                // The join's start dropped any status answer in flight.
+                update_wifi_status();
             }
         });
     });
