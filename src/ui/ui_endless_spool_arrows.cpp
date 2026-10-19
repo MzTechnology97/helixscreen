@@ -384,7 +384,7 @@ static void endless_spool_arrows_xml_apply(lv_xml_parser_state_t* state, const c
         const char* value = attrs[i + 1];
 
         if (strcmp(name, "slot_count") == 0) {
-            data->slot_count = LV_CLAMP(atoi(value), 1, MAX_SLOTS);
+            data->slot_count = LV_CLAMP(1, atoi(value), MAX_SLOTS);
             needs_redraw = true;
         } else if (strcmp(name, "slot_width") == 0) {
             data->slot_width = LV_MAX(atoi(value), 20);
@@ -445,7 +445,7 @@ lv_obj_t* ui_endless_spool_arrows_create(lv_obj_t* parent) {
 void ui_endless_spool_arrows_set_slot_count(lv_obj_t* obj, int count) {
     auto* data = get_data(obj);
     if (data) {
-        data->slot_count = LV_CLAMP(count, 1, MAX_SLOTS);
+        data->slot_count = LV_CLAMP(1, count, MAX_SLOTS);
         lv_obj_invalidate(obj);
     }
 }

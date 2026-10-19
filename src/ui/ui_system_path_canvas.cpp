@@ -144,6 +144,12 @@ static constexpr int32_t BYPASS_SPOOL_HALF = 28;
 
 static int32_t calc_tool_x(int tool_index, int total_tools, int32_t x_off, int32_t width);
 
+/// @p v clamped into [@p lo, @p hi]. A span too short to hold anything
+/// (@p lo > @p hi) yields its midpoint, never a bound lying past the other.
+static int32_t clamp_span(int32_t lo, int32_t v, int32_t hi) {
+    return lo <= hi ? LV_CLAMP(lo, v, hi) : lo + (hi - lo) / 2;
+}
+
 static BypassGeometry compute_bypass_geometry(const SystemPathData* data,
                                               const lv_area_t& obj_coords) {
     int32_t width = lv_area_get_width(&obj_coords);
@@ -165,6 +171,7 @@ static BypassGeometry compute_bypass_geometry(const SystemPathData* data,
     // Right boundary the spool centre must stay inside (leave room for its half
     // width + a small margin from the canvas edge).
     int32_t right_limit = x_off + width - BYPASS_SPOOL_HALF - 4;
+    int32_t left_limit = x_off + BYPASS_SPOOL_HALF + 4;
 
     // Default horizontal position (single-tool / no toolhead row): the historic
     // 0.85 ratio gives a long visible tube run from the hub.
@@ -192,7 +199,7 @@ static BypassGeometry compute_bypass_geometry(const SystemPathData* data,
             // No horizontal room even at the canvas edge — drop the spool below
             // the toolhead row, centred over the rightmost toolhead, so it never
             // overlaps a nozzle. Degrades better than a clipped/overlapping spool.
-            bypass_x = LV_CLAMP(rightmost_tool_x, x_off + BYPASS_SPOOL_HALF + 4, right_limit);
+            bypass_x = clamp_span(left_limit, rightmost_tool_x, right_limit);
             // Sit below the toolhead row: nozzle centre + glyph drop + spool half.
             // Clamp so the spool's lower edge never falls off the canvas bottom on
             // short panels (the spool overlay is centred on merge_y).
@@ -201,7 +208,7 @@ static BypassGeometry compute_bypass_geometry(const SystemPathData* data,
         }
     }
 
-    bypass_x = LV_MIN(bypass_x, right_limit);
+    bypass_x = clamp_span(left_limit, bypass_x, right_limit);
 
     return {bypass_x, merge_y, center_x};
 }
@@ -326,7 +333,7 @@ static void draw_routed_tube_parallel(lv_layer_t* layer, int32_t sx, int32_t sy,
                                    sp_lane_style(color, width, active));
         return;
     }
-    horiz_y = LV_CLAMP(horiz_y, lo, hi);
+    horiz_y = LV_CLAMP(lo, horiz_y, hi);
 
     int32_t dx = (ex > sx) ? (ex - sx) : (sx - ex);
     int32_t y_approach = horiz_y + dx / 10; // ~10% downward slope along the run
@@ -420,7 +427,7 @@ static void draw_hub_box(lv_layer_t* layer, int32_t cx, int32_t cy, int32_t widt
 
 // Color blending helper (same pattern as filament_path_canvas)
 static lv_color_t sp_blend(lv_color_t c1, lv_color_t c2, float factor) {
-    factor = LV_CLAMP(factor, 0.0f, 1.0f);
+    factor = LV_CLAMP(0.0f, factor, 1.0f);
     return lv_color_make((uint8_t)(c1.red + (c2.red - c1.red) * factor),
                          (uint8_t)(c1.green + (c2.green - c1.green) * factor),
                          (uint8_t)(c1.blue + (c2.blue - c1.blue) * factor));
@@ -615,7 +622,7 @@ static int32_t unit_stem_x(const SystemPathData* data, const SysLayout& L, int i
         return L.x_off + L.width / 2;
     }
     int32_t margin = LV_MIN(8, L.width / 4);
-    return LV_CLAMP(L.x_off + data->unit_x_positions[i], L.x_off + margin,
+    return LV_CLAMP(L.x_off + margin, L.x_off + data->unit_x_positions[i],
                     L.x_off + L.width - margin);
 }
 
@@ -920,7 +927,7 @@ static void draw_routes(lv_layer_t* layer, SystemPathData* data, const SysLayout
             int32_t horiz_y = par_bot_y - parallel_idx * par_step;
             parallel_idx++;
 
-            horiz_y = LV_CLAMP(horiz_y, route.start_y + arc_r + 2, route.end_y - arc_r - 2);
+            horiz_y = clamp_span(route.start_y + arc_r + 2, horiz_y, route.end_y - arc_r - 2);
 
             draw_routed_tube_parallel(layer, route.start_x, route.start_y, route.end_x, route.end_y,
                                       horiz_y, route_color, route_w,
@@ -1277,7 +1284,7 @@ static void system_path_xml_apply(lv_xml_parser_state_t* state, const char** att
         const char* value = attrs[i + 1];
 
         if (strcmp(name, "unit_count") == 0) {
-            data->unit_count = LV_CLAMP(atoi(value), 0, SystemPathData::MAX_UNITS);
+            data->unit_count = LV_CLAMP(0, atoi(value), SystemPathData::MAX_UNITS);
             needs_redraw = true;
         } else if (strcmp(name, "active_unit") == 0) {
             data->active_unit = atoi(value);
@@ -1346,7 +1353,7 @@ void ui_system_path_canvas_set_unit_count(lv_obj_t* obj, int count) {
     auto* data = get_data(obj);
     if (!data)
         return;
-    int clamped = LV_CLAMP(count, 0, SystemPathData::MAX_UNITS);
+    int clamped = LV_CLAMP(0, count, SystemPathData::MAX_UNITS);
     if (data->unit_count == clamped)
         return;
     data->unit_count = clamped;
@@ -1465,7 +1472,7 @@ void ui_system_path_canvas_set_total_tools(lv_obj_t* obj, int total_tools) {
     auto* data = get_data(obj);
     if (!data)
         return;
-    int clamped = LV_CLAMP(total_tools, 0, SystemPathData::MAX_TOOLS);
+    int clamped = LV_CLAMP(0, total_tools, SystemPathData::MAX_TOOLS);
     if (data->total_tools == clamped)
         return;
     data->total_tools = clamped;

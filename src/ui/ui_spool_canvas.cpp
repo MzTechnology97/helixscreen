@@ -286,7 +286,7 @@ static void render_spool_pixels(SpoolCanvasData* data) {
 
     // Fill level determines wound filament radius
     // Max filament is smaller than flange so flanges always show as "taller"
-    float fill = LV_CLAMP(data->fill_level, 0.0f, 1.0f);
+    float fill = LV_CLAMP(0.0f, data->fill_level, 1.0f);
     int32_t max_filament_ry = (int32_t)(flange_ry * 0.85f); // Flanges 15% taller than full filament
     int32_t filament_ry = hub_ry + (int32_t)((max_filament_ry - hub_ry) * fill);
     int32_t filament_rx = (int32_t)(filament_ry * ELLIPSE_RATIO);
@@ -595,7 +595,7 @@ void ui_spool_canvas_set_fill_level(lv_obj_t* canvas, float fill_level) {
     auto* data = get_data(canvas);
     if (!data)
         return;
-    float clamped = LV_CLAMP(fill_level, 0.0f, 1.0f);
+    float clamped = LV_CLAMP(0.0f, fill_level, 1.0f);
     data->fill_level = clamped;
     // redraw_spool() will dedup on bucket; no need to skip here since the
     // bucket comparison is the only thing that actually matters visually.

@@ -386,19 +386,19 @@ static void filament_path_xml_apply(lv_xml_parser_state_t* state, const char** a
             }
             needs_redraw = true;
         } else if (strcmp(name, "slot_count") == 0) {
-            data->slot_count = LV_CLAMP(atoi(value), 1, FilamentPathData::MAX_SLOTS);
+            data->slot_count = LV_CLAMP(1, atoi(value), FilamentPathData::MAX_SLOTS);
             needs_redraw = true;
         } else if (strcmp(name, "active_slot") == 0) {
             data->active_slot = atoi(value);
             needs_redraw = true;
         } else if (strcmp(name, "filament_segment") == 0) {
-            data->filament_segment = LV_CLAMP(atoi(value), 0, PATH_SEGMENT_COUNT - 1);
+            data->filament_segment = LV_CLAMP(0, atoi(value), PATH_SEGMENT_COUNT - 1);
             needs_redraw = true;
         } else if (strcmp(name, "error_segment") == 0) {
-            data->error_segment = LV_CLAMP(atoi(value), 0, PATH_SEGMENT_COUNT - 1);
+            data->error_segment = LV_CLAMP(0, atoi(value), PATH_SEGMENT_COUNT - 1);
             needs_redraw = true;
         } else if (strcmp(name, "anim_progress") == 0) {
-            data->anim.progress = LV_CLAMP(atoi(value), 0, 100);
+            data->anim.progress = LV_CLAMP(0, atoi(value), 100);
             needs_redraw = true;
         } else if (strcmp(name, "filament_color") == 0) {
             data->filament_color = strtoul(value, nullptr, 0);
@@ -466,7 +466,7 @@ void ui_filament_path_canvas_set_slot_count(lv_obj_t* obj, int count) {
     auto* data = get_data(obj);
     if (!data)
         return;
-    int clamped = LV_CLAMP(count, 1, FilamentPathData::MAX_SLOTS);
+    int clamped = LV_CLAMP(1, count, FilamentPathData::MAX_SLOTS);
     if (data->slot_count == clamped)
         return;
     data->slot_count = clamped;
@@ -548,7 +548,7 @@ void ui_filament_path_canvas_set_filament_segment(lv_obj_t* obj, int segment) {
     if (!data)
         return;
 
-    int new_segment = LV_CLAMP(segment, 0, PATH_SEGMENT_COUNT - 1);
+    int new_segment = LV_CLAMP(0, segment, PATH_SEGMENT_COUNT - 1);
 
     // When not in eject mode and the active slot has a prep sensor, clamp the
     // minimum displayed segment to LANE so the retract animation stops at the
@@ -589,7 +589,7 @@ void ui_filament_path_canvas_set_error_segment(lv_obj_t* obj, int segment) {
     if (!data)
         return;
 
-    int new_error = LV_CLAMP(segment, 0, PATH_SEGMENT_COUNT - 1);
+    int new_error = LV_CLAMP(0, segment, PATH_SEGMENT_COUNT - 1);
     int old_error = data->error_segment;
 
     if (new_error == old_error)
@@ -615,7 +615,7 @@ void ui_filament_path_canvas_set_anim_progress(lv_obj_t* obj, int progress) {
     auto* data = get_data(obj);
     if (!data)
         return;
-    int clamped = LV_CLAMP(progress, 0, 100);
+    int clamped = LV_CLAMP(0, progress, 100);
     if (data->anim.progress == clamped)
         return;
     data->anim.progress = clamped;
@@ -666,8 +666,8 @@ void ui_filament_path_canvas_animate_segment(lv_obj_t* obj, int from_segment, in
     if (!data)
         return;
 
-    int from = LV_CLAMP(from_segment, 0, PATH_SEGMENT_COUNT - 1);
-    int to = LV_CLAMP(to_segment, 0, PATH_SEGMENT_COUNT - 1);
+    int from = LV_CLAMP(0, from_segment, PATH_SEGMENT_COUNT - 1);
+    int to = LV_CLAMP(0, to_segment, PATH_SEGMENT_COUNT - 1);
 
     if (from != to) {
         start_segment_animation(obj, data, from, to);
