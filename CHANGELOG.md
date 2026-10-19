@@ -5,6 +5,12 @@ All notable changes to HelixScreen will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.6] - Unreleased
+
+### Fixed
+
+- **Power tiles keep updating after a Klipper restart** - a power device's home tile stopped following its device once Klipper restarted, until the home screen was rebuilt. Tiles now keep tracking their device across restarts.
+
 ## [1.0.5] - 2026-10-13
 
 <!-- whatsnew

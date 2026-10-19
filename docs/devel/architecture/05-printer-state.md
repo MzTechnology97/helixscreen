@@ -105,7 +105,7 @@ Like `PrinterState`, `ToolState` is fed `update_from_status()` on the main threa
 | `AmsState` | [`ams_state.h`](../../../include/ams_state.h) | Multi-backend filament-system state (ch. 07) |
 | `TimelapseState` | [`timelapse_state.h`](../../../include/timelapse_state.h) | Timelapse recording + render progress |
 | `PrintControlButtons` | [`print_control_buttons.h`](../../../include/print_control_buttons.h) | Shared pause/resume/stop subjects + callbacks |
-| `PowerDeviceState` | [`power_device_state.h`](../../../include/power_device_state.h) | Moonraker power-device state |
+| `PowerDeviceState` | [`power_device_state.h`](../../../include/power_device_state.h) | Moonraker power-device state. Rediscovery (every Klipper restart) keeps a still-present device's subject and lifetime and updates it in place, so tiles observing it keep working |
 | `PerformanceState` | [`performance_state.h`](../../../include/performance_state.h) | Per-metric ring buffers (~60 s history) |
 | `SensorState` | [`sensor_state.h`](../../../include/sensor_state.h) | Discovered Moonraker sensor metadata |
 | **Sensor managers** | | |
