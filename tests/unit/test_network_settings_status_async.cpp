@@ -12,6 +12,7 @@
 #include "../lvgl_ui_test_fixture.h"
 #include "../test_helpers/network_settings_overlay_test_access.h"
 #include "../test_helpers/scoped_runtime_config.h"
+#include "../ui_test_utils.h"
 #include "async_lifetime_guard.h"
 #include "http_executor.h"
 #include "runtime_config.h"
@@ -217,4 +218,22 @@ TEST_CASE_METHOD(OverlayStatusFixture, "network settings: a failed join reads th
 
     REQUIRE(wait_until([&]() { return shows_connection(); }));
     CHECK(no_read_on_this_thread());
+}
+
+TEST_CASE_METHOD(OverlayStatusFixture,
+                 "network settings: Forget on a link whose name is not known yet says so",
+                 "[network_settings][wifi_status_async]") {
+    // What a CONNECTED event leaves cached until a read answers.
+    wifi->set_connected_state(true, "", kIp, 70);
+    auto toasts = std::make_shared<std::vector<std::string>>();
+    helix::ui::set_test_notification_warning_hook(
+        [toasts](const std::string& m) { toasts->push_back(m); });
+
+    Access::forget_clicked(overlay());
+    const bool toasted = wait_until([&]() { return !toasts->empty(); });
+    helix::ui::set_test_notification_warning_hook(nullptr);
+    REQUIRE(toasted);
+    CHECK(toasts->front() == "WiFi isn't responding");
+    CHECK(Access::pending_forget_ssid(overlay()).empty());
+    CHECK(ModalStack::instance().empty());
 }

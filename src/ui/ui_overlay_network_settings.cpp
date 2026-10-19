@@ -1501,6 +1501,12 @@ void NetworkSettingsOverlay::handle_network_settings_forget() {
             if (gen != status_generation_) {
                 return;
             }
+            if (status.connected && status.ssid.empty()) {
+                // A link with no name is the cached one a CONNECTED event left,
+                // and no read has answered since: nothing to name in a dialog.
+                NOTIFY_WARNING("{}", lv_tr("WiFi isn't responding"));
+                return;
+            }
             confirm_forget(status.ssid);
         });
 }
