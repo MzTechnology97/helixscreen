@@ -11,6 +11,8 @@
 // Each test names the specific parser file it is mirroring; if you add a new
 // field read in that parser, update both the subscription and this test.
 
+#include "../helix_test_fixture.h"
+#include "moonraker_client_mock.h"
 #include "moonraker_discovery_sequence.h"
 #include "printer_discovery.h"
 
@@ -605,4 +607,16 @@ TEST_CASE("Subscription: ZMOD printers subscribe save_variables for the persiste
 
         REQUIRE(subs.contains("save_variables"));
     }
+}
+
+TEST_CASE_METHOD(HelixTestFixture,
+                 "Subscription: an extruder-prefixed module object is not subscribed as a heater",
+                 "[moonraker][subscription]") {
+    MoonrakerClientMock mock(MoonrakerClientMock::PrinterType::VORON_24);
+    MoonrakerDiscoverySequence discovery(mock);
+    // The Snapmaker U1 lists extruder_offset_calibration beside its four extruders.
+    discovery.parse_objects(json::array({"heater_bed", "extruder_offset_calibration", "extruder",
+                                         "extruder1", "extruder2", "extruder3"}));
+    CHECK(discovery.heaters() == std::vector<std::string>{"heater_bed", "extruder", "extruder1",
+                                                          "extruder2", "extruder3"});
 }
