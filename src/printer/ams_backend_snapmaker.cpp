@@ -9,6 +9,7 @@
 #include "ams_fault_event.h"
 #include "ams_state.h"
 #include "app_globals.h"
+#include "filament_database.h"
 #include "filament_slot_override.h"
 #include "filament_slot_override_store.h"
 #include "json_utils.h"
@@ -24,6 +25,7 @@
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
+#include <array>
 #include <cctype>
 #include <lvgl.h>
 #include <memory>
@@ -74,6 +76,35 @@ constexpr std::string_view PRODUCT_LINE_VENDOR = "Snapmaker";
 
 [[nodiscard]] bool is_product_line_vendor(const std::string& brand) {
     return lower_ascii(brand) == lower_ascii(std::string(PRODUCT_LINE_VENDOR));
+}
+
+// The filament families the firmware's filament table marks soft (TPU, PEBA,
+// PVA), plus TPE, which is softer than any TPU and has no row there, and the
+// generic "Flex" names.
+constexpr std::array<std::string_view, 6> SOFT_FAMILIES = {"tpu", "tpe",  "peba",
+                                                           "pva", "flex", "flexible"};
+
+/// The material database's group for flexible filament.
+constexpr std::string_view SOFT_COMPAT_GROUP = "TPU";
+
+/// Whether @p material is soft filament. The firmware keys its table by the
+/// exact type, so a grade it has no row for ("TPU-85A", "TPU95A") reads rigid
+/// there. This asks the material database first, then judges the family: a
+/// soft family name followed by the end or a non-letter ("PVA+", "TPU95A"),
+/// so a longer word that merely starts with one ("TPUX") stays rigid.
+[[nodiscard]] bool is_soft_material(const std::string& material) {
+    if (const auto info = filament::find_material(material);
+        info && info->compat_group && SOFT_COMPAT_GROUP == info->compat_group) {
+        return true;
+    }
+    const std::string lower = lower_ascii(material);
+    return std::any_of(SOFT_FAMILIES.begin(), SOFT_FAMILIES.end(), [&](std::string_view f) {
+        if (lower.size() < f.size() || std::string_view(lower).substr(0, f.size()) != f) {
+            return false;
+        }
+        return lower.size() == f.size() ||
+               !std::isalpha(static_cast<unsigned char>(lower[f.size()]));
+    });
 }
 
 /// The spool name a tag states: its SUB_TYPE, or empty when the tag names no
@@ -2270,11 +2301,15 @@ std::string AmsBackendSnapmaker::build_filament_config_gcode(int head, const Slo
     const char* force_arg = force ? " FORCE=1" : "";
     // Colour rides its own line, as the stock screen sends it: the firmware's
     // colour forms are parsed apart from the identity fields.
+    // SOFT=1 makes the firmware store the head as soft when its own table has
+    // no row for the type. Rigid is left to the table: SOFT=0 would override a
+    // row that knows better.
+    const char* soft_arg = is_soft_material(slot.material) ? " SOFT=1" : "";
     const std::string identity =
         fmt::format("SET_PRINT_FILAMENT_CONFIG CONFIG_EXTRUDER={} VENDOR={} FILAMENT_TYPE={} "
-                    "FILAMENT_SUBTYPE={}{}",
+                    "FILAMENT_SUBTYPE={}{}{}",
                     head, vendor, IMoonrakerAPI::gcode_param_value(slot.material),
-                    IMoonrakerAPI::gcode_param_value(subtype), force_arg);
+                    IMoonrakerAPI::gcode_param_value(subtype), soft_arg, force_arg);
     const std::string colour =
         fmt::format("SET_PRINT_FILAMENT_CONFIG CONFIG_EXTRUDER={} FILAMENT_COLOR_RGBA={:06X}FF{}",
                     head, slot.color_rgb & 0xFFFFFFu, force_arg);

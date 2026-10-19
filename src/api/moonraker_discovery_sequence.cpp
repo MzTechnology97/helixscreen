@@ -14,6 +14,7 @@
 #include "helix_version.h"
 #include "humidity_sensor_types.h"
 #include "hv/requests.h"
+#include "klipper_extruder_naming.h"
 #include "led/led_controller.h"
 #include "macro_executor.h"
 #include "macro_fan_analyzer.h"
@@ -1784,17 +1785,8 @@ void MoonrakerDiscoverySequence::parse_objects(const json& objects) {
         if (name.rfind("stepper_", 0) == 0) {
             steppers_.push_back(name);
         }
-        // Extruders (controllable heaters)
-        // Match "extruder", "extruder1", etc., but NOT "extruder_stepper"
-        else if (name.rfind("extruder", 0) == 0 && name.rfind("extruder_stepper", 0) != 0) {
-            heaters_.push_back(name);
-        }
-        // Heated bed
-        else if (name == "heater_bed") {
-            heaters_.push_back(name);
-        }
-        // Generic heaters (e.g., "heater_generic chamber")
-        else if (name.rfind("heater_generic ", 0) == 0) {
+        // Heaters: extruders, heater_bed, heater_generic
+        else if (helix::is_heater_object_name(name)) {
             heaters_.push_back(name);
         }
         // Read-only temperature sensors

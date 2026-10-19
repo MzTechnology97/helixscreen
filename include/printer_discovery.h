@@ -14,6 +14,7 @@
  */
 
 #include "ams_types.h"
+#include "klipper_extruder_naming.h"
 #include "macro_patterns.h"   // Shared macro-name tables (nozzle clean, ...)
 #include "printer_detector.h" // For BuildVolume struct
 
@@ -156,20 +157,14 @@ class PrinterDiscovery {
             // ================================================================
             // Heaters: extruders, heater_bed, heater_generic
             // ================================================================
-            // Match "extruder", "extruder1", etc., but NOT "extruder_stepper"
-            else if (name.rfind("extruder", 0) == 0 && name.rfind("extruder_stepper", 0) != 0) {
+            else if (helix::is_heater_object_name(name)) {
                 heaters_.push_back(name);
-            }
-            // Heated bed
-            else if (name == "heater_bed") {
-                heaters_.push_back(name);
-                has_heater_bed_ = true;
-            }
-            // Generic heaters (e.g., "heater_generic chamber")
-            else if (name.rfind("heater_generic ", 0) == 0) {
-                heaters_.push_back(name);
-                std::string heater_name = name.substr(15); // Remove "heater_generic " prefix
-                try_set_chamber_heater(name, heater_name, CHAMBER_HEATER_GENERIC_WEIGHT);
+                if (name == "heater_bed") {
+                    has_heater_bed_ = true;
+                } else if (name.rfind("heater_generic ", 0) == 0) {
+                    std::string heater_name = name.substr(15); // Remove "heater_generic " prefix
+                    try_set_chamber_heater(name, heater_name, CHAMBER_HEATER_GENERIC_WEIGHT);
+                }
             }
             // ================================================================
             // Sensors: temperature_sensor, temperature_fan (dual-purpose)

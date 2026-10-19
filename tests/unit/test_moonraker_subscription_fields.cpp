@@ -11,6 +11,9 @@
 // Each test names the specific parser file it is mirroring; if you add a new
 // field read in that parser, update both the subscription and this test.
 
+#include "../helix_test_fixture.h"
+#include "klipper_extruder_naming.h"
+#include "moonraker_client_mock.h"
 #include "moonraker_discovery_sequence.h"
 #include "printer_discovery.h"
 
@@ -605,4 +608,42 @@ TEST_CASE("Subscription: ZMOD printers subscribe save_variables for the persiste
 
         REQUIRE(subs.contains("save_variables"));
     }
+}
+
+TEST_CASE_METHOD(HelixTestFixture,
+                 "Subscription: an extruder-prefixed module object is not subscribed as a heater",
+                 "[moonraker][subscription]") {
+    MoonrakerClientMock mock(MoonrakerClientMock::PrinterType::VORON_24);
+    MoonrakerDiscoverySequence discovery(mock);
+    // The Snapmaker U1 lists extruder_offset_calibration beside its four extruders.
+    discovery.parse_objects(json::array({"heater_bed", "extruder_offset_calibration", "extruder",
+                                         "extruder1", "extruder2", "extruder3"}));
+    CHECK(discovery.heaters() == std::vector<std::string>{"heater_bed", "extruder", "extruder1",
+                                                          "extruder2", "extruder3"});
+}
+
+TEST_CASE_METHOD(HelixTestFixture,
+                 "Subscription: discovery and the hardware snapshot share one heater rule",
+                 "[moonraker][subscription][printer_discovery]") {
+    const json objects = json::array(
+        {"heater_bed", "extruder", "extruder1", "extruder_stepper belt", "heater_generic chamber",
+         "heater_genericx", "heater_fan hotend", "temperature_sensor mcu", "extruderx",
+         "extruder_offset_calibration", "heater_bedx", "fan"});
+    std::vector<std::string> expected;
+    for (const auto& o : objects) {
+        if (helix::is_heater_object_name(o.get<std::string>())) {
+            expected.push_back(o.get<std::string>());
+        }
+    }
+    REQUIRE(expected == std::vector<std::string>{"heater_bed", "extruder", "extruder1",
+                                                 "heater_generic chamber"});
+
+    MoonrakerClientMock mock(MoonrakerClientMock::PrinterType::VORON_24);
+    MoonrakerDiscoverySequence sequence(mock);
+    sequence.parse_objects(objects);
+    CHECK(sequence.heaters() == expected);
+
+    PrinterDiscovery hw;
+    hw.parse_objects(objects);
+    CHECK(hw.heaters() == expected);
 }

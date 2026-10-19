@@ -24,6 +24,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Power tiles keep updating after a Klipper restart** - a power device's home tile
   stopped following its device once Klipper restarted, until the home screen was rebuilt.
   Tiles now keep tracking their device across restarts.
+- **Snapmaker U1: no phantom heater** - the U1's extruder offset calibration module is no
+  longer listed as a heater, so it stops appearing as a Hotend Heater choice in the setup
+  wizard, and a saved hardware list that named it no longer warns that a heater went missing.
+- **AFC toolchanges keep their progress** - the brief Idle AFC reports between the unload
+  and load of one tool change no longer clears the operation status or restarts the step
+  progress partway through the change.
+- **Filament path values stay in range** - slot counts, path positions, progress and spool
+  fill levels above their maximum are now held at it, so a very large lane count can't draw
+  past the end of the filament path.
+- **Snapmaker U1: soft filament is saved as soft** - TPU, TPE, PEBA, PVA and Flex filament,
+  including grades the printer has no entry for such as TPU-85A, TPU95A or PVA+, are now
+  saved to the printer as soft filament.
 
 ## [1.0.5] - 2026-10-13
 
