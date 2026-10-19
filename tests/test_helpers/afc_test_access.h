@@ -18,4 +18,10 @@ class AfcTestAccess {
     template <class B> static auto& overrides(B& b) {
         return b.overrides_;
     }
+    template <class B> static auto& toolchange_hold_since(B& b) {
+        return b.toolchange_hold_since_;
+    }
+    template <class B> static auto& timed_out_state(B& b) {
+        return b.timed_out_state_;
+    }
 };
