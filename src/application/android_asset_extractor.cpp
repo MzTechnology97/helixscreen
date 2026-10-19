@@ -484,8 +484,8 @@ void android_configure_backup_dirs() {
         return;
     }
     const AndroidStorageLayout layout = android_storage_layout(internal_path);
-    app_constants::update::detail::state_dir_ref() = layout.backup_dir;
-    app_constants::update::detail::backup_fallback_dir_ref() = layout.backup_fallback_dir;
+    AppConstants::Update::detail::state_dir_ref() = layout.backup_dir;
+    AppConstants::Update::detail::backup_fallback_dir_ref() = layout.backup_fallback_dir;
     spdlog::info("[AndroidAssets] Settings backups: {} (fallback {})", layout.backup_dir,
                  layout.backup_fallback_dir);
 }

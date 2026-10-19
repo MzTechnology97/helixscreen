@@ -5,6 +5,16 @@ All notable changes to HelixScreen will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.6] - Unreleased
+
+### Fixed
+
+- **Printer detection** - a four-extruder machine or a MIPS host without any IFS sign is no
+  longer named an AD5X.
+- **Android settings backups** - the app keeps its rolling settings backups in its own
+  storage instead of failing to write any, and an update no longer overwrites themes or
+  printer database overrides you saved.
+
 ## [1.0.5] - 2026-10-13
 
 <!-- whatsnew
