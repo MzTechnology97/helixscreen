@@ -63,6 +63,10 @@ class WizardWifiStepTestAccess {
     static void announce_connected(WizardWifiStep& step) {
         step.announce_connected();
     }
+    /// The password modal's Cancel button.
+    static void modal_cancel_clicked(WizardWifiStep& step) {
+        step.handle_modal_cancel_clicked();
+    }
 
     static std::string text(lv_subject_t& subject) {
         return lv_subject_get_string(&subject);

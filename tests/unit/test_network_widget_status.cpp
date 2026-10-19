@@ -178,3 +178,17 @@ TEST_CASE_METHOD(NetworkWidgetStatusFixture,
     helix::WiFiManagerTestAccess::fire_disconnected(*helix::get_wifi_manager());
     CHECK(wait_until([&]() { return icon() == 0; }));
 }
+
+TEST_CASE_METHOD(NetworkWidgetStatusFixture,
+                 "network tile: a WiFi state change on a hidden tile starts no poll timer",
+                 "[network_widget]") {
+    wifi->set_connected_state(true, "HomeNet", "192.168.1.100", 80);
+    attach();
+    REQUIRE(wait_until([&]() { return icon() == 4; }));
+    widget->on_deactivate();
+    REQUIRE(NetworkWidgetTestAccess::signal_poll_timer(*widget) == nullptr);
+
+    helix::WiFiManagerTestAccess::fire_connected(*helix::get_wifi_manager());
+    await_earlier_answers();
+    CHECK(NetworkWidgetTestAccess::signal_poll_timer(*widget) == nullptr);
+}

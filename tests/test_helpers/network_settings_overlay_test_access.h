@@ -46,6 +46,11 @@ class NetworkSettingsOverlayTestAccess {
     static lv_subject_t& wifi_connected(NetworkSettingsOverlay& o) {
         return o.wifi_connected_;
     }
+    /// Apply a status read's answer the way the async read does.
+    static void apply_wifi_status(NetworkSettingsOverlay& o,
+                                  const WifiBackend::ConnectionStatus& status) {
+        o.apply_wifi_status(status);
+    }
     /// The SSID the password modal is about. The handlers read it rather than
     /// taking it as an argument, so a test has to seed it.
     static void set_current_ssid(NetworkSettingsOverlay& o, const std::string& ssid) {
@@ -81,6 +86,43 @@ class NetworkSettingsOverlayTestAccess {
     }
     static void forget_clicked(NetworkSettingsOverlay& o) {
         o.handle_network_settings_forget();
+    }
+    /// The Forget dialog's confirm button, for `ssid`.
+    static void forget_confirmed(NetworkSettingsOverlay& o, const std::string& ssid) {
+        o.pending_forget_ssid_ = ssid;
+        o.handle_network_forget_confirm();
+    }
+    /// Drive the production WLAN toggle handler for THIS overlay, from a switch
+    /// left in `checked`. The XML trampoline resolves the overlay through the
+    /// process-wide accessor, so an instance-scoped test needs its own event.
+    static void wlan_toggle_changed(NetworkSettingsOverlay& o, lv_obj_t* sw, bool checked) {
+        if (checked) {
+            lv_obj_add_state(sw, LV_STATE_CHECKED);
+        } else {
+            lv_obj_remove_state(sw, LV_STATE_CHECKED);
+        }
+        lv_obj_add_event_cb(
+            sw,
+            [](lv_event_t* e) {
+                static_cast<NetworkSettingsOverlay*>(lv_event_get_user_data(e))
+                    ->handle_wlan_toggle_changed(e);
+            },
+            LV_EVENT_VALUE_CHANGED, &o);
+        lv_obj_send_event(sw, LV_EVENT_VALUE_CHANGED, nullptr);
+    }
+    /// Tap a row built by populate(), on THIS overlay. The row's XML click
+    /// callback goes to the process-wide overlay, so the tap rides an event
+    /// code of its own.
+    static void network_item_clicked(NetworkSettingsOverlay& o, lv_obj_t* item) {
+        static const auto tap = static_cast<lv_event_code_t>(lv_event_register_id());
+        lv_obj_add_event_cb(
+            item,
+            [](lv_event_t* e) {
+                static_cast<NetworkSettingsOverlay*>(lv_event_get_user_data(e))
+                    ->handle_network_item_clicked(e);
+            },
+            tap, &o);
+        lv_obj_send_event(item, tap, nullptr);
     }
     static const std::string& pending_forget_ssid(NetworkSettingsOverlay& o) {
         return o.pending_forget_ssid_;

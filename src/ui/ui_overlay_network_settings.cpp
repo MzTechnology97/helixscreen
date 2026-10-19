@@ -462,7 +462,6 @@ void NetworkSettingsOverlay::cleanup() {
 
     // Call base class to set cleanup_called_ flag
     OverlayBase::cleanup();
-    ++status_generation_;
 
     cancel_wlan_toggle_backstop();
 

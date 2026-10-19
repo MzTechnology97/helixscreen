@@ -123,6 +123,35 @@ class OverlayStatusFixture : public LVGLUITestFixture {
         return modal;
     }
 
+    /// Parks a status read that answers "connected", then drops the link, so
+    /// a connected header can only come from that parked answer. The header
+    /// shows disconnected until then.
+    void hold_stale_connected_answer() {
+        REQUIRE(lv_subject_get_int(&Access::wifi_connected(*overlay_)) == 0);
+        wifi->hold_next_status();
+        Access::update_wifi_status(*overlay_);
+        REQUIRE(wait_until([&]() { return !wifi->status_callers().empty(); }));
+        wifi->set_connected_state(false);
+    }
+
+    /// Releases the parked answer and every read behind it; true when the
+    /// header ever showed the parked answer's connection.
+    bool stale_answer_landed() {
+        bool landed = false;
+        lv_observer_t* watch = lv_subject_add_observer(
+            &Access::wifi_connected(*overlay_),
+            [](lv_observer_t* observer, lv_subject_t* subject) {
+                if (lv_subject_get_int(subject) == 1) {
+                    *static_cast<bool*>(lv_observer_get_user_data(observer)) = true;
+                }
+            },
+            &landed);
+        wifi->release_held_status();
+        await_earlier_answers();
+        lv_observer_remove(watch);
+        return landed;
+    }
+
   private:
     std::shared_ptr<helix::WiFiManager> manager_;
     std::unique_ptr<NetworkSettingsOverlay> overlay_;
@@ -236,4 +265,69 @@ TEST_CASE_METHOD(OverlayStatusFixture,
     CHECK(toasts->front() == "WiFi isn't responding");
     CHECK(Access::pending_forget_ssid(overlay()).empty());
     CHECK(ModalStack::instance().empty());
+}
+
+TEST_CASE_METHOD(OverlayStatusFixture,
+                 "network settings: WiFi isn't responding shows only while control is unresponsive",
+                 "[network_settings][wifi_status_async]") {
+    lv_obj_t* row = lv_obj_find_by_name(test_screen(), "wifi_unresponsive_state");
+    REQUIRE(row != nullptr);
+
+    WifiBackend::ConnectionStatus status;
+    status.connected = true;
+    status.ssid = kSsid;
+    Access::apply_wifi_status(overlay(), status);
+    CHECK(lv_obj_has_flag(row, LV_OBJ_FLAG_HIDDEN));
+
+    status.unresponsive = true;
+    Access::apply_wifi_status(overlay(), status);
+    CHECK_FALSE(lv_obj_has_flag(row, LV_OBJ_FLAG_HIDDEN));
+    // The rows above keep the last known state.
+    CHECK(lv_subject_get_int(&Access::wifi_connected(overlay())) == 1);
+}
+
+TEST_CASE_METHOD(OverlayStatusFixture,
+                 "network settings: a status answer in flight across the WiFi toggle is dropped",
+                 "[network_settings][wifi_status_async]") {
+    hold_stale_connected_answer();
+    lv_obj_t* sw = lv_switch_create(test_screen());
+    Access::wlan_toggle_changed(overlay(), sw, /*checked=*/true);
+    CHECK_FALSE(stale_answer_landed());
+}
+
+TEST_CASE_METHOD(OverlayStatusFixture,
+                 "network settings: a status answer in flight across a hidden join is dropped",
+                 "[network_settings][wifi_status_async]") {
+    hold_stale_connected_answer();
+    Access::add_other_clicked(overlay());
+    lv_obj_t* modal = Access::hidden_network_modal(overlay());
+    REQUIRE(modal != nullptr);
+    lv_obj_t* ssid_input = lv_obj_find_by_name(modal, "ssid_input");
+    REQUIRE(ssid_input != nullptr);
+    lv_textarea_set_text(ssid_input, "StealthNet");
+    Access::hidden_connect_clicked(overlay());
+    CHECK_FALSE(stale_answer_landed());
+}
+
+TEST_CASE_METHOD(OverlayStatusFixture,
+                 "network settings: a status answer in flight across an open network's join is "
+                 "dropped",
+                 "[network_settings][wifi_status_async]") {
+    Access::populate(overlay(), {WiFiNetwork("CoffeeShop_Free", 68, false)});
+    lv_obj_t* list = Access::networks_list(overlay());
+    REQUIRE(list != nullptr);
+    REQUIRE(lv_obj_get_child_count(list) > 0);
+    lv_obj_t* row = lv_obj_get_child(list, static_cast<int32_t>(lv_obj_get_child_count(list)) - 1);
+
+    hold_stale_connected_answer();
+    Access::network_item_clicked(overlay(), row);
+    CHECK_FALSE(stale_answer_landed());
+}
+
+TEST_CASE_METHOD(OverlayStatusFixture,
+                 "network settings: a status answer in flight across a Forget is dropped",
+                 "[network_settings][wifi_status_async]") {
+    hold_stale_connected_answer();
+    Access::forget_confirmed(overlay(), kSsid);
+    CHECK_FALSE(stale_answer_landed());
 }

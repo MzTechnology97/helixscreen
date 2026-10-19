@@ -1190,7 +1190,6 @@ void WizardWifiStep::cleanup() {
     // Mark as cleaned up FIRST to invalidate any pending async callbacks
     cleanup_called_ = true;
     lifetime_.invalidate(); // Expire all outstanding tokens
-    ++status_generation_;
 
     if (wifi_manager_) {
         spdlog::debug("[{}] Stopping scan", get_name());

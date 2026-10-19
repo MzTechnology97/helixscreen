@@ -265,9 +265,9 @@ class NetworkSettingsOverlay : public OverlayBase {
     // Cached networks for async UI update
     std::vector<WiFiNetwork> cached_networks_;
 
-    // Bumped (main thread) on toggle, connect start, forget and cleanup. A
-    // status answer issued under an older value describes a state the user has
-    // since replaced, so it is dropped.
+    // Bumped (main thread) on toggle, connect start and forget. A status answer
+    // issued under an older value describes a state the user has since
+    // replaced, so it is dropped. cleanup() expires the answers' tokens instead.
     uint32_t status_generation_ = 0;
     // A Forget tap's status read is in flight: further taps issue none, so one
     // tap opens at most one confirm dialog. Cleared by the answer, and by

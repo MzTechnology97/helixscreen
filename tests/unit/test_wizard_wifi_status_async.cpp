@@ -32,6 +32,9 @@ namespace {
 constexpr const char* kSsid = "HomeNet";
 constexpr const char* kIp = "192.168.1.77";
 constexpr const char* kMockMac = "MAC: de:ad:be:ef:ca:fe"; // WifiBackendMock::get_status
+constexpr const char* kOpenSsid = "CoffeeShop_Free";       // open in WifiBackendMock's list
+constexpr const char* kSecuredSsid = "HomeNetwork-5G";     // secured, password below
+constexpr const char* kSecuredPassword = "12345678";
 
 bool names(const std::string& text, const std::string& ssid) {
     return text.find(ssid) != std::string::npos;
@@ -116,6 +119,31 @@ class WizardWifiStatusFixture : public LVGLUITestFixture {
         return strongest->ssid;
     }
 
+    /// The list's row for an open network the mock stocks, built through the
+    /// production list path.
+    lv_obj_t* open_network_row() {
+        Access::refresh_list(step_, {WiFiNetwork(kOpenSsid, 68, false)});
+        lv_obj_t* list = Access::network_list(step_);
+        REQUIRE(list != nullptr);
+        REQUIRE(wait_until([&]() { return lv_obj_get_child_count(list) > 0; }));
+        await_earlier_answers();
+        return lv_obj_get_child(list, static_cast<int32_t>(lv_obj_get_child_count(list)) - 1);
+    }
+
+    /// Parks the backend-state apply's read, which answers "connected to
+    /// HomeNet", until the test releases it.
+    void hold_apply_answer() {
+        wifi->hold_next_status();
+        Access::apply_backend_state(step_);
+        REQUIRE(wait_until([&]() { return !wifi->status_callers().empty(); }));
+    }
+
+    /// A join that succeeded shows the address the mock handed out.
+    bool shows_join_of(const std::string& ssid) {
+        const std::string ip = Access::ip(step_);
+        return names(Access::status(step_), ssid) && !ip.empty() && ip != kIp;
+    }
+
     bool shows_connection() {
         return names(Access::status(step_), kSsid) && Access::ip(step_) == kIp &&
                Access::mac(step_) == kMockMac;
@@ -184,4 +212,67 @@ TEST_CASE_METHOD(WizardWifiStatusFixture,
     wifi->release_held_status();
     await_earlier_answers();
     CHECK(Access::status(step()) == connecting);
+}
+
+TEST_CASE_METHOD(WizardWifiStatusFixture,
+                 "wizard wifi: a status answer in flight across the WiFi toggle is dropped",
+                 "[wizard_wifi][wifi_status_async]") {
+    hold_apply_answer();
+    lv_obj_t* toggle = lv_switch_create(test_screen());
+    Access::toggle_changed(step(), toggle, /*checked=*/false);
+    const std::string disabled = Access::status(step());
+    REQUIRE_FALSE(names(disabled, kSsid));
+
+    wifi->release_held_status();
+    await_earlier_answers();
+    CHECK(Access::status(step()) == disabled);
+}
+
+TEST_CASE_METHOD(WizardWifiStatusFixture,
+                 "wizard wifi: a status answer in flight across a network tap is dropped",
+                 "[wizard_wifi][wifi_status_async]") {
+    lv_obj_t* row = open_network_row();
+    hold_apply_answer();
+    lv_obj_send_event(row, LV_EVENT_CLICKED, nullptr);
+    const std::string connecting = Access::status(step());
+    REQUIRE(names(connecting, kOpenSsid));
+
+    wifi->release_held_status();
+    await_earlier_answers();
+    CHECK(Access::status(step()) == connecting);
+}
+
+TEST_CASE_METHOD(WizardWifiStatusFixture,
+                 "wizard wifi: a status answer in flight across the password Cancel is dropped",
+                 "[wizard_wifi][wifi_status_async]") {
+    hold_apply_answer();
+    Access::modal_cancel_clicked(step());
+    const std::string cancelled = Access::status(step());
+    REQUIRE_FALSE(names(cancelled, kSsid));
+
+    wifi->release_held_status();
+    await_earlier_answers();
+    CHECK(Access::status(step()) == cancelled);
+}
+
+TEST_CASE_METHOD(WizardWifiStatusFixture,
+                 "wizard wifi: joining an open network reads its address off the UI thread",
+                 "[wizard_wifi][wifi_status_async]") {
+    lv_obj_t* row = open_network_row();
+    wifi->clear_status_callers();
+    lv_obj_send_event(row, LV_EVENT_CLICKED, nullptr);
+    REQUIRE(wait_until([&]() { return shows_join_of(kOpenSsid); }));
+    CHECK(no_read_on_this_thread());
+}
+
+TEST_CASE_METHOD(WizardWifiStatusFixture,
+                 "wizard wifi: joining with a password reads its address off the UI thread",
+                 "[wizard_wifi][wifi_status_async]") {
+    Access::set_current_ssid(step(), kSecuredSsid);
+    lv_obj_t* modal = make_modal();
+    lv_textarea_set_text(lv_obj_find_by_name(modal, "password_input"), kSecuredPassword);
+    Access::password_modal(step()) = modal;
+    Access::password_connect_clicked(step());
+    REQUIRE(wait_until([&]() { return shows_join_of(kSecuredSsid); }));
+    CHECK(no_read_on_this_thread());
 }

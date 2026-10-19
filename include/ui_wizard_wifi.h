@@ -220,8 +220,9 @@ class WizardWifiStep : public helix::wizard::Step {
     // set_enabled(). Runs on the UI thread (state observer defers via token).
     void apply_wifi_backend_state();
     // Bumped (main thread) on every user-initiated change to the connection
-    // state: toggle, connect start, disconnect, cleanup. A status answer issued
-    // under an older value describes a state the user has since replaced.
+    // state: toggle, connect start, disconnect. A status answer issued under an
+    // older value describes a state the user has since replaced. cleanup()
+    // expires the answers' tokens instead.
     uint32_t status_generation_ = 0;
     // Repopulates from cached_networks_ once an async status read says which
     // network is connected. A status read can block for seconds on
