@@ -56,8 +56,8 @@ constexpr const char* HOME_CONFIRM_LOAD_DECLINE_TAG =
  * unique_ptr on the AMS / AMS Overview panel and is destroyed every time that
  * panel closes, while the XML tree bound to this subject is torn down
  * asynchronously. An instance-owned subject would be deinit'd out from under a
- * live binding. Registered once, deinit'd via StaticSubjectRegistry (which runs
- * before lv_deinit()), same shape as ScrewsTiltShareModal's row subjects.
+ * live binding. Registered once and kept across a printer switch, deinit'd via
+ * StaticSubjectRegistry at exit (which runs before lv_deinit()).
  */
 lv_subject_t s_unload_disabled;
 bool s_unload_disabled_initialized = false;
@@ -71,13 +71,27 @@ void init_unload_gating_subject() {
     lv_xml_register_subject(nullptr, "ams_sidebar_unload_disabled", &s_unload_disabled);
     s_unload_disabled_initialized = true;
 
-    StaticSubjectRegistry::instance().register_deinit("AmsSidebarUnloadGating", []() {
-        if (s_unload_disabled_initialized && lv_is_initialized()) {
-            lv_subject_deinit(&s_unload_disabled);
-            s_unload_disabled_initialized = false;
-            spdlog::trace("[AmsSidebar] Unload gating subject deinitialized");
-        }
-    });
+    // The subject is created once, from the AMS panels' process-once XML
+    // registration, so a printer switch must not deinit it: nothing would
+    // create it again. The switch resets its value instead.
+    StaticSubjectRegistry::instance().register_deinit(
+        "AmsSidebarUnloadGating",
+        []() {
+            if (s_unload_disabled_initialized && lv_is_initialized()) {
+                lv_subject_deinit(&s_unload_disabled);
+                s_unload_disabled_initialized = false;
+                spdlog::trace("[AmsSidebar] Unload gating subject deinitialized");
+            }
+        },
+        StaticSubjectRegistry::Lifetime::Process);
+    StaticSubjectRegistry::instance().register_deinit(
+        "AmsSidebarUnloadGatingReset",
+        []() {
+            if (s_unload_disabled_initialized && lv_is_initialized()) {
+                lv_subject_set_int(&s_unload_disabled, 1);
+            }
+        },
+        StaticSubjectRegistry::Lifetime::ProcessRunOnSwitch);
 }
 
 } // namespace
