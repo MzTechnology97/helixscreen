@@ -377,6 +377,12 @@ void WifiBackendMock::connect_thread_func() {
 WifiBackend::ConnectionStatus WifiBackendMock::get_status() {
     ConnectionStatus status = {};
     std::unique_lock<std::mutex> lock(status_mutex_);
+    // An app run under --test reads status for hours; no test reads back more
+    // than a handful.
+    if (status_callers_.size() >= MAX_STATUS_CALLERS) {
+        status_callers_.erase(status_callers_.begin(),
+                              status_callers_.begin() + MAX_STATUS_CALLERS / 2);
+    }
     status_callers_.push_back(std::this_thread::get_id());
     status.connected = connected_;
     status.ssid = connected_ssid_;

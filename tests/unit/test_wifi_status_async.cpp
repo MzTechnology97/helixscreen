@@ -127,3 +127,13 @@ TEST_CASE_METHOD(StatusAsyncFixture,
     REQUIRE(wait_until([&]() { return dropped_answered && next_answered; }));
     CHECK(WiFiManagerTestAccess::radio_ops_inflight(*wm) == 0);
 }
+
+TEST_CASE("the mock keeps a bounded record of status readers", "[wifi][wifi_status_async]") {
+    WifiBackendMock mock;
+    for (size_t i = 0; i < WifiBackendMock::MAX_STATUS_CALLERS * 4; ++i) {
+        mock.get_status();
+    }
+    const auto callers = mock.status_callers();
+    CHECK_FALSE(callers.empty());
+    CHECK(callers.size() <= WifiBackendMock::MAX_STATUS_CALLERS);
+}

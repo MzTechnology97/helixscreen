@@ -98,7 +98,9 @@ class WifiBackendMock : public WifiBackend {
 
     /// Test helpers for callers that must never block on a status read: the
     /// threads get_status() ran on since the last clear, and a gate that makes
-    /// the next get_status() take its answer, then wait for release.
+    /// the next get_status() take its answer, then wait for release. Keeps at
+    /// most the last MAX_STATUS_CALLERS threads.
+    static constexpr size_t MAX_STATUS_CALLERS = 64;
     std::vector<std::thread::id> status_callers();
     void clear_status_callers();
     void hold_next_status();
