@@ -5,6 +5,7 @@
 
 #include "../test_fixtures.h"
 #include "../test_helpers/panel_widget_manager_test_access.h"
+#include "../test_helpers/process_async_timers.h"
 #include "../ui_test_utils.h"
 #include "config.h"
 #include "grid_layout.h"
@@ -21,31 +22,6 @@
 #include "../catch_amalgamated.hpp"
 
 using namespace helix;
-
-namespace {
-
-/// Drain LVGL's async list (lv_async_call queue) by calling lv_timer_handler
-/// repeatedly until no one-shot timer fires. lv_async_call schedules its
-/// callback as a one-shot timer; lv_timer_handler dispatches it.
-void process_async_calls() {
-    for (int safety = 0; safety < 50; ++safety) {
-        bool fired = false;
-        lv_timer_t* t = lv_timer_get_next(nullptr);
-        while (t) {
-            lv_timer_t* next = lv_timer_get_next(t);
-            if (t->repeat_count > 0 && t->timer_cb) {
-                t->timer_cb(t);
-                fired = true;
-                break;
-            }
-            t = next;
-        }
-        if (!fired)
-            break;
-    }
-}
-
-} // namespace
 
 TEST_CASE("PanelWidget: supports_reuse defaults to true", "[panel_widget]") {
     struct TestWidget : PanelWidget {
@@ -240,7 +216,7 @@ TEST_CASE("PanelWidgetManager coalesces multiple gate firings into one rebuild",
         REQUIRE(rebuild_count == 0);
 
         // Run LVGL's async list. Should fire exactly one rebuild.
-        process_async_calls();
+        process_async_timers();
         REQUIRE(rebuild_count == 1);
     }
 
@@ -252,7 +228,7 @@ TEST_CASE("PanelWidgetManager coalesces multiple gate firings into one rebuild",
             lv_subject_set_int(subj, 1);
         }
         q.drain();
-        process_async_calls();
+        process_async_timers();
         REQUIRE(rebuild_count == 1);
 
         // Second burst (different values) after first rebuild completed →
@@ -261,7 +237,7 @@ TEST_CASE("PanelWidgetManager coalesces multiple gate firings into one rebuild",
             lv_subject_set_int(subj, 2);
         }
         q.drain();
-        process_async_calls();
+        process_async_timers();
         REQUIRE(rebuild_count == 2);
     }
 

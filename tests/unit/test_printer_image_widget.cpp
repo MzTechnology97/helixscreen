@@ -3,6 +3,7 @@
 
 #include "../test_fixtures.h"
 #include "../test_helpers/config_test_access.h"
+#include "../test_helpers/process_async_timers.h"
 #include "config.h"
 #include "misc/lv_timer_private.h"
 #include "panel_widget_manager.h"
@@ -12,33 +13,6 @@
 #include "../catch_amalgamated.hpp"
 
 using namespace helix;
-
-namespace {
-
-/// Drain LVGL's one-shot timer queue (lv_async_call + our deferral timers) by
-/// calling each ready one-shot timer's callback once, repeating until none
-/// fire. Mirrors process_async_calls() in test_panel_widget_manager.cpp — a
-/// fixed process_lvgl(ms) elapse does not reliably fire period-0 one-shot
-/// timers created mid-tick, so we pump them explicitly.
-void process_async_calls() {
-    for (int safety = 0; safety < 50; ++safety) {
-        bool fired = false;
-        lv_timer_t* t = lv_timer_get_next(nullptr);
-        while (t) {
-            lv_timer_t* next = lv_timer_get_next(t);
-            if (t->repeat_count > 0 && t->timer_cb) {
-                t->timer_cb(t);
-                fired = true;
-                break;
-            }
-            t = next;
-        }
-        if (!fired)
-            break;
-    }
-}
-
-} // namespace
 
 // Regression test for #1025 (grid walk-off crash family, #983). PrinterImageWidget
 // forced a SYNCHRONOUS LVGL layout from inside attach() -> reload_from_config() ->
@@ -89,7 +63,7 @@ TEST_CASE_METHOD(XMLTestFixture, "PrinterImageWidget defers image refresh out of
     REQUIRE(lv_image_get_src(img) == nullptr);
 
     // Fire the deferred refresh timer and let layout settle.
-    process_async_calls();
+    process_async_timers();
     process_lvgl(5);
 
     // After a tick the deferred refresh ran and applied a source image.
@@ -100,7 +74,7 @@ TEST_CASE_METHOD(XMLTestFixture, "PrinterImageWidget defers image refresh out of
         // It must not crash and must (re)apply the source via the deferred timer.
         w.on_activate();
         // Drain any pending deferred refresh + cache timers from on_activate().
-        process_async_calls();
+        process_async_timers();
         process_lvgl(5);
         REQUIRE(lv_image_get_src(img) != nullptr);
     }
@@ -134,7 +108,7 @@ TEST_CASE_METHOD(XMLTestFixture,
     CHECK(std::string(lv_subject_get_string(label)) == "10.0.0.9");
 
     w.detach();
-    process_async_calls();
+    process_async_timers();
     helix::ConfigTestAccess::data(*cfg) = saved;
     helix::ConfigTestAccess::active_printer_id(*cfg) = saved_active;
 }
