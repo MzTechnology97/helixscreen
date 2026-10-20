@@ -22,20 +22,25 @@ inline bool timer_is_live(const lv_timer_t* timer) {
 /// have modified the list.
 ///
 /// Each fire spends a repeat the way lv_timer_exec() does, and a timer whose
-/// count is spent is deleted unless its callback already deleted it. A timer
-/// left armed would fire again on the next pass, and a callback that frees its
-/// user data on the first fire reads freed memory on the second.
+/// count is spent is deleted, or paused when it is not auto_delete, unless its
+/// callback already deleted it. A timer left armed would fire again on the next
+/// pass, and a callback that frees its user data on the first fire reads freed
+/// memory on the second. A paused timer is skipped, as lv_timer_exec() skips it.
 inline void process_async_timers() {
     for (int safety = 0; safety < 100; safety++) {
         bool fired = false;
         lv_timer_t* t = lv_timer_get_next(nullptr);
         while (t) {
             lv_timer_t* next = lv_timer_get_next(t);
-            if (t->repeat_count > 0 && t->timer_cb) {
+            if (!t->paused && t->repeat_count > 0 && t->timer_cb) {
                 t->repeat_count--;
                 t->timer_cb(t);
                 if (timer_is_live(t) && t->repeat_count == 0) {
-                    lv_timer_delete(t);
+                    if (t->auto_delete) {
+                        lv_timer_delete(t);
+                    } else {
+                        lv_timer_pause(t);
+                    }
                 }
                 fired = true;
                 break; // Restart — list may have changed
