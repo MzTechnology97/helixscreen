@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Updates install on systemd printers that run HelixScreen as root** - on a K2 running
+  systemd-based custom firmware (and any other root install under systemd), Install Update
+  stopped at **Error: cannot write the service file in /etc/systemd/system**. The check
+  behind that message no longer runs where an update never writes that file.
 - **The screen no longer freezes when Wi-Fi stops answering** - Wi-Fi scans, joins, the
   radio switch and status checks now run in the background, so a hung Wi-Fi driver can't
   lock up the touchscreen or drop the UI mid-scan. If the Wi-Fi service stops responding,

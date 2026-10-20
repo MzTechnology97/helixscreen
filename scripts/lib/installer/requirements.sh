@@ -236,6 +236,13 @@ _overlay_upperdir() {
 # Runs at pre-flight -- before any UI is stopped and before the ~58MB download
 # -- so a refusal here leaves the printer exactly as it was found.
 check_service_dest_space() {
+    # A self-update under systemd writes no service definition: it runs inside
+    # the unit's ProtectSystem=strict sandbox, where /etc is read-only even for
+    # root, and the unit's root ExecStartPre refreshes the service files on
+    # restart.
+    if _is_self_update && _systemd_is_init; then
+        return 0
+    fi
     # set_install_paths() has already run, so INIT_SCRIPT_DEST is known. It is
     # empty on systemd platforms, where install_service_systemd writes the unit
     # to /etc/systemd/system instead.
@@ -289,9 +296,14 @@ check_service_dest_space() {
 
 # Detect init system (systemd vs SysV)
 # Sets: INIT_SYSTEM to "systemd" or "sysv"
+# True when systemd is this host's running init.
+_systemd_is_init() {
+    command -v systemctl >/dev/null 2>&1 && [ -d /run/systemd/system ]
+}
+
 detect_init_system() {
     # Check for systemd
-    if command -v systemctl >/dev/null 2>&1 && [ -d /run/systemd/system ]; then
+    if _systemd_is_init; then
         INIT_SYSTEM="systemd"
         log_info "Init system: systemd"
         return
