@@ -838,4 +838,27 @@ TEST_CASE_METHOD(LVGLUITestFixture, "Recovery dialog translates its content exac
     REQUIRE(std::string(lv_label_get_text(title)) == "Printer Shutdown");
 }
 
+TEST_CASE_METHOD(LVGLUITestFixture, "A refused restart tap leaves the recovery dialog up",
+                 "[recovery][restart_in_flight]") {
+    auto& estop = EmergencyStopOverlay::instance();
+    estop.show_recovery_for(RecoveryReason::SHUTDOWN);
+    process_lvgl(50);
+    REQUIRE(lv_obj_find_by_name(lv_screen_active(), "klipper_recovery_card") != nullptr);
+
+    EmergencyStopOverlayTestAccess::set_restart_in_progress(estop, true);
+    SECTION("Firmware Restart") {
+        EmergencyStopOverlayTestAccess::recovery_firmware_restart_clicked();
+    }
+    SECTION("Restart Klipper") {
+        EmergencyStopOverlayTestAccess::recovery_restart_klipper_clicked();
+    }
+    process_lvgl(50);
+
+    CHECK(lv_obj_find_by_name(lv_screen_active(), "klipper_recovery_card") != nullptr);
+
+    EmergencyStopOverlayTestAccess::set_restart_in_progress(estop, false);
+    EmergencyStopOverlayTestAccess::dismiss_recovery_dialog(estop);
+    process_lvgl(50);
+}
+
 #endif // __APPLE__

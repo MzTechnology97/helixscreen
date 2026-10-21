@@ -81,6 +81,17 @@ class EmergencyStopOverlayTestAccess {
         o.firmware_restart();
     }
 
+    /// The recovery dialog's own buttons, as an LVGL click delivers them.
+    static void recovery_restart_klipper_clicked() {
+        EmergencyStopOverlay::recovery_restart_klipper_clicked(nullptr);
+    }
+    static void recovery_firmware_restart_clicked() {
+        EmergencyStopOverlay::recovery_firmware_restart_clicked(nullptr);
+    }
+    static void dismiss_recovery_dialog(EmergencyStopOverlay& o) {
+        o.dismiss_recovery_dialog();
+    }
+
     /// Drop the dependency pointers init() installed. Same singleton problem as
     /// reset_suppression(), but it outlives memory rather than a deadline: tests
     /// pass init() a stack local or fixture member (test_unified_recovery_dialog
