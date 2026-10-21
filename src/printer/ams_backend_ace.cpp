@@ -25,6 +25,7 @@
 
 #include <spdlog/fmt/fmt.h>
 
+#include <algorithm>
 #include <chrono>
 
 using json = nlohmann::json;
@@ -124,8 +125,12 @@ void AmsBackendAce::on_started() {
                 const json* ace_data = nullptr;
                 std::string matched_key;
                 if (response.contains("result") && response["result"].contains("status")) {
-                    ace_data =
-                        select_slot_bearing_object(response["result"]["status"], &matched_key);
+                    const json& status = response["result"]["status"];
+                    ace_data = select_slot_bearing_object(status, &matched_key);
+                    if (has_ace_instance_object(status)) {
+                        std::lock_guard<std::mutex> lock(mutex_);
+                        addresses_units_by_instance_ = true;
+                    }
                 }
 
                 if (ace_data) {
@@ -199,6 +204,8 @@ void AmsBackendAce::handle_status_update(const json& notification) {
         }
         if (best_key) {
             ace_data = &(*status)[*best_key];
+            std::lock_guard<std::mutex> lock(mutex_);
+            addresses_units_by_instance_ = true;
         }
     }
     if (!ace_data)
@@ -1345,6 +1352,9 @@ bool AmsBackendAce::parse_status_response(const json& data) {
     if (data.contains("firmware") && data["firmware"].is_string()) {
         system_info_.version = data["firmware"].get<std::string>();
     }
+    if (data.contains("ace_manager")) {
+        addresses_units_by_instance_ = true;
+    }
 
     if (data.contains("loaded_slot") && data["loaded_slot"].is_number_integer()) {
         int slot = data["loaded_slot"].get<int>();
@@ -1522,6 +1532,31 @@ AmsError AmsBackendAce::validate_slot_index(int slot_index) const {
     return AmsErrorHelper::success();
 }
 
+std::string AmsBackendAce::slot_command(const std::string& verb, int slot) const {
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (!addresses_units_by_instance_) {
+        return fmt::format("{} INDEX={}", verb, slot);
+    }
+    int instance = 0;
+    int local = slot;
+    if (const AmsUnit* unit = system_info_.get_unit_for_slot(slot)) {
+        instance = unit->unit_index;
+        local = slot - unit->first_slot_global_index;
+    }
+    return fmt::format("{} INSTANCE={} INDEX={}", verb, instance, local);
+}
+
+bool AmsBackendAce::has_ace_instance_object(const json& status) {
+    if (!status.is_object())
+        return false;
+    for (auto it = status.begin(); it != status.end(); ++it) {
+        if (it.key().rfind("ace_instance", 0) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
 // ============================================================================
 // Device Actions
 // ============================================================================
@@ -1584,33 +1619,25 @@ std::vector<helix::printer::DeviceAction> AmsBackendAce::get_device_actions() co
 }
 
 AmsError AmsBackendAce::execute_device_action(const std::string& action_id, const std::any& value) {
+    const int slot = std::max(get_current_slot(), 0);
+
     if (action_id == "ace_manual_feed") {
-        int slot = get_current_slot();
-        if (slot < 0)
-            slot = 0;
-        static constexpr int MANUAL_FEED_LENGTH = 50;
-        static constexpr int MANUAL_FEED_SPEED = 50;
-        return execute_gcode("ACE_FEED INDEX=" + std::to_string(slot) +
-                             " LENGTH=" + std::to_string(MANUAL_FEED_LENGTH) +
-                             " SPEED=" + std::to_string(MANUAL_FEED_SPEED));
+        static constexpr int kManualFeedLength = 50;
+        static constexpr int kManualFeedSpeed = 50;
+        return execute_gcode(slot_command("ACE_FEED", slot) + fmt::format(" LENGTH={} SPEED={}",
+                                                                          kManualFeedLength,
+                                                                          kManualFeedSpeed));
     }
 
     if (action_id == "ace_manual_retract") {
-        int slot = get_current_slot();
-        if (slot < 0)
-            slot = 0;
-        static constexpr int MANUAL_RETRACT_LENGTH = 50;
-        static constexpr int MANUAL_RETRACT_SPEED = 50;
-        return execute_gcode("ACE_RETRACT INDEX=" + std::to_string(slot) +
-                             " LENGTH=" + std::to_string(MANUAL_RETRACT_LENGTH) +
-                             " SPEED=" + std::to_string(MANUAL_RETRACT_SPEED));
+        static constexpr int kManualRetractLength = 50;
+        static constexpr int kManualRetractSpeed = 50;
+        return execute_gcode(slot_command("ACE_RETRACT", slot) + fmt::format(" LENGTH={} SPEED={}",
+                                                                             kManualRetractLength,
+                                                                             kManualRetractSpeed));
     }
 
     if (action_id == "ace_feed_assist_toggle") {
-        int slot = get_current_slot();
-        if (slot < 0)
-            slot = 0;
-
         bool enable = true;
         if (value.has_value()) {
             try {
@@ -1620,11 +1647,8 @@ AmsError AmsBackendAce::execute_device_action(const std::string& action_id, cons
             }
         }
 
-        if (enable) {
-            return execute_gcode("ACE_ENABLE_FEED_ASSIST INDEX=" + std::to_string(slot));
-        } else {
-            return execute_gcode("ACE_DISABLE_FEED_ASSIST INDEX=" + std::to_string(slot));
-        }
+        return execute_gcode(
+            slot_command(enable ? "ACE_ENABLE_FEED_ASSIST" : "ACE_DISABLE_FEED_ASSIST", slot));
     }
 
     return AmsErrorHelper::not_supported("Unknown ACE action: " + action_id);

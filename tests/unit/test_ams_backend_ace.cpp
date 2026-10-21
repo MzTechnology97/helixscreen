@@ -14,12 +14,14 @@
 #include "printer_state.h"
 
 #include <algorithm>
+#include <any>
 #include <filesystem>
 #include <json.hpp> // nlohmann/json from libhv
 #include <memory>
 #include <optional>
 #include <string>
 #include <unistd.h>
+#include <vector>
 
 #include "../catch_amalgamated.hpp"
 
@@ -81,6 +83,23 @@ class AceTestAccess {
     }
     static void poll_slots(AmsBackendAce& b) {
         b.poll_slots();
+    }
+
+    static void set_current_slot(AmsBackendAce& b, int slot) {
+        std::lock_guard<std::mutex> lock(b.mutex_);
+        b.system_info_.current_slot = slot;
+    }
+    // Append a unit of `slot_count` slots after the existing ones, numbered
+    // as the next unit_index.
+    static void append_unit(AmsBackendAce& b, int slot_count) {
+        std::lock_guard<std::mutex> lock(b.mutex_);
+        AmsUnit unit;
+        unit.unit_index = static_cast<int>(b.system_info_.units.size());
+        unit.first_slot_global_index = b.system_info_.total_slots;
+        unit.slot_count = slot_count;
+        unit.slots.resize(static_cast<size_t>(slot_count));
+        b.system_info_.units.push_back(unit);
+        b.system_info_.total_slots += slot_count;
     }
 };
 
@@ -1559,4 +1578,100 @@ TEST_CASE_METHOD(LVGLTestFixture, "ACE surfaces an error when the data endpoints
     }
 
     CHECK(error_events >= 1);
+}
+
+// ============================================================================
+// Device actions: unit + slot addressing per driver (prestonbrown/helixscreen#1821)
+// ============================================================================
+
+namespace {
+class AceGcodeCapture : public AmsBackendAceTestHelper {
+  public:
+    std::vector<std::string> sent;
+    AmsError execute_gcode(const std::string& gcode) override {
+        sent.push_back(gcode);
+        return AmsErrorHelper::success();
+    }
+};
+
+json four_slot_array() {
+    return json::array({json{{"status", "ready"}}, json{{"status", "ready"}},
+                        json{{"status", "ready"}}, json{{"status", "ready"}}});
+}
+
+// Every gcode the three slot-addressed actions send for the current slot, in
+// order: feed, retract, feed assist on, feed assist off.
+std::vector<std::string> run_slot_actions(AceGcodeCapture& b) {
+    b.sent.clear();
+    REQUIRE(b.execute_device_action("ace_manual_feed", {}).success());
+    REQUIRE(b.execute_device_action("ace_manual_retract", {}).success());
+    REQUIRE(b.execute_device_action("ace_feed_assist_toggle", std::any(true)).success());
+    REQUIRE(b.execute_device_action("ace_feed_assist_toggle", std::any(false)).success());
+    return b.sent;
+}
+
+json status_notification(const std::string& key, const json& obj) {
+    json status = json::object();
+    status[key] = obj;
+    return json{{"params", json::array({status, 1.0})}};
+}
+
+// Feed the backend one driver's status surface with a four-slot unit.
+void present_driver_surface(AceGcodeCapture& b, const std::string& surface) {
+    if (surface == "rest") {
+        b.test_parse_slots_response(json{{"slots", four_slot_array()}});
+        b.test_parse_status_response(json{{"model", "ACE Pro"}});
+    } else if (surface == "rest+ace_manager") {
+        b.test_parse_slots_response(json{{"slots", four_slot_array()}});
+        b.test_parse_status_response(
+            json{{"model", "ACE Pro"}, {"ace_manager", json{{"current_index", -1}}}});
+    } else {
+        b.test_handle_status_update(
+            status_notification(surface, json{{"slots", four_slot_array()}}));
+    }
+}
+} // namespace
+
+TEST_CASE("ACE slot actions address the hub by INDEX= on single-hub drivers",
+          "[ams][ace][device_actions]") {
+    const std::string surface = GENERATE(as<std::string>{}, "filament_hub", "ace", "rest");
+    CAPTURE(surface);
+    AceGcodeCapture b;
+    present_driver_surface(b, surface);
+    AceTestAccess::set_current_slot(b, 2);
+
+    CHECK(run_slot_actions(b) == std::vector<std::string>{
+                                     "ACE_FEED INDEX=2 LENGTH=50 SPEED=50",
+                                     "ACE_RETRACT INDEX=2 LENGTH=50 SPEED=50",
+                                     "ACE_ENABLE_FEED_ASSIST INDEX=2",
+                                     "ACE_DISABLE_FEED_ASSIST INDEX=2",
+                                 });
+}
+
+TEST_CASE("ACE slot actions name INSTANCE= and the local INDEX= on the Kobra S1 fork",
+          "[ams][ace][device_actions][kobra]") {
+    const std::string surface = GENERATE(as<std::string>{}, "ace_instance_0", "rest+ace_manager");
+    CAPTURE(surface);
+    AceGcodeCapture b;
+    present_driver_surface(b, surface);
+
+    SECTION("one unit") {
+        AceTestAccess::set_current_slot(b, 2);
+        CHECK(run_slot_actions(b) == std::vector<std::string>{
+                                         "ACE_FEED INSTANCE=0 INDEX=2 LENGTH=50 SPEED=50",
+                                         "ACE_RETRACT INSTANCE=0 INDEX=2 LENGTH=50 SPEED=50",
+                                         "ACE_ENABLE_FEED_ASSIST INSTANCE=0 INDEX=2",
+                                         "ACE_DISABLE_FEED_ASSIST INSTANCE=0 INDEX=2",
+                                     });
+    }
+    SECTION("two units: global slot 5 is the second unit's slot 1") {
+        AceTestAccess::append_unit(b, 4);
+        AceTestAccess::set_current_slot(b, 5);
+        CHECK(run_slot_actions(b) == std::vector<std::string>{
+                                         "ACE_FEED INSTANCE=1 INDEX=1 LENGTH=50 SPEED=50",
+                                         "ACE_RETRACT INSTANCE=1 INDEX=1 LENGTH=50 SPEED=50",
+                                         "ACE_ENABLE_FEED_ASSIST INSTANCE=1 INDEX=1",
+                                         "ACE_DISABLE_FEED_ASSIST INSTANCE=1 INDEX=1",
+                                     });
+    }
 }

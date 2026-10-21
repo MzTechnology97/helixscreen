@@ -245,6 +245,16 @@ class AmsBackendAce : public AmsSubscriptionBackend {
 
     AmsError validate_slot_index(int slot_index) const;
 
+    /// `<verb>` addressed at global @p slot in the form the driver parses. The
+    /// Kobra S1 fork resolves a unit from INSTANCE= and reads INDEX= as that
+    /// unit's local slot, rejecting INDEX= alone; GoKlipper and ValgACE drive a
+    /// single hub by INDEX= only.
+    std::string slot_command(const std::string& verb, int slot) const;
+
+    /// Whether @p status carries any of the Kobra S1 fork's `ace_instance_N`
+    /// objects.
+    static bool has_ace_instance_object(const nlohmann::json& status);
+
     /**
      * @brief Parse slot color from either RGB array [r,g,b] or hex string "#RRGGBB"
      * @param color_val JSON value (array or string)
@@ -307,6 +317,11 @@ class AmsBackendAce : public AmsSubscriptionBackend {
     // still false.
     std::atomic<bool> rest_data_ok_{false};
     std::atomic<int> data_fetch_failures_{0};
+
+    // Set once the Kobra S1 fork's surface is seen (an `ace_instance_N`
+    // object, or the REST bridge's `ace_manager`): its slot commands take
+    // INSTANCE= + INDEX=. Guarded by mutex_.
+    bool addresses_units_by_instance_ = false;
 
     // Callback lifetime management
     helix::AsyncLifetimeGuard lifetime_;
