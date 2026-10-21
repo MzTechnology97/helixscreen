@@ -27,6 +27,8 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cstdlib>
+#include <string_view>
 
 using json = nlohmann::json;
 using namespace helix;
@@ -127,9 +129,10 @@ void AmsBackendAce::on_started() {
                 if (response.contains("result") && response["result"].contains("status")) {
                     const json& status = response["result"]["status"];
                     ace_data = select_slot_bearing_object(status, &matched_key);
-                    if (has_ace_instance_object(status)) {
+                    const int instance = lowest_ace_instance_number(status);
+                    if (instance >= 0) {
                         std::lock_guard<std::mutex> lock(mutex_);
-                        addresses_units_by_instance_ = true;
+                        instance_base_ = instance;
                     }
                 }
 
@@ -204,8 +207,9 @@ void AmsBackendAce::handle_status_update(const json& notification) {
         }
         if (best_key) {
             ace_data = &(*status)[*best_key];
+            const int instance = lowest_ace_instance_number(*status);
             std::lock_guard<std::mutex> lock(mutex_);
-            addresses_units_by_instance_ = true;
+            instance_base_ = std::max(instance, 0);
         }
     }
     if (!ace_data)
@@ -1352,8 +1356,8 @@ bool AmsBackendAce::parse_status_response(const json& data) {
     if (data.contains("firmware") && data["firmware"].is_string()) {
         system_info_.version = data["firmware"].get<std::string>();
     }
-    if (data.contains("ace_manager")) {
-        addresses_units_by_instance_ = true;
+    if (data.contains("ace_manager") && instance_base_ < 0) {
+        instance_base_ = 0;
     }
 
     if (data.contains("loaded_slot") && data["loaded_slot"].is_number_integer()) {
@@ -1534,27 +1538,35 @@ AmsError AmsBackendAce::validate_slot_index(int slot_index) const {
 
 std::string AmsBackendAce::slot_command(const std::string& verb, int slot) const {
     std::lock_guard<std::mutex> lock(mutex_);
-    if (!addresses_units_by_instance_) {
+    if (instance_base_ < 0) {
         return fmt::format("{} INDEX={}", verb, slot);
     }
-    int instance = 0;
+    int instance = instance_base_;
     int local = slot;
     if (const AmsUnit* unit = system_info_.get_unit_for_slot(slot)) {
-        instance = unit->unit_index;
+        instance += unit->unit_index;
         local = slot - unit->first_slot_global_index;
     }
     return fmt::format("{} INSTANCE={} INDEX={}", verb, instance, local);
 }
 
-bool AmsBackendAce::has_ace_instance_object(const json& status) {
+int AmsBackendAce::lowest_ace_instance_number(const json& status) {
+    static constexpr std::string_view kPrefix = "ace_instance_";
     if (!status.is_object())
-        return false;
+        return -1;
+    int lowest = -1;
     for (auto it = status.begin(); it != status.end(); ++it) {
-        if (it.key().rfind("ace_instance", 0) == 0) {
-            return true;
-        }
+        const std::string& key = it.key();
+        if (key.rfind(kPrefix, 0) != 0 || key.size() == kPrefix.size())
+            continue;
+        char* end = nullptr;
+        const long n = std::strtol(key.c_str() + kPrefix.size(), &end, 10);
+        if (*end != '\0' || n < 0 || n > 255)
+            continue;
+        if (lowest < 0 || n < lowest)
+            lowest = static_cast<int>(n);
     }
-    return false;
+    return lowest;
 }
 
 // ============================================================================

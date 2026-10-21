@@ -251,9 +251,9 @@ class AmsBackendAce : public AmsSubscriptionBackend {
     /// single hub by INDEX= only.
     std::string slot_command(const std::string& verb, int slot) const;
 
-    /// Whether @p status carries any of the Kobra S1 fork's `ace_instance_N`
-    /// objects.
-    static bool has_ace_instance_object(const nlohmann::json& status);
+    /// N of the lowest-numbered Kobra S1 fork `ace_instance_N` object in
+    /// @p status, or -1 when it carries none.
+    static int lowest_ace_instance_number(const nlohmann::json& status);
 
     /**
      * @brief Parse slot color from either RGB array [r,g,b] or hex string "#RRGGBB"
@@ -318,10 +318,11 @@ class AmsBackendAce : public AmsSubscriptionBackend {
     std::atomic<bool> rest_data_ok_{false};
     std::atomic<int> data_fetch_failures_{0};
 
-    // Set once the Kobra S1 fork's surface is seen (an `ace_instance_N`
-    // object, or the REST bridge's `ace_manager`): its slot commands take
-    // INSTANCE= + INDEX=. Guarded by mutex_.
-    bool addresses_units_by_instance_ = false;
+    // The Kobra S1 fork's instance number for units[0], or -1 until that
+    // driver's surface is seen. Its slot commands take INSTANCE= + INDEX=; the
+    // base is N of the displayed `ace_instance_N`, or 0 when only the REST
+    // bridge's `ace_manager` has been seen. Guarded by mutex_.
+    int instance_base_ = -1;
 
     // Callback lifetime management
     helix::AsyncLifetimeGuard lifetime_;
