@@ -250,6 +250,7 @@ void AmsState::init_subjects(bool register_xml) {
         // guard, then rebinds to the current subject with the current lifetime
         // token), so calling it unconditionally is safe and self-healing.
         install_print_state_observer();
+        install_klippy_state_observer();
         return;
     }
 
@@ -667,6 +668,33 @@ void AmsState::init_subjects(bool register_xml) {
     // PrinterState::init_subjects() must run before this point; tests/main
     // do so during fixture setup / app boot.
     install_print_state_observer();
+    install_klippy_state_observer();
+}
+
+void AmsState::install_klippy_state_observer() {
+    // on_klipper_restarted() must run before the first status frame after the
+    // resubscribe, since backends clear per-channel history that frame then
+    // rebuilds. That holds because Moonraker drops every subscription when
+    // Klippy's socket closes, and the READY update is queued on UpdateQueue
+    // ahead of rediscovery's subscribe, which UpdateQueue runs in order.
+    klippy_state_observer_.reset();
+    last_klippy_state_ = -1;
+    klippy_state_observer_ = helix::ui::observe_int_sync<AmsState>(
+        get_printer_state().get_klippy_state_subject(), this,
+        [](AmsState* self, int state) {
+            const int prev = self->last_klippy_state_;
+            self->last_klippy_state_ = state;
+            constexpr int kReady = static_cast<int>(KlippyState::READY);
+            if (state != kReady || prev == -1 || prev == kReady) {
+                return;
+            }
+            for (int i = 0; i < self->backend_count(); ++i) {
+                if (AmsBackend* backend = self->get_backend(i)) {
+                    backend->on_klipper_restarted();
+                }
+            }
+        },
+        get_printer_state().get_subjects_lifetime());
 }
 
 void AmsState::install_print_state_observer() {
@@ -716,6 +744,7 @@ void AmsState::deinit_subjects() {
     // LVGL observer is removed cleanly (reset(), not release() — see project
     // CLAUDE.md § "ObserverGuard::reset() is the default").
     print_state_observer_.reset();
+    klippy_state_observer_.reset();
 
     // IMPORTANT: clear_backends() MUST precede subjects_.deinit_all() because
     // BackendSlotSubjects are managed outside SubjectManager for lifetime reasons

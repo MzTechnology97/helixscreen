@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "../helix_test_fixture.h"
+#include "../lvgl_test_fixture.h"
 #include "../test_helpers/printer_state_test_access.h"
 #include "../test_helpers/update_queue_test_access.h"
 #include "../ui_test_utils.h"
@@ -930,6 +931,106 @@ TEST_CASE_METHOD(SnapmakerFixture, "Snapmaker a held outcome is dropped when a n
 
     SnapmakerTestAccess::handle_status(backend, make_feed_status(3, "wait_insert"));
     CHECK(backend.get_system_info().action == AmsAction::LOADING);
+}
+
+TEST_CASE_METHOD(SnapmakerFixture,
+                 "Snapmaker the first frame after a Klipper restart ends no operation",
+                 "[ams][snapmaker][action_state][klipper_restart_expiry]") {
+    // The backend object outlives a Klipper restart, so what it remembers of
+    // each channel describes firmware that no longer exists. The subscription's
+    // first full frame must be read as a fresh start, not compared against it.
+    AmsState::instance().clear_backends();
+    AmsBackendSnapmaker backend(nullptr, nullptr);
+    SnapmakerTestAccess::set_current_slot(backend, 3);
+    SnapmakerTestAccess::set_current_tool(backend, 3);
+
+    SnapmakerTestAccess::handle_status(backend,
+                                       feed_with_action(3, "unload_doing", "unload_doing"));
+    REQUIRE(backend.get_system_info().action == AmsAction::UNLOADING);
+
+    backend.on_klipper_restarted();
+    helix::ui::UpdateQueueTestAccess::drain_all(helix::ui::UpdateQueue::instance());
+
+    SECTION("a finished unload's action_state") {
+        SnapmakerTestAccess::handle_status(backend,
+                                           feed_with_action(3, "preload_finish", "unload_finish"));
+        CHECK_FALSE(AmsState::instance().was_slot_recently_unloaded(3));
+    }
+    SECTION("a failed unload's action_state") {
+        SnapmakerTestAccess::handle_status(backend,
+                                           feed_with_action(3, "preload_finish", "unload_fail"));
+    }
+
+    CHECK(backend.get_system_info().action == AmsAction::IDLE);
+    CHECK(backend.get_system_info().operation_detail.empty());
+}
+
+TEST_CASE_METHOD(SnapmakerFixture, "Snapmaker a Klipper restart forgets a held outcome",
+                 "[ams][snapmaker][action_state][klipper_restart_expiry]") {
+    AmsState::instance().clear_backends();
+    AmsBackendSnapmaker backend(nullptr, nullptr);
+
+    SnapmakerTestAccess::handle_status(backend,
+                                       feed_with_action(3, "unload_doing", "unload_doing"));
+    SnapmakerTestAccess::handle_status(backend,
+                                       feed_with_action(3, "unload_doing", "unload_finish"));
+    REQUIRE(backend.get_system_info().action == AmsAction::UNLOADING);
+
+    backend.on_klipper_restarted();
+    helix::ui::UpdateQueueTestAccess::drain_all(helix::ui::UpdateQueue::instance());
+
+    SnapmakerTestAccess::handle_status(backend, make_feed_status(3, "load_feeding"));
+    REQUIRE(backend.get_system_info().action == AmsAction::LOADING);
+
+    SnapmakerTestAccess::handle_status(backend, make_feed_status(3, "wait_insert"));
+    CHECK(backend.get_system_info().action == AmsAction::LOADING);
+    CHECK_FALSE(AmsState::instance().was_slot_recently_unloaded(3));
+}
+
+TEST_CASE_METHOD(SnapmakerFixture, "Snapmaker a Klipper restart leaves an ERROR in place",
+                 "[ams][snapmaker][action_state][klipper_restart_expiry]") {
+    CapturingSnapmakerBackend backend;
+
+    SnapmakerTestAccess::handle_status(backend, make_feed_status(1, "load_feeding"));
+    SnapmakerTestAccess::handle_status(backend, make_feed_status(1, "load_fail"));
+    REQUIRE(backend.get_current_action() == AmsAction::ERROR);
+
+    backend.on_klipper_restarted();
+
+    CHECK(backend.get_current_action() == AmsAction::ERROR);
+}
+
+namespace {
+class SnapmakerKlipperRestartFixture : public LVGLTestFixture {
+  public:
+    SnapmakerKlipperRestartFixture() {
+        get_printer_state().init_subjects(false);
+        get_printer_state().set_klippy_state_sync(KlippyState::READY);
+        AmsState::instance().init_subjects(true);
+    }
+    ~SnapmakerKlipperRestartFixture() override {
+        AmsState::instance().set_backend(nullptr);
+        get_printer_state().set_klippy_state_sync(KlippyState::READY);
+        helix::ui::UpdateQueueTestAccess::drain_all(helix::ui::UpdateQueue::instance());
+    }
+};
+} // namespace
+
+TEST_CASE_METHOD(SnapmakerKlipperRestartFixture,
+                 "A U1 operation latched busy ends with a Klipper restart",
+                 "[ams][snapmaker][klipper_restart_expiry]") {
+    auto owned = std::make_unique<AmsBackendSnapmaker>(nullptr, nullptr);
+    auto* backend = owned.get();
+    AmsState::instance().set_backend(std::move(owned));
+
+    SnapmakerTestAccess::handle_status(*backend, make_feed_status(1, "load_feeding"));
+    REQUIRE(ams_action_is_busy(backend->get_current_action()));
+
+    get_printer_state().set_klippy_state_sync(KlippyState::STARTUP);
+    get_printer_state().set_klippy_state_sync(KlippyState::READY);
+    helix::ui::UpdateQueueTestAccess::drain_all(helix::ui::UpdateQueue::instance());
+
+    CHECK(backend->get_current_action() == AmsAction::IDLE);
 }
 
 TEST_CASE_METHOD(SnapmakerFixture,

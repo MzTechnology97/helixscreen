@@ -24,4 +24,7 @@ class AfcTestAccess {
     template <class B> static auto& timed_out_state(B& b) {
         return b.timed_out_state_;
     }
+    template <class B> static auto& system_info(B& b) {
+        return b.system_info_;
+    }
 };

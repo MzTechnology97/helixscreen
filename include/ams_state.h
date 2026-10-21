@@ -1874,6 +1874,15 @@ class AmsState {
     /// SubjectLifetime token is required.
     ObserverGuard print_state_observer_;
 
+    /// Ends every backend's busy operation when klippy_state enters READY from
+    /// any other state: a Klipper restart ends every firmware-side operation.
+    ObserverGuard klippy_state_observer_;
+    /// The klippy_state the observer last saw; -1 before its first fire.
+    int last_klippy_state_ = -1;
+
+    /// Wire (or rewire) klippy_state_observer_. Idempotent.
+    void install_klippy_state_observer();
+
     /// Recompute the ams_action_detail subject from current AMS action +
     /// cached operation_detail + PrinterState print state.
     /// Caller must hold mutex_.

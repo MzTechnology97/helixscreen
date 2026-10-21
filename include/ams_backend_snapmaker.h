@@ -210,6 +210,10 @@ class AmsBackendSnapmaker : public AmsSubscriptionBackend {
     AmsError recover() override;
     AmsError reset() override;
     AmsError cancel() override;
+    /// Also forgets each channel's last frame and in-flight op, because the
+    /// backend outlives the restart: the subscription's first full frame is
+    /// then a fresh start rather than a change from firmware that is gone.
+    void on_klipper_restarted() override;
 
     // Resume preparation. A Terminal pause answers RESUME_REQUIRES_RESTART at
     // once. After a runout (sensor_filament_present_ false for the active

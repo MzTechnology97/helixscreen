@@ -337,6 +337,9 @@ class AmsBackendAd5xIfs : public AmsSubscriptionBackend {
     AmsError recover() override;
     AmsError reset() override;
     AmsError cancel() override;
+    /// Also ends the phase tracking, so a later head-sensor edge cannot drive
+    /// the steps of an operation the restart already ended.
+    void on_klipper_restarted() override;
 
     [[nodiscard]] std::optional<helix::ErrorEvent> current_error() const override;
 
