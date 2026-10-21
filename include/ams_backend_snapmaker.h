@@ -600,6 +600,10 @@ class AmsBackendSnapmaker : public AmsSubscriptionBackend {
     /// channel rests. Under mutex_.
     std::array<std::string, NUM_TOOLS> held_channel_state_{};
     std::array<std::string, NUM_TOOLS> held_channel_action_state_{};
+    /// Per channel: an op outcome channel_action_state reported while the
+    /// channel still showed a step under way, applied when it settles. Under
+    /// mutex_.
+    std::array<std::string, NUM_TOOLS> held_op_outcome_{};
 
     /// Per channel: the last in-progress channel_state was a preload_*. A
     /// preload ends at preload_finish; any other op merely rests there (an

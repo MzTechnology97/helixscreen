@@ -305,33 +305,52 @@ struct ChannelStateInfo {
 // The firmware sets an op's terminal and its resting state (wait_insert,
 // preload_finish) in one reactor tick, and a status frame carries only the
 // last channel_state. channel_action_state keeps the op's own last step at
-// rest, so it stands in when the channel rests and it moved to a *_finish or
-// *_fail since the previous frame. An unchanged value is the previous op's
+// rest, so it stands in once the channel rests. The two fields also move in
+// either order across frames: an outcome that arrives while the channel still
+// reports a step under way is held until the channel settles, and a new step
+// in channel_action_state drops it. An unchanged value is the previous op's
 // outcome and says nothing about the current one, and the first value a
 // channel reports is an op that ended before anyone was watching.
 //
-// Returns the state to drive the op lifecycle with, or nullopt to use
-// channel_state. preload_finish is a resting state here, never an outcome,
-// although the table marks it terminal for the latch: an unload heats with the
-// channel still there, and only the parse knows whether a preload was running.
-[[nodiscard]] std::optional<std::string> settled_op_outcome(const std::string& channel_state,
-                                                            const std::string& prev_action_state,
-                                                            const std::string& action_state) {
-    if (channel_state.empty() || prev_action_state.empty() || action_state == prev_action_state) {
-        return std::nullopt;
-    }
+// preload_finish is a resting state here, never an outcome, although the table
+// marks it terminal for the latch: an unload heats with the channel still
+// there, and only the parse knows whether a preload was running.
+struct OpOutcome {
+    std::optional<std::string> outcome; ///< drives the op lifecycle; nullopt = use channel_state
+    std::string held;                   ///< an outcome still waiting for the channel to settle
+};
+
+[[nodiscard]] OpOutcome resolve_op_outcome(const std::string& channel_state,
+                                           const std::string& prev_action_state,
+                                           const std::string& action_state,
+                                           const std::string& held_outcome) {
     auto ends_op = [](const ChannelStateInfo& info, const std::string& s) {
         return info.is_terminal && s != "preload_finish";
     };
-    const ChannelStateInfo resting = classify_channel_state(channel_state);
-    if (resting.action != AmsAction::IDLE || resting.ignore || ends_op(resting, channel_state)) {
-        return std::nullopt;
+    auto in_progress = [](const ChannelStateInfo& info) {
+        return info.action == AmsAction::LOADING || info.action == AmsAction::UNLOADING;
+    };
+    std::string held = held_outcome;
+    if (!prev_action_state.empty() && action_state != prev_action_state) {
+        const ChannelStateInfo step = classify_channel_state(action_state);
+        if (ends_op(step, action_state) || step.is_fail) {
+            held = action_state;
+        } else if (in_progress(step)) {
+            held.clear();
+        }
     }
-    const ChannelStateInfo outcome = classify_channel_state(action_state);
-    if (!ends_op(outcome, action_state) && !outcome.is_fail) {
-        return std::nullopt;
+    if (held.empty() || channel_state.empty()) {
+        return {std::nullopt, held};
     }
-    return action_state;
+    const ChannelStateInfo channel = classify_channel_state(channel_state);
+    if (in_progress(channel) || channel.ignore) {
+        return {std::nullopt, held};
+    }
+    if (ends_op(channel, channel_state) || channel.is_fail) {
+        // The channel reports the op's end itself.
+        return {std::nullopt, {}};
+    }
+    return {held, {}};
 }
 
 } // namespace
@@ -1473,9 +1492,12 @@ void AmsBackendSnapmaker::handle_status_update(const nlohmann::json& notificatio
                             held_channel_action_state_[i] =
                                 action_it->get_ref<const std::string&>();
                         }
+                        OpOutcome resolved =
+                            resolve_op_outcome(held_channel_state_[i], prev_action_state,
+                                               held_channel_action_state_[i], held_op_outcome_[i]);
+                        held_op_outcome_[i] = std::move(resolved.held);
                         const std::optional<std::string> settled_outcome =
-                            settled_op_outcome(held_channel_state_[i], prev_action_state,
-                                               held_channel_action_state_[i]);
+                            std::move(resolved.outcome);
                         const std::string& op_state = settled_outcome ? *settled_outcome : state;
                         const ChannelStateInfo op_info =
                             settled_outcome ? classify_channel_state(op_state) : info;
