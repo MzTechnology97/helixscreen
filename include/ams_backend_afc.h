@@ -789,53 +789,14 @@ class AmsBackendAfc : public AmsSubscriptionBackend {
     void query_lane_data();
 
     /**
-     * @brief Whether this machine has an AFC toolchanger.
-     *
-     * The registration gate for AFC_SELECT_TOOL / AFC_UNSELECT_TOOL: both are
-     * registered by AfcToolchanger.__init__ (AFC_Toolchanger.py:47-53) and by
-     * nothing else, and Klipper loads that class only for an
-     * `[AFC_Toolchanger <name>]` section.
-     *
-     * Two INDEPENDENT sufficient signals, OR-ed — each one on its own implies
-     * the section exists, and neither is necessary:
-     *
-     *  1. configfile.settings carries an `afc_toolchanger <name>` section. This
-     *     is literally the registration condition, so it is authoritative.
-     *  2. AFC's `units` array carries a unit whose type is `Toolchanger`. AFC
-     *     publishes units as `"<Type> <name>"` with spaces in the type replaced
-     *     by underscores (AFC.py get_status, v1.2.0:2550-2556), and the type is
-     *     the string AfcToolchanger set on itself
-     *     (`config.get("type", "Toolchanger")`).
-     *
-     * Signal 2 alone is NOT enough: that same loop only emits a unit when
-     * `len(unit.lanes) > 0` (AFC.py v1.2.0:2554). A toolchanger whose toolheads
-     * are all lane-fed (a BoxTurtle feeding several heads on a shuttle) has its
-     * per-toolhead synthetic lane popped back off the unit by
-     * AFCExtruder.check_lanes() (AFC_extruder.py:391-401) once a real lane
-     * exists, so the Toolchanger unit can legitimately end up with zero lanes
-     * and never appear in `units` at all. Signal 1 is what covers that machine.
-     * Conversely signal 2 covers the case where configfile is unreachable.
-     *
-     * Distinct from `num_extruders_ > 1`, which counts `[AFC_extruder]`
-     * sections and is therefore also true on IDEX and standalone-toolhead
-     * machines that have no toolchanger and no AFC_SELECT_TOOL.
-     *
-     * Takes mutex_; callers must NOT hold it.
-     */
-    [[nodiscard]] bool has_toolchanger() const;
-
-    /**
      * @brief Read the AFC topology that only the printer's config file carries.
      *
      * One-shot `printer.objects.query {"configfile": ["settings"]}`, recovering
-     * two things no get_status() publishes:
-     *
-     *  - the AFC_extruder section -> Klipper extruder name map. AFC derives a
-     *    toolhead's tool index from `th_extruder_name` (AFC_extruder.py:222-223
-     *    = `config.get("extruder_name", <section name>)`, consumed at
-     *    AFC_Toolchanger.py:231-232, both v1.2.0).
-     *  - whether an `[AFC_Toolchanger <name>]` section exists at all, which is
-     *    exactly what registers AFC_SELECT_TOOL.
+     * the AFC_extruder section -> Klipper extruder name map, which no
+     * get_status() publishes. AFC derives a toolhead's tool index from
+     * `th_extruder_name` (AFC_extruder.py:222-223 =
+     * `config.get("extruder_name", <section name>)`, consumed at
+     * AFC_Toolchanger.py:231-232, both v1.2.0).
      *
      * Costs one query of the whole resolved config at startup; the same query
      * the bed-mesh and screws-tilt panels already make on demand.
@@ -1379,12 +1340,6 @@ class AmsBackendAfc : public AmsSubscriptionBackend {
     /// looked yet" — an empty extruder_klipper_names_ means both, and only the
     /// first justifies telling the user their config is missing something.
     bool configfile_answered_{false};
-
-    /// True once an `[AFC_Toolchanger …]` section has been seen in
-    /// configfile.settings. Never cleared by a config that lacks one — absence
-    /// in an unanswered/unavailable configfile is not evidence, and the units
-    /// array is the independent second signal. See has_toolchanger().
-    bool configfile_has_toolchanger_{false};
 
     /// Section names already reported as unresolvable — dedupes the warning so
     /// it fires once per extruder, not once per status frame.
