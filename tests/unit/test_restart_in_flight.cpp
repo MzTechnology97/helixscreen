@@ -287,3 +287,29 @@ TEST_CASE_METHOD(RestartInFlightFixture, "A firmware restart Moonraker refused s
     CHECK(counting_api.firmware_restarts == 1);
     CHECK(counting_api.service_restarts == 1);
 }
+
+TEST_CASE_METHOD(RestartInFlightFixture,
+                 "A startup seen by an expired restart does not end the next one at its shutdown",
+                 "[recovery][restart_in_flight]") {
+    auto& estop = EmergencyStopOverlay::instance();
+    state().set_klippy_state_sync(KlippyState::READY);
+    settle();
+
+    // The first restart starts up, then runs out its backstop with no READY.
+    EmergencyStopOverlayTestAccess::restart_klipper(estop);
+    settle();
+    state().set_klippy_state_sync(KlippyState::STARTUP);
+    settle();
+    lv_tick_inc(RecoverySuppression::RESTART_FLAG_TIMEOUT + 1000);
+
+    EmergencyStopOverlayTestAccess::restart_klipper(estop);
+    settle();
+    REQUIRE(counting_api.klipper_restarts == 2);
+
+    // The second restart's way down: a SHUTDOWN with no STARTUP of its own.
+    state().set_klippy_state_sync(KlippyState::SHUTDOWN);
+    settle();
+    EmergencyStopOverlayTestAccess::firmware_restart(estop);
+    settle();
+    CHECK(counting_api.firmware_restarts == 0);
+}
