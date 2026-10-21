@@ -4338,6 +4338,65 @@ has_update_manager_section() {
     grep -q '^\[update_manager helixscreen\]' "$conf" 2>/dev/null
 }
 
+# Print every Moonraker config file reachable from @1 through [include] lines,
+# @1 first, one per line, each once. A relative include resolves against the
+# directory of the file that names it, as the path was given (a symlinked
+# moonraker.conf resolves against the link's directory). A glob expands the way
+# Moonraker expands it. @2, when set, is prefixed to an absolute include: the
+# root Moonraker runs under, seen from here. A file is walked once however
+# many paths lead to it, so an include cycle ends. Paths holding blanks are
+# not supported; no Moonraker layout uses them.
+moonraker_conf_files() {
+    _mcf_root="${2:-}"
+    _mcf_todo="$1"
+    _mcf_seen=" "
+    while [ -n "$_mcf_todo" ]; do
+        _mcf_file="${_mcf_todo%% *}"
+        case "$_mcf_todo" in
+            *" "*) _mcf_todo="${_mcf_todo#* }" ;;
+            *) _mcf_todo="" ;;
+        esac
+        [ -n "$_mcf_file" ] || continue
+        [ -f "$_mcf_file" ] || continue
+        _mcf_key=$(readlink -f "$_mcf_file" 2>/dev/null) || _mcf_key=""
+        [ -n "$_mcf_key" ] || _mcf_key="$_mcf_file"
+        case "$_mcf_seen" in *" $_mcf_key "*) continue ;; esac
+        _mcf_seen="$_mcf_seen$_mcf_key "
+        printf '%s\n' "$_mcf_file"
+        _mcf_dir=$(dirname "$_mcf_file")
+        # Trailing blanks after "]" include the CR of a file saved on Windows.
+        _mcf_incs=$(sed -n 's/^\[include[[:space:]]\{1,\}\([^]]*[^][:space:]]\)[[:space:]]*\][[:space:]]*$/\1/p' "$_mcf_file" 2>/dev/null)
+        while IFS= read -r _mcf_pat; do
+            [ -n "$_mcf_pat" ] || continue
+            case "$_mcf_pat" in
+                /*) _mcf_pat="$_mcf_root$_mcf_pat" ;;
+                *) _mcf_pat="$_mcf_dir/$_mcf_pat" ;;
+            esac
+            # Unquoted on purpose: the pattern expands here, against its own directory.
+            for _mcf_inc in $_mcf_pat; do
+                if [ -f "$_mcf_inc" ]; then
+                    _mcf_todo="${_mcf_todo:+$_mcf_todo }$_mcf_inc"
+                fi
+            done
+        done <<MCF_INCLUDES
+$_mcf_incs
+MCF_INCLUDES
+    done
+    return 0
+}
+
+# Print each file holding [update_manager helixscreen] among moonraker.conf @1
+# and the files its [include] lines reach, one per line; nothing when none does.
+# Some firmware keeps the web UIs' updater stanzas in an included mainsail.conf.
+update_manager_stanza_files() {
+    moonraker_conf_files "$1" | while IFS= read -r _umsf_file; do
+        if has_update_manager_section "$_umsf_file"; then
+            printf '%s\n' "$_umsf_file"
+        fi
+    done
+    return 0
+}
+
 # The channel Moonraker's type:web updater should follow. Moonraker accepts
 # only stable and beta here; the dev channel has no Moonraker lane and rides
 # beta, the closest published feed.
@@ -4842,6 +4901,13 @@ configure_moonraker_updates() {
 
     log_info "Using moonraker.conf at: $conf"
 
+    # The stanza may sit in a file the conf includes rather than in the conf.
+    # Every check and rewrite below goes to the files Moonraker reads it from;
+    # appending one to the conf would leave two for Moonraker to merge.
+    local stanza_files stanza_conf
+    stanza_files=$(update_manager_stanza_files "$conf")
+    stanza_conf=$(printf '%s\n' "$stanza_files" | sed -n 1p)
+
     # Gate on Moonraker's asset_name support before arming the one-click
     # updater (prestonbrown/helixscreen#993). On a Moonraker that ignores
     # asset_name, the Update button in Mainsail/Fluidd rmtree()s the install
@@ -4863,7 +4929,7 @@ configure_moonraker_updates() {
         # The gun may already be loaded from an earlier install that ran before
         # this gate existed -- unload it.
         local removed_stale=0
-        if has_update_manager_section "$conf"; then
+        if [ -n "$stanza_files" ]; then
             log_warn "Removing the existing [update_manager helixscreen] section."
             remove_update_manager_section
             removed_stale=1
@@ -4896,8 +4962,9 @@ configure_moonraker_updates() {
 
     # Migrate old git_repo or zip config to type: web
     # (type: zip shows perpetual UP-TO-DATE in Mainsail — see mainsail-crew/mainsail#2444)
-    if has_old_git_repo_section "$conf" || has_old_zip_section "$conf"; then
-        migrate_to_web_type "$conf"
+    if [ -n "$stanza_conf" ] \
+        && { has_old_git_repo_section "$stanza_conf" || has_old_zip_section "$stanza_conf"; }; then
+        migrate_to_web_type "$stanza_conf"
         # Where the OS has no package manager, silence the provider warnings.
         disable_system_updates_on_buildroot "$conf"
         ensure_moonraker_asvc "$conf"
@@ -4905,17 +4972,23 @@ configure_moonraker_updates() {
         return 0
     fi
 
-    if has_update_manager_section "$conf"; then
-        log_info "update_manager section already exists in $conf"
+    if [ -n "$stanza_files" ]; then
         # Set by sync_update_manager_channel; Moonraker reads its config only at
         # startup, so a rewritten stanza needs a restart before Mainsail sees it.
         _UPDATE_MANAGER_SYNCED=""
-        # channel: is only ever written when the section is first added, so
-        # rewrite it to whatever this update resolved to.
-        sync_update_manager_channel "$conf"
-        # Remove options not supported by type: web (persistent_files,
-        # managed_services, install_script) that cause Moonraker warnings.
-        cleanup_unsupported_options "$conf"
+        local stanza_file
+        while IFS= read -r stanza_file; do
+            [ -n "$stanza_file" ] || continue
+            log_info "update_manager section already exists in $stanza_file"
+            # channel: is only ever written when the section is first added, so
+            # rewrite it to whatever this update resolved to.
+            sync_update_manager_channel "$stanza_file"
+            # Remove options not supported by type: web (persistent_files,
+            # managed_services, install_script) that cause Moonraker warnings.
+            cleanup_unsupported_options "$stanza_file"
+        done <<STANZA_FILES
+$stanza_files
+STANZA_FILES
         # Where the OS has no package manager, silence the provider warnings.
         disable_system_updates_on_buildroot "$conf"
         # Still ensure asvc is correct even if section already exists
@@ -4933,15 +5006,30 @@ configure_moonraker_updates() {
     restart_moonraker
 }
 
-# Remove update_manager section from moonraker.conf
+# Remove [update_manager helixscreen] from conf @1, or with no argument from
+# every file Moonraker reads it from: find_moonraker_conf and the files its
+# [include] lines reach.
 # Called during uninstallation
 remove_update_manager_section() {
-    local conf
-    conf=$(find_moonraker_conf)
-
-    if [ -z "$conf" ]; then
-        return 0
+    if [ -n "${1:-}" ]; then
+        _remove_update_manager_section_from "$1"
+        return
     fi
+    local conf stanza_file
+    conf=$(find_moonraker_conf)
+    [ -n "$conf" ] || return 0
+    while IFS= read -r stanza_file; do
+        [ -n "$stanza_file" ] || continue
+        _remove_update_manager_section_from "$stanza_file"
+    done <<STANZA_FILES
+$(update_manager_stanza_files "$conf")
+STANZA_FILES
+}
+
+# Remove [update_manager helixscreen] and the comment block the installer
+# writes above it from conf @1.
+_remove_update_manager_section_from() {
+    local conf="$1"
 
     if ! has_update_manager_section "$conf"; then
         return 0
