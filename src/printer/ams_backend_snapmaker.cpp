@@ -29,8 +29,10 @@
 #include <cctype>
 #include <lvgl.h>
 #include <memory>
+#include <mutex>
 #include <optional>
 #include <string_view>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -177,6 +179,7 @@ constexpr std::string_view SOFT_COMPAT_GROUP = "TPU";
 //  - sets_loaded:   SET the "loaded at toolhead" latch true (load_finish only).
 //  - clears_loaded: CLEAR the latch false (unload_finish/wait_insert/preload_finish).
 //  - ignore:        the factory 'test' state — touch nothing.
+//  - known:         listed in the table; an unknown state ends no operation.
 struct ChannelStateInfo {
     AmsAction action = AmsAction::IDLE;
     int phase = -1;
@@ -185,6 +188,7 @@ struct ChannelStateInfo {
     bool sets_loaded = false;
     bool clears_loaded = false;
     bool ignore = false;
+    bool known = true; ///< false for a state the table does not list
 };
 
 [[nodiscard]] ChannelStateInfo classify_channel_state(const std::string& state) {
@@ -257,7 +261,11 @@ struct ChannelStateInfo {
     // Fallback for an unrecognized state (firmware drift). Never emitted by
     // firmware 20260608, but classify conservatively so a future state can't
     // wedge the action machine. Prefix chooses the family; suffix the phase.
+    // Only the table's states end an op: an unknown *_finish may be a sub-step
+    // with filament still moving, and an unknown *_fail may be one the
+    // firmware recovers from, so both rest without resolving anything.
     ChannelStateInfo info;
+    info.known = false;
     auto ends_with = [&](std::string_view suffix) {
         return state.size() > suffix.size() &&
                state.compare(state.size() - suffix.size(), suffix.size(), suffix) == 0;
@@ -266,12 +274,8 @@ struct ChannelStateInfo {
     const bool is_load =
         !is_unload && (state.rfind("load_", 0) == 0 || state.rfind("preload_", 0) == 0 ||
                        state.rfind("manual_sta_", 0) == 0);
-    if (ends_with("_fail")) {
-        info.action = AmsAction::ERROR;
-        info.is_fail = true;
-    } else if (ends_with("_finish")) {
+    if (ends_with("_fail") || ends_with("_finish")) {
         info.action = AmsAction::IDLE;
-        info.is_terminal = true;
     } else if (is_unload) {
         info.action = AmsAction::UNLOADING;
     } else if (is_load) {
@@ -294,9 +298,20 @@ struct ChannelStateInfo {
                  ends_with("_flushing"))
             info.phase = 3;
     }
-    spdlog::debug("[AmsBackendSnapmaker] unrecognized channel_state '{}' -> fallback action={} "
-                  "phase={}",
-                  state, ams_action_to_string(info.action), info.phase);
+    // Once per distinct value, so a new firmware state shows in a debug bundle
+    // without flooding the log on every frame that repeats it.
+    static std::mutex warned_mutex;
+    static std::unordered_set<std::string> warned;
+    bool first_sighting = false;
+    {
+        std::lock_guard<std::mutex> lock(warned_mutex);
+        first_sighting = warned.insert(state).second;
+    }
+    if (first_sighting) {
+        spdlog::warn("[AmsBackendSnapmaker] unrecognized channel state '{}' -> fallback action={} "
+                     "phase={}; it ends no operation",
+                     state, ams_action_to_string(info.action), info.phase);
+    }
     return info;
 }
 
@@ -343,7 +358,7 @@ struct OpOutcome {
         return {std::nullopt, held};
     }
     const ChannelStateInfo channel = classify_channel_state(channel_state);
-    if (in_progress(channel) || channel.ignore) {
+    if (in_progress(channel) || channel.ignore || !channel.known) {
         return {std::nullopt, held};
     }
     if (ends_op(channel, channel_state) || channel.is_fail) {
