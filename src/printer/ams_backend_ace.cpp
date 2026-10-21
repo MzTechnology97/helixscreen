@@ -69,6 +69,12 @@ AmsBackendAce::~AmsBackendAce() {
 void AmsBackendAce::on_started() {
     spdlog::info("[ACE] Backend started — querying initial filament_hub/ace state via WebSocket");
 
+    // A restart re-picks the displayed unit from a fresh initial query.
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        instance_base_ = -1;
+    }
+
     // Load persisted per-slot overrides from the shared FilamentSlotOverrideStore
     // BEFORE issuing the initial status query — otherwise the first status
     // callback (libhv background thread) could fire and parse slots before
@@ -129,10 +135,13 @@ void AmsBackendAce::on_started() {
                 if (response.contains("result") && response["result"].contains("status")) {
                     const json& status = response["result"]["status"];
                     ace_data = select_slot_bearing_object(status, &matched_key);
-                    const int instance = lowest_ace_instance_number(status);
-                    if (instance >= 0) {
+                    if (lowest_ace_instance_number(status) >= 0) {
+                        // The displayed unit is the instance the pick chose;
+                        // with no slot-bearing instance the REST bridge serves
+                        // instance 0.
                         std::lock_guard<std::mutex> lock(mutex_);
-                        instance_base_ = instance;
+                        instance_base_ =
+                            ace_data ? std::max(ace_instance_number(matched_key), 0) : 0;
                     }
                 }
 
@@ -207,9 +216,13 @@ void AmsBackendAce::handle_status_update(const json& notification) {
         }
         if (best_key) {
             ace_data = &(*status)[*best_key];
-            const int instance = lowest_ace_instance_number(*status);
+            // A delta names only the objects that changed, so it never moves
+            // the base the initial query chose; it fills one only before that
+            // answer.
             std::lock_guard<std::mutex> lock(mutex_);
-            instance_base_ = std::max(instance, 0);
+            if (instance_base_ < 0) {
+                instance_base_ = std::max(ace_instance_number(*best_key), 0);
+            }
         }
     }
     if (!ace_data)
@@ -1550,21 +1563,25 @@ std::string AmsBackendAce::slot_command(const std::string& verb, int slot) const
     return fmt::format("{} INSTANCE={} INDEX={}", verb, instance, local);
 }
 
-int AmsBackendAce::lowest_ace_instance_number(const json& status) {
+int AmsBackendAce::ace_instance_number(const std::string& key) {
     static constexpr std::string_view kPrefix = "ace_instance_";
+    if (key.rfind(kPrefix, 0) != 0 || key.size() == kPrefix.size())
+        return -1;
+    char* end = nullptr;
+    const long n = std::strtol(key.c_str() + kPrefix.size(), &end, 10);
+    if (*end != '\0' || n < 0 || n > 255)
+        return -1;
+    return static_cast<int>(n);
+}
+
+int AmsBackendAce::lowest_ace_instance_number(const json& status) {
     if (!status.is_object())
         return -1;
     int lowest = -1;
     for (auto it = status.begin(); it != status.end(); ++it) {
-        const std::string& key = it.key();
-        if (key.rfind(kPrefix, 0) != 0 || key.size() == kPrefix.size())
-            continue;
-        char* end = nullptr;
-        const long n = std::strtol(key.c_str() + kPrefix.size(), &end, 10);
-        if (*end != '\0' || n < 0 || n > 255)
-            continue;
-        if (lowest < 0 || n < lowest)
-            lowest = static_cast<int>(n);
+        const int n = ace_instance_number(it.key());
+        if (n >= 0 && (lowest < 0 || n < lowest))
+            lowest = n;
     }
     return lowest;
 }

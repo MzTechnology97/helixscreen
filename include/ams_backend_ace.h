@@ -255,6 +255,9 @@ class AmsBackendAce : public AmsSubscriptionBackend {
     /// @p status, or -1 when it carries none.
     static int lowest_ace_instance_number(const nlohmann::json& status);
 
+    /// N of an `ace_instance_N` key, or -1 for any other key.
+    static int ace_instance_number(const std::string& key);
+
     /**
      * @brief Parse slot color from either RGB array [r,g,b] or hex string "#RRGGBB"
      * @param color_val JSON value (array or string)
@@ -320,8 +323,9 @@ class AmsBackendAce : public AmsSubscriptionBackend {
 
     // The Kobra S1 fork's instance number for units[0], or -1 until that
     // driver's surface is seen. Its slot commands take INSTANCE= + INDEX=; the
-    // base is N of the displayed `ace_instance_N`, or 0 when only the REST
-    // bridge's `ace_manager` has been seen. Guarded by mutex_.
+    // base is N of the `ace_instance_N` the initial query picked for display,
+    // or 0 when the REST bridge serves the data. Reset on every start.
+    // Guarded by mutex_.
     int instance_base_ = -1;
 
     // Callback lifetime management
