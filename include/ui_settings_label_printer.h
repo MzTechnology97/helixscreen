@@ -17,6 +17,8 @@
 namespace helix::settings {
 
 class LabelPrinterSettingsOverlay : public OverlayBase {
+    friend class LabelPrinterSettingsOverlayTestAccess;
+
   public:
     LabelPrinterSettingsOverlay();
     ~LabelPrinterSettingsOverlay() override;
