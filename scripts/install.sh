@@ -2632,6 +2632,98 @@ detect_init_system() {
     exit 1
 }
 
+# Print every process's command line, one per line, through the widest form
+# the host's ps takes. Bare `ps` lists every process only on BusyBox: procps-ng
+# ps lists the caller's session alone, which under `curl | sh` holds neither
+# Klipper nor Moonraker. Some BusyBox builds reject -e/-o, and their plain ps
+# cuts each line at the terminal width unless given w.
+_ps_all_args() {
+    ps -e -o args 2>/dev/null || ps w 2>/dev/null || ps 2>/dev/null
+}
+
+# True when systemd has service $1 active: $1.service or a numbered instance
+# ($1-1.service, ...). Only digits may follow the dash, because klipper-mcu and
+# moonraker-obico are other programs. Never true off systemd (INIT_SYSTEM).
+_systemd_service_active() {
+    [ "$INIT_SYSTEM" = systemd ] || return 1
+    systemctl is-active --quiet "$1.service" 2>/dev/null && return 0
+    systemctl list-units --type=service --state=active --no-legend --plain "$1-*.service" 2>/dev/null |
+        awk -v svc="$1" '$1 ~ ("^" svc "-[0-9]+\\.service$") { found = 1 } END { exit !found }'
+}
+
+# The awk program that reads a process's argv, one element per line, and
+# prints what makes it the python program named by the awk variable `name`:
+# the <name>.py it runs, or "-m" and the module it runs (<name>, or
+# <name>.<name> as in python3 -m moonraker.moonraker on the CC1), joined
+# (-m<name>) or not. The program is a python interpreter (argv[0] python,
+# python3, python3.11, ...); an init script, editor or log viewer whose argv
+# names the file comes and goes beside it and is not the program. Prints
+# nothing for any other process.
+# shellcheck disable=SC2016  # awk's own $
+HELIX_PYTHON_ARGV_AWK='
+    function is_module(m) { return m == name || m == name "." name }
+    NR == 1 { n = split($0, part, "/"); if (part[n] !~ /^python[0-9.]*$/) exit; next }
+    module { if (is_module($0)) print "-m " $0; exit }
+    $0 == "-m" { module = 1; next }
+    /^-m/ { if (is_module(substr($0, 3))) print "-m " substr($0, 3); exit }
+    $0 ~ ("(^|/)" name "\\.py$") { print; exit }'
+
+# Print one line per running process of the python program $1 (klippy,
+# moonraker): its /proc/<pid> directory under HELIX_PROC_ROOT (tests point it
+# at a fixture tree), else /proc, a blank, and what HELIX_PYTHON_ARGV_AWK
+# prints for it. Prints nothing when none runs.
+running_python_module() {
+    _rpm_root="${HELIX_PROC_ROOT:-/proc}"
+    for _rpm_f in "$_rpm_root"/[0-9]*/cmdline; do
+        [ -r "$_rpm_f" ] || continue
+        _rpm_script=$(tr '\000' '\n' < "$_rpm_f" 2>/dev/null | awk -v name="$1" "$HELIX_PYTHON_ARGV_AWK")
+        [ -n "$_rpm_script" ] || continue
+        printf '%s %s\n' "$(dirname "$_rpm_f")" "$_rpm_script"
+    done
+    return 0
+}
+
+# True when HELIX_PROC_ROOT (else /proc) shows any process's argv. When it
+# does, /proc holds every process whichever ps the host ships, and ps has
+# nothing to add.
+_proc_lists_processes() {
+    local f
+    for f in "${HELIX_PROC_ROOT:-/proc}"/[0-9]*/cmdline; do
+        [ -r "$f" ] && return 0
+    done
+    return 1
+}
+
+# True when a ps line (_ps_all_args) runs the python program $1 the way
+# running_python_module recognizes it: $1.py, or the module $1 or $1.$1.
+# A ps line's columns differ between builds, so argv[0] is not checked here.
+_ps_runs_python() {
+    _ps_all_args | grep -v grep |
+        grep -Eq "(^|[ /])$1\.py( |\$)|-m ?$1(\.$1)?( |\$)"
+}
+
+# True when the python program $1 runs here: in /proc when it lists any
+# process, else in the ps listing, or on systemd as an active $1 unit. A log
+# viewer, an editor, KlipperScreen or moonraker-obico only names the program.
+_python_service_running() {
+    if _proc_lists_processes; then
+        [ -n "$(running_python_module "$1")" ] && return 0
+    else
+        _ps_runs_python "$1" && return 0
+    fi
+    _systemd_service_active "$2"
+}
+
+# True when Klipper (klippy.py, service klipper) runs here.
+installer_klipper_running() {
+    _python_service_running klippy klipper
+}
+
+# True when Moonraker runs here.
+installer_moonraker_running() {
+    _python_service_running moonraker moonraker
+}
+
 # Check that Klipper and Moonraker are running (AD5M + K1 only)
 # These platforms require local Klipper/Moonraker; without them HelixScreen
 # has nothing to connect to. Warns and prompts for confirmation.
@@ -2644,16 +2736,14 @@ check_klipper_ecosystem() {
         *) return 0 ;;
     esac
 
-    local warnings=""
+    local warnings="" moonraker_up=false
 
-    # Check Klipper process
-    # Klipper runs as "klippy" (python module) or "klipper" (service name)
-    if ! ps | grep -v grep | grep -q -e '[Kk]lipper' -e '[Kk]lippy'; then
+    if ! installer_klipper_running; then
         warnings="Klipper does not appear to be running."
     fi
 
-    # Check Moonraker process
-    if ! ps | grep -v grep | grep -q '[Mm]oonraker'; then
+    installer_moonraker_running && moonraker_up=true
+    if [ "$moonraker_up" = false ]; then
         if [ -n "$warnings" ]; then
             warnings="$warnings
 Moonraker does not appear to be running."
@@ -2663,7 +2753,7 @@ Moonraker does not appear to be running."
     fi
 
     # If Moonraker process is up, verify it responds on the expected port
-    if ps | grep -v grep | grep -q '[Mm]oonraker'; then
+    if [ "$moonraker_up" = true ]; then
         if command -v wget >/dev/null 2>&1; then
             if ! wget -q -O /dev/null --timeout=5 "http://127.0.0.1:7125/server/info" 2>/dev/null; then
                 if [ -n "$warnings" ]; then
@@ -7865,6 +7955,65 @@ has_update_manager_section() {
     grep -q '^\[update_manager helixscreen\]' "$conf" 2>/dev/null
 }
 
+# Print every Moonraker config file reachable from @1 through [include] lines,
+# @1 first, one per line, each once. A relative include resolves against the
+# directory of the file that names it, as the path was given (a symlinked
+# moonraker.conf resolves against the link's directory). A glob expands the way
+# Moonraker expands it. @2, when set, is prefixed to an absolute include: the
+# root Moonraker runs under, seen from here. A file is walked once however
+# many paths lead to it, so an include cycle ends. Paths holding blanks are
+# not supported; no Moonraker layout uses them.
+moonraker_conf_files() {
+    _mcf_root="${2:-}"
+    _mcf_todo="$1"
+    _mcf_seen=" "
+    while [ -n "$_mcf_todo" ]; do
+        _mcf_file="${_mcf_todo%% *}"
+        case "$_mcf_todo" in
+            *" "*) _mcf_todo="${_mcf_todo#* }" ;;
+            *) _mcf_todo="" ;;
+        esac
+        [ -n "$_mcf_file" ] || continue
+        [ -f "$_mcf_file" ] || continue
+        _mcf_key=$(readlink -f "$_mcf_file" 2>/dev/null) || _mcf_key=""
+        [ -n "$_mcf_key" ] || _mcf_key="$_mcf_file"
+        case "$_mcf_seen" in *" $_mcf_key "*) continue ;; esac
+        _mcf_seen="$_mcf_seen$_mcf_key "
+        printf '%s\n' "$_mcf_file"
+        _mcf_dir=$(dirname "$_mcf_file")
+        # Trailing blanks after "]" include the CR of a file saved on Windows.
+        _mcf_incs=$(sed -n 's/^\[include[[:space:]]\{1,\}\([^]]*[^][:space:]]\)[[:space:]]*\][[:space:]]*$/\1/p' "$_mcf_file" 2>/dev/null)
+        while IFS= read -r _mcf_pat; do
+            [ -n "$_mcf_pat" ] || continue
+            case "$_mcf_pat" in
+                /*) _mcf_pat="$_mcf_root$_mcf_pat" ;;
+                *) _mcf_pat="$_mcf_dir/$_mcf_pat" ;;
+            esac
+            # Unquoted on purpose: the pattern expands here, against its own directory.
+            for _mcf_inc in $_mcf_pat; do
+                if [ -f "$_mcf_inc" ]; then
+                    _mcf_todo="${_mcf_todo:+$_mcf_todo }$_mcf_inc"
+                fi
+            done
+        done <<MCF_INCLUDES
+$_mcf_incs
+MCF_INCLUDES
+    done
+    return 0
+}
+
+# Print each file holding [update_manager helixscreen] among moonraker.conf @1
+# and the files its [include] lines reach, one per line; nothing when none does.
+# Some firmware keeps the web UIs' updater stanzas in an included mainsail.conf.
+update_manager_stanza_files() {
+    moonraker_conf_files "$1" | while IFS= read -r _umsf_file; do
+        if has_update_manager_section "$_umsf_file"; then
+            printf '%s\n' "$_umsf_file"
+        fi
+    done
+    return 0
+}
+
 # The channel Moonraker's type:web updater should follow. Moonraker accepts
 # only stable and beta here; the dev channel has no Moonraker lane and rides
 # beta, the closest published feed.
@@ -8369,6 +8518,13 @@ configure_moonraker_updates() {
 
     log_info "Using moonraker.conf at: $conf"
 
+    # The stanza may sit in a file the conf includes rather than in the conf.
+    # Every check and rewrite below goes to the files Moonraker reads it from;
+    # appending one to the conf would leave two for Moonraker to merge.
+    local stanza_files stanza_conf
+    stanza_files=$(update_manager_stanza_files "$conf")
+    stanza_conf=$(printf '%s\n' "$stanza_files" | sed -n 1p)
+
     # Gate on Moonraker's asset_name support before arming the one-click
     # updater (prestonbrown/helixscreen#993). On a Moonraker that ignores
     # asset_name, the Update button in Mainsail/Fluidd rmtree()s the install
@@ -8390,7 +8546,7 @@ configure_moonraker_updates() {
         # The gun may already be loaded from an earlier install that ran before
         # this gate existed -- unload it.
         local removed_stale=0
-        if has_update_manager_section "$conf"; then
+        if [ -n "$stanza_files" ]; then
             log_warn "Removing the existing [update_manager helixscreen] section."
             remove_update_manager_section
             removed_stale=1
@@ -8423,8 +8579,9 @@ configure_moonraker_updates() {
 
     # Migrate old git_repo or zip config to type: web
     # (type: zip shows perpetual UP-TO-DATE in Mainsail — see mainsail-crew/mainsail#2444)
-    if has_old_git_repo_section "$conf" || has_old_zip_section "$conf"; then
-        migrate_to_web_type "$conf"
+    if [ -n "$stanza_conf" ] \
+        && { has_old_git_repo_section "$stanza_conf" || has_old_zip_section "$stanza_conf"; }; then
+        migrate_to_web_type "$stanza_conf"
         # Where the OS has no package manager, silence the provider warnings.
         disable_system_updates_on_buildroot "$conf"
         ensure_moonraker_asvc "$conf"
@@ -8432,17 +8589,23 @@ configure_moonraker_updates() {
         return 0
     fi
 
-    if has_update_manager_section "$conf"; then
-        log_info "update_manager section already exists in $conf"
+    if [ -n "$stanza_files" ]; then
         # Set by sync_update_manager_channel; Moonraker reads its config only at
         # startup, so a rewritten stanza needs a restart before Mainsail sees it.
         _UPDATE_MANAGER_SYNCED=""
-        # channel: is only ever written when the section is first added, so
-        # rewrite it to whatever this update resolved to.
-        sync_update_manager_channel "$conf"
-        # Remove options not supported by type: web (persistent_files,
-        # managed_services, install_script) that cause Moonraker warnings.
-        cleanup_unsupported_options "$conf"
+        local stanza_file
+        while IFS= read -r stanza_file; do
+            [ -n "$stanza_file" ] || continue
+            log_info "update_manager section already exists in $stanza_file"
+            # channel: is only ever written when the section is first added, so
+            # rewrite it to whatever this update resolved to.
+            sync_update_manager_channel "$stanza_file"
+            # Remove options not supported by type: web (persistent_files,
+            # managed_services, install_script) that cause Moonraker warnings.
+            cleanup_unsupported_options "$stanza_file"
+        done <<STANZA_FILES
+$stanza_files
+STANZA_FILES
         # Where the OS has no package manager, silence the provider warnings.
         disable_system_updates_on_buildroot "$conf"
         # Still ensure asvc is correct even if section already exists
@@ -8460,15 +8623,30 @@ configure_moonraker_updates() {
     restart_moonraker
 }
 
-# Remove update_manager section from moonraker.conf
+# Remove [update_manager helixscreen] from conf @1, or with no argument from
+# every file Moonraker reads it from: find_moonraker_conf and the files its
+# [include] lines reach.
 # Called during uninstallation
 remove_update_manager_section() {
-    local conf
-    conf=$(find_moonraker_conf)
-
-    if [ -z "$conf" ]; then
-        return 0
+    if [ -n "${1:-}" ]; then
+        _remove_update_manager_section_from "$1"
+        return
     fi
+    local conf stanza_file
+    conf=$(find_moonraker_conf)
+    [ -n "$conf" ] || return 0
+    while IFS= read -r stanza_file; do
+        [ -n "$stanza_file" ] || continue
+        _remove_update_manager_section_from "$stanza_file"
+    done <<STANZA_FILES
+$(update_manager_stanza_files "$conf")
+STANZA_FILES
+}
+
+# Remove [update_manager helixscreen] and the comment block the installer
+# writes above it from conf @1.
+_remove_update_manager_section_from() {
+    local conf="$1"
 
     if ! has_update_manager_section "$conf"; then
         return 0
