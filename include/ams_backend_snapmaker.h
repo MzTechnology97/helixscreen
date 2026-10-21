@@ -594,6 +594,19 @@ class AmsBackendSnapmaker : public AmsSubscriptionBackend {
     /// a different question ("did the ACTIVE lane run out during extrusion").
     std::array<bool, NUM_TOOLS> loaded_at_toolhead_{{false, false, false, false}};
 
+    /// Per channel: the last channel_state and channel_action_state a frame
+    /// carried. Status frames are deltas, and an op that settles in one frame
+    /// reports its outcome only as a channel_action_state change while the
+    /// channel rests. Under mutex_.
+    std::array<std::string, NUM_TOOLS> held_channel_state_{};
+    std::array<std::string, NUM_TOOLS> held_channel_action_state_{};
+
+    /// Per channel: the last in-progress channel_state was a preload_*. A
+    /// preload ends at preload_finish; any other op merely rests there (an
+    /// unload heats with the channel still at preload_finish), so only this
+    /// lets preload_finish resolve the op. Under mutex_.
+    std::array<bool, NUM_TOOLS> preload_in_flight_{};
+
     /// Validate slot index is within range
     AmsError validate_slot_index(int slot_index) const;
 

@@ -29,6 +29,7 @@
 #include <cctype>
 #include <lvgl.h>
 #include <memory>
+#include <optional>
 #include <string_view>
 #include <utility>
 #include <vector>
@@ -297,6 +298,40 @@ struct ChannelStateInfo {
                   "phase={}",
                   state, ams_action_to_string(info.action), info.phase);
     return info;
+}
+
+// The op outcome a resting channel reports only through channel_action_state.
+//
+// The firmware sets an op's terminal and its resting state (wait_insert,
+// preload_finish) in one reactor tick, and a status frame carries only the
+// last channel_state. channel_action_state keeps the op's own last step at
+// rest, so it stands in when the channel rests and it moved to a *_finish or
+// *_fail since the previous frame. An unchanged value is the previous op's
+// outcome and says nothing about the current one, and the first value a
+// channel reports is an op that ended before anyone was watching.
+//
+// Returns the state to drive the op lifecycle with, or nullopt to use
+// channel_state. preload_finish is a resting state here, never an outcome,
+// although the table marks it terminal for the latch: an unload heats with the
+// channel still there, and only the parse knows whether a preload was running.
+[[nodiscard]] std::optional<std::string> settled_op_outcome(const std::string& channel_state,
+                                                            const std::string& prev_action_state,
+                                                            const std::string& action_state) {
+    if (channel_state.empty() || prev_action_state.empty() || action_state == prev_action_state) {
+        return std::nullopt;
+    }
+    auto ends_op = [](const ChannelStateInfo& info, const std::string& s) {
+        return info.is_terminal && s != "preload_finish";
+    };
+    const ChannelStateInfo resting = classify_channel_state(channel_state);
+    if (resting.action != AmsAction::IDLE || resting.ignore || ends_op(resting, channel_state)) {
+        return std::nullopt;
+    }
+    const ChannelStateInfo outcome = classify_channel_state(action_state);
+    if (!ends_op(outcome, action_state) && !outcome.is_fail) {
+        return std::nullopt;
+    }
+    return action_state;
 }
 
 } // namespace
@@ -1424,6 +1459,38 @@ void AmsBackendSnapmaker::handle_status_update(const nlohmann::json& notificatio
                         auto error = helix::json_util::safe_string(ch, "channel_error", "ok");
                         const ChannelStateInfo info = classify_channel_state(state);
 
+                        // The op lifecycle and error surfacing read the op's
+                        // outcome; the latch and the step bar read where the
+                        // filament is. They differ only when the outcome
+                        // survives in channel_action_state alone. Both fields
+                        // are held across delta frames that omit them.
+                        if (!state.empty()) {
+                            held_channel_state_[i] = state;
+                        }
+                        const std::string prev_action_state = held_channel_action_state_[i];
+                        const auto action_it = ch.find("channel_action_state");
+                        if (action_it != ch.end() && action_it->is_string()) {
+                            held_channel_action_state_[i] =
+                                action_it->get_ref<const std::string&>();
+                        }
+                        const std::optional<std::string> settled_outcome =
+                            settled_op_outcome(held_channel_state_[i], prev_action_state,
+                                               held_channel_action_state_[i]);
+                        const std::string& op_state = settled_outcome ? *settled_outcome : state;
+                        const ChannelStateInfo op_info =
+                            settled_outcome ? classify_channel_state(op_state) : info;
+                        // A preload ends at preload_finish; any other op merely
+                        // rests there (an unload heats with the channel still at
+                        // preload_finish, and a load can report it mid-feed).
+                        const bool preload_ends_op =
+                            !settled_outcome && state == "preload_finish" && preload_in_flight_[i];
+                        if (info.action == AmsAction::LOADING ||
+                            info.action == AmsAction::UNLOADING) {
+                            preload_in_flight_[i] = state.rfind("preload_", 0) == 0;
+                        } else if (!state.empty()) {
+                            preload_in_flight_[i] = false;
+                        }
+
                         // Mirror the granular firmware sub-phase into the system
                         // info so the sidebar step bar can show the real
                         // Home/Select/Heat/Move sequence. -1 for any non-active
@@ -1470,39 +1537,39 @@ void AmsBackendSnapmaker::handle_status_update(const nlohmann::json& notificatio
                         // empty-lane guard applies to it as to the no_filament token).
                         const bool has_error_token =
                             error != "ok" && !error.empty() && error != "none";
-                        if (has_error_token || info.is_fail) {
+                        if (has_error_token || op_info.is_fail) {
                             const auto* slot = system_info_.units[0].get_slot(i);
                             const bool lane_empty = slot == nullptr || !slot->is_present();
                             const bool active_lane =
                                 system_info_.current_slot == i || system_info_.current_tool == i;
-                            const bool op_in_progress = info.action == AmsAction::LOADING ||
-                                                        info.action == AmsAction::UNLOADING;
+                            const bool op_in_progress = op_info.action == AmsAction::LOADING ||
+                                                        op_info.action == AmsAction::UNLOADING;
                             if (lane_empty && !op_in_progress && !active_lane) {
                                 spdlog::debug(
                                     "[AmsBackendSnapmaker] ignoring error (token='{}' state='{}') "
                                     "on idle empty lane {} (not operating, not active)",
-                                    error, state, i);
+                                    error, op_state, i);
                             } else {
                                 system_info_.action = AmsAction::ERROR;
                                 system_info_.operation_detail =
                                     has_error_token ? friendly_channel_error(error, i)
-                                                    : friendly_channel_state_fail(state, i);
+                                                    : friendly_channel_state_fail(op_state, i);
                                 changed = true;
                             }
-                        } else if (!state.empty() && !info.ignore) {
+                        } else if (!op_state.empty() && !op_info.ignore) {
                             // No error — drive the action / operation lifecycle from
                             // the classifier.
-                            if (info.action == AmsAction::LOADING) {
+                            if (op_info.action == AmsAction::LOADING) {
                                 if (system_info_.action != AmsAction::LOADING) {
                                     system_info_.action = AmsAction::LOADING;
                                     changed = true;
                                 }
-                            } else if (info.action == AmsAction::UNLOADING) {
+                            } else if (op_info.action == AmsAction::UNLOADING) {
                                 if (system_info_.action != AmsAction::UNLOADING) {
                                     system_info_.action = AmsAction::UNLOADING;
                                     changed = true;
                                 }
-                            } else if (info.is_terminal) {
+                            } else if (op_info.is_terminal) {
                                 // A *_finish state resolves the operation.
                                 // unload_finish and preload_finish both retract
                                 // filament out of the toolhead: demote the slot from
@@ -1527,7 +1594,7 @@ void AmsBackendSnapmaker::handle_status_update(const nlohmann::json& notificatio
                                 // filament_loaded is the right signal for "no
                                 // filament at the nozzle"; current_slot tracks the
                                 // picked-up tool, full stop.
-                                if (info.clears_loaded) {
+                                if (op_info.clears_loaded) {
                                     auto* slot = system_info_.units[0].get_slot(i);
                                     if (slot && slot->status == SlotStatus::LOADED) {
                                         slot->status = SlotStatus::AVAILABLE;
@@ -1539,7 +1606,7 @@ void AmsBackendSnapmaker::handle_status_update(const nlohmann::json& notificatio
                                         changed = true;
                                     }
                                 }
-                                if (state == "unload_finish") {
+                                if (op_state == "unload_finish") {
                                     // Deferred to after the lock for the same
                                     // reason emit_event is: this reaches into
                                     // AmsState, which takes its own mutex, while
@@ -1549,14 +1616,12 @@ void AmsBackendSnapmaker::handle_status_update(const nlohmann::json& notificatio
                                     // reported the deadlock (nightly, 2026-08-16).
                                     unloaded_lanes.push_back(i);
                                 }
-                                // preload_finish is terminal-for-latch but does NOT
-                                // end the op: a lane already at preload_finish that
-                                // the user re-unloads keeps channel_state=preload_finish
-                                // while the nozzle heats, and dropping to IDLE here
-                                // killed the unload step display mid-heat
-                                // (#u1-unload-steps). Only the true terminals resolve
-                                // the action to IDLE.
-                                if (state != "preload_finish") {
+                                // preload_finish is terminal-for-latch but ends
+                                // only a preload: a lane already at preload_finish
+                                // that the user re-unloads keeps that channel_state
+                                // while the nozzle heats, and the unload's step
+                                // display must survive it (#u1-unload-steps).
+                                if (op_state != "preload_finish" || preload_ends_op) {
                                     if (system_info_.action == AmsAction::LOADING ||
                                         system_info_.action == AmsAction::UNLOADING) {
                                         system_info_.action = AmsAction::IDLE;
@@ -1568,8 +1633,10 @@ void AmsBackendSnapmaker::handle_status_update(const nlohmann::json& notificatio
                             }
                             // IDLE non-terminal (none / inited / wait_insert): leave
                             // the action untouched — a stray idle mid-op must not
-                            // clobber an in-progress LOADING/UNLOADING. The latch
-                            // already handled wait_insert's clear above.
+                            // clobber an in-progress LOADING/UNLOADING. The op's own
+                            // outcome, when a resting state hides it, arrives as
+                            // settled_outcome above. The latch already handled
+                            // wait_insert's clear.
                         }
 
                         // Diagnostic: trace the firmware channel_state sequence during
@@ -1578,10 +1645,10 @@ void AmsBackendSnapmaker::handle_status_update(const nlohmann::json& notificatio
                         // The on-screen step bar / status was dropping to Idle before the
                         // physical unload finished; the real event order is firmware-
                         // specific and was previously unlogged. (#u1-unload-steps)
-                        if (!state.empty()) {
+                        if (!state.empty() || settled_outcome) {
                             spdlog::debug("[AmsBackendSnapmaker] tool {} channel_state='{}' "
-                                          "error='{}' -> action={} current_slot={}",
-                                          i, state, error,
+                                          "op_state='{}' error='{}' -> action={} current_slot={}",
+                                          i, state, op_state, error,
                                           ams_action_to_string(system_info_.action),
                                           system_info_.current_slot);
                         }
