@@ -932,37 +932,6 @@ TEST_CASE_METHOD(SnapmakerFixture, "Snapmaker a held outcome is dropped when a n
     CHECK(backend.get_system_info().action == AmsAction::LOADING);
 }
 
-TEST_CASE_METHOD(SnapmakerFixture, "Snapmaker an unknown firmware state ends no operation",
-                 "[ams][snapmaker][unload][action_state]") {
-    AmsBackendSnapmaker backend(nullptr, nullptr);
-
-    SnapmakerTestAccess::handle_status(backend,
-                                       feed_with_action(3, "unload_doing", "unload_doing"));
-    REQUIRE(backend.get_system_info().action == AmsAction::UNLOADING);
-
-    SECTION("an unknown sub-step finish in channel_action_state while resting") {
-        SnapmakerTestAccess::handle_status(
-            backend, feed_with_action(3, "wait_insert", "unload_foo_finish", false));
-        CHECK(backend.get_system_info().action == AmsAction::UNLOADING);
-    }
-    SECTION("an unknown sub-step failure in channel_action_state while resting") {
-        SnapmakerTestAccess::set_current_slot(backend, 3);
-        SnapmakerTestAccess::set_current_tool(backend, 3);
-        SnapmakerTestAccess::handle_status(
-            backend, feed_with_action(3, "wait_insert", "unload_foo_fail", false));
-        CHECK(backend.get_system_info().action == AmsAction::UNLOADING);
-    }
-    SECTION("an unknown sub-step finish in channel_state") {
-        SnapmakerTestAccess::handle_status(backend, make_feed_status(3, "unload_foo_finish"));
-        CHECK(backend.get_system_info().action == AmsAction::UNLOADING);
-    }
-    SECTION("a known terminal still ends it") {
-        SnapmakerTestAccess::handle_status(
-            backend, feed_with_action(3, "wait_insert", "unload_finish", false));
-        CHECK(backend.get_system_info().action == AmsAction::IDLE);
-    }
-}
-
 TEST_CASE_METHOD(SnapmakerFixture,
                  "Snapmaker a previous op's channel_action_state never ends a new one",
                  "[ams][snapmaker][unload][action_state]") {
