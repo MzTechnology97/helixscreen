@@ -7435,6 +7435,19 @@ TEST_CASE("AFC no-op load resolves on the macro ack", "[ams][afc][dispatch][1183
     REQUIRE(h.trace().back() == AmsAction::IDLE);
 }
 
+TEST_CASE("AFC forgets a dispatched operation on a Klipper restart",
+          "[ams][afc][dispatch][klipper_restart_expiry]") {
+    AfcDispatchAckHelper h;
+    REQUIRE(h.load_filament(2).success());
+    REQUIRE(h.has_pending_dispatch());
+
+    h.on_klipper_restarted();
+
+    CHECK(h.action() == AmsAction::IDLE);
+    CHECK_FALSE(h.has_pending_dispatch());
+    CHECK(h.operation_detail().empty());
+}
+
 TEST_CASE("AFC declining the pre-load home confirmation fully unwinds the optimistic dispatch "
           "(final-review I2)",
           "[ams][afc][dispatch][homing][confirm]") {

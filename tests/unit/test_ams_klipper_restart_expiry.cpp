@@ -12,17 +12,21 @@
 #include "../test_helpers/ad5x_ifs_test_access.h"
 #include "../test_helpers/afc_test_access.h"
 #include "../test_helpers/cfs_test_access.h"
+#include "../test_helpers/toolchanger_test_access.h"
 #include "../test_helpers/update_queue_test_access.h"
 #include "ams_backend_ad5x_ifs.h"
 #include "ams_backend_afc.h"
 #include "ams_backend_cfs.h"
 #include "ams_backend_mock.h"
+#include "ams_backend_toolchanger.h"
 #include "ams_state.h"
 #include "ams_types.h"
 #include "app_globals.h"
 #include "printer_state.h"
 
+#include <functional>
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "../catch_amalgamated.hpp"
@@ -86,6 +90,27 @@ class KlipperBootFixture : public LVGLTestFixture {
     void settle() {
         helix::ui::UpdateQueueTestAccess::drain_all(helix::ui::UpdateQueue::instance());
     }
+};
+
+/// A tool changer whose macro acks only when the test says so, so a dispatch
+/// stays armed across a restart.
+class HeldAckToolChanger : public AmsBackendToolChanger {
+  public:
+    HeldAckToolChanger() : AmsBackendToolChanger(nullptr, nullptr) {}
+
+    AmsError execute_gcode(const std::string& /*gcode*/) override {
+        return AmsErrorHelper::success();
+    }
+    AmsError execute_gcode(const std::string& /*gcode*/,
+                           std::function<void()> on_complete) override {
+        held_ack = std::move(on_complete);
+        return AmsErrorHelper::success();
+    }
+    bool toolhead_homed() const override {
+        return true;
+    }
+
+    std::function<void()> held_ack;
 };
 
 } // namespace
@@ -187,4 +212,19 @@ TEST_CASE_METHOD(KlipperRestartFixture, "A new printer's first READY is a connec
 
     restart_klipper();
     CHECK(backend->restarts == 1);
+}
+
+TEST_CASE_METHOD(KlipperRestartFixture,
+                 "A tool changer forgets its dispatched operation on a Klipper restart",
+                 "[ams][toolchanger][klipper_restart_expiry]") {
+    HeldAckToolChanger backend;
+    REQUIRE(ToolChangerTestAccess::call_dispatch_operation(backend, "SELECT_TOOL T=1",
+                                                           AmsAction::SELECTING)
+                .success());
+    REQUIRE(ToolChangerTestAccess::has_pending_dispatch(backend));
+
+    backend.on_klipper_restarted();
+
+    CHECK(backend.get_current_action() == AmsAction::IDLE);
+    CHECK_FALSE(ToolChangerTestAccess::has_pending_dispatch(backend));
 }

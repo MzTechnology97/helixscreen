@@ -996,6 +996,15 @@ void AmsBackendToolChanger::on_home_confirmation_declined() {
     abandon_dispatch(generation);
 }
 
+void AmsBackendToolChanger::on_klipper_restarted() {
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        pending_dispatch_action_.reset();
+        ++dispatch_generation_;
+    }
+    AmsSubscriptionBackend::on_klipper_restarted();
+}
+
 void AmsBackendToolChanger::abandon_dispatch(uint64_t generation) {
     {
         std::lock_guard<std::mutex> lock(mutex_);

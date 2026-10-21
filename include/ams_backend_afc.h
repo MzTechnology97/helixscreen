@@ -325,6 +325,9 @@ class AmsBackendAfc : public AmsSubscriptionBackend {
         return true;
     }
     AmsError cancel() override;
+    /// Also drops the dispatch awaiting its macro's ack and retires its
+    /// generation, so the late ack resolves nothing.
+    void on_klipper_restarted() override;
 
     // Configuration
     AmsError set_slot_info(int slot_index, const SlotInfo& info, bool persist = true) override;
