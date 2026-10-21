@@ -91,15 +91,6 @@ bool deadline_pending(const std::atomic<uint32_t>& deadline_ms) {
 /// polling faster only burns timer ticks.
 constexpr uint32_t RECOVERY_RECHECK_RETRY_MS = 2000;
 
-/// Whether a restart that answered with @p err may still be under way. Klipper
-/// going down fails every pending request with CONNECTION_LOST, the restart's
-/// own reply among them, and a TIMEOUT says nothing either way; only an answer
-/// that proves the command never reached Klipper ends the restart.
-bool restart_may_be_running(const MoonrakerError& err) {
-    return err.type == MoonrakerErrorType::CONNECTION_LOST ||
-           err.type == MoonrakerErrorType::TIMEOUT;
-}
-
 /// How many declined re-checks before the latch stops re-arming (~30s at the
 /// cadence above). One of those guards has no bound of its own - the setup
 /// wizard is up for as long as the user takes over it - and a timer cycling for
@@ -838,7 +829,7 @@ void EmergencyStopOverlay::restart_klipper() {
         },
         [](const MoonrakerError& err) {
             spdlog::error("[KlipperRecovery] Klipper restart failed: {}", err.message);
-            if (!restart_may_be_running(err)) {
+            if (!helix::restart_may_be_running(err)) {
                 EmergencyStopOverlay::instance().end_restart_window();
             }
             ToastManager::instance().show(ToastSeverity::ERROR,
@@ -876,7 +867,7 @@ void EmergencyStopOverlay::firmware_restart() {
         },
         [](const MoonrakerError& err) {
             spdlog::error("[KlipperRecovery] Recovery failed: {}", err.message);
-            if (!restart_may_be_running(err)) {
+            if (!helix::restart_may_be_running(err)) {
                 EmergencyStopOverlay::instance().end_restart_window();
             }
             ToastManager::instance().show(

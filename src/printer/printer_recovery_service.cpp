@@ -36,6 +36,11 @@ bool firmware_restart_unrecoverable(const MoonrakerError& err) {
 
 } // namespace
 
+bool restart_may_be_running(const MoonrakerError& err) {
+    return err.type == MoonrakerErrorType::CONNECTION_LOST ||
+           err.type == MoonrakerErrorType::TIMEOUT;
+}
+
 bool PrinterRecoveryService::local_recovery_available() {
     const auto path = local_recovery_script_path();
     if (path.empty())
@@ -171,20 +176,32 @@ void PrinterRecoveryService::recover(SuccessCallback on_success, ErrorCallback o
     // klippy it's the fastest path. If klippy is dead, the 503 short-circuits
     // us to step 2. We log the distinction between "expected dead path" (503,
     // -32601) and unexpected failures, but escalate identically — the user
-    // clicked "restart" and we should exhaust the chain before giving up.
+    // clicked "restart" and we should exhaust the chain before giving up. A
+    // lost reply is the exception: the restart may be running, and the
+    // caller's in-flight window covers it.
     spdlog::info("[Recovery] Trying printer.firmware_restart");
-    api_->restart_firmware(on_success, [run_local_then_services](const MoonrakerError& err) {
-        if (firmware_restart_unrecoverable(err)) {
-            spdlog::info("[Recovery] firmware_restart not viable "
-                         "(code={} msg='{}') — escalating",
-                         err.code, err.message);
-        } else {
-            spdlog::warn("[Recovery] firmware_restart hard-failed: {} — "
-                         "escalating anyway",
-                         err.message);
-        }
-        run_local_then_services();
-    });
+    api_->restart_firmware(
+        on_success, [run_local_then_services, on_error](const MoonrakerError& err) {
+            // A second restart through the fallbacks would land on a Klipper still
+            // coming up from this one and can leave it halted on a busy serial port.
+            if (restart_may_be_running(err)) {
+                spdlog::warn("[Recovery] firmware_restart reply lost ({}) — the restart may be "
+                             "running, not escalating",
+                             err.message);
+                on_error(err);
+                return;
+            }
+            if (firmware_restart_unrecoverable(err)) {
+                spdlog::info("[Recovery] firmware_restart not viable "
+                             "(code={} msg='{}') — escalating",
+                             err.code, err.message);
+            } else {
+                spdlog::warn("[Recovery] firmware_restart hard-failed: {} — "
+                             "escalating anyway",
+                             err.message);
+            }
+            run_local_then_services();
+        });
 }
 
 } // namespace helix

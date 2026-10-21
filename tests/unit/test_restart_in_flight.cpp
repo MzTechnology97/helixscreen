@@ -16,6 +16,7 @@
 #include "../ui_test_utils.h"
 #include "moonraker_api_mock.h"
 #include "moonraker_error.h"
+#include "printer_recovery_service.h"
 #include "printer_state.h"
 
 #include <optional>
@@ -38,6 +39,7 @@ class CountingRestartApi : public MoonrakerAPIMock {
 
     int klipper_restarts = 0;
     int firmware_restarts = 0;
+    int service_restarts = 0;
     /// When set, every restart the API is asked for fails with this error.
     std::optional<MoonrakerError> fail_with;
 
@@ -51,10 +53,12 @@ class CountingRestartApi : public MoonrakerAPIMock {
     }
     void restart_firmware(SuccessCallback /*on_success*/, ErrorCallback on_error) override {
         ++firmware_restarts;
-        on_error(MoonrakerError::connection_lost("printer.firmware_restart"));
+        on_error(fail_with ? *fail_with
+                           : MoonrakerError::connection_lost("printer.firmware_restart"));
     }
     void restart_service(const std::string& /*service*/, SuccessCallback on_success,
                          ErrorCallback on_error) override {
+        ++service_restarts;
         if (fail_with) {
             on_error(*fail_with);
             return;
@@ -247,4 +251,39 @@ TEST_CASE_METHOD(RestartInFlightFixture,
         CHECK(counting_api.firmware_restarts == 1);
     }
     CHECK(toasted("A restart is already in progress"));
+}
+
+TEST_CASE_METHOD(RestartInFlightFixture,
+                 "A firmware restart whose reply was dropped escalates no further",
+                 "[recovery][restart_in_flight]") {
+    // The restart may be running: a second restart through the services
+    // fallback would land on a Klipper still coming up.
+    std::optional<MoonrakerError> reported;
+    SECTION("connection lost") {
+        counting_api.fail_with = MoonrakerError::connection_lost("printer.firmware_restart");
+    }
+    SECTION("timed out") {
+        counting_api.fail_with = MoonrakerError::timeout("printer.firmware_restart", 30000);
+    }
+
+    helix::PrinterRecoveryService recovery(&counting_api);
+    recovery.recover([] {}, [&reported](const MoonrakerError& err) { reported = err; });
+    settle();
+
+    CHECK(counting_api.firmware_restarts == 1);
+    CHECK(counting_api.service_restarts == 0);
+    REQUIRE(reported.has_value());
+    CHECK(reported->type == counting_api.fail_with->type);
+}
+
+TEST_CASE_METHOD(RestartInFlightFixture, "A firmware restart Moonraker refused still escalates",
+                 "[recovery][restart_in_flight]") {
+    counting_api.fail_with = MoonrakerError::json_rpc_error("printer.firmware_restart", "refused");
+
+    helix::PrinterRecoveryService recovery(&counting_api);
+    recovery.recover([] {}, [](const MoonrakerError&) {});
+    settle();
+
+    CHECK(counting_api.firmware_restarts == 1);
+    CHECK(counting_api.service_restarts == 1);
 }

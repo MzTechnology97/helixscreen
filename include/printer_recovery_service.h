@@ -42,6 +42,12 @@ namespace helix {
 ///
 /// Lifetime: stateless free-standing helper, owned wherever it's invoked from
 /// (typically the EmergencyStopOverlay or a toast action callback).
+/// Whether a restart that answered with @p err may still be under way. Klipper
+/// going down fails every pending request with CONNECTION_LOST, the restart's
+/// own reply among them, and a TIMEOUT says nothing either way; only an answer
+/// that proves the command never reached Klipper ends the restart.
+[[nodiscard]] bool restart_may_be_running(const MoonrakerError& err);
+
 class PrinterRecoveryService {
   public:
     using SuccessCallback = std::function<void()>;
