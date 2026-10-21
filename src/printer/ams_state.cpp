@@ -679,13 +679,19 @@ void AmsState::install_klippy_state_observer() {
     // ahead of rediscovery's subscribe, which UpdateQueue runs in order.
     klippy_state_observer_.reset();
     last_klippy_state_ = -1;
+    klippy_ready_seen_ = false;
     klippy_state_observer_ = helix::ui::observe_int_sync<AmsState>(
         get_printer_state().get_klippy_state_subject(), this,
         [](AmsState* self, int state) {
             const int prev = self->last_klippy_state_;
             self->last_klippy_state_ = state;
             constexpr int kReady = static_cast<int>(KlippyState::READY);
-            if (state != kReady || prev == -1 || prev == kReady) {
+            if (state != kReady) {
+                return;
+            }
+            const bool seen = self->klippy_ready_seen_;
+            self->klippy_ready_seen_ = true;
+            if (!seen || prev == -1 || prev == kReady) {
                 return;
             }
             for (int i = 0; i < self->backend_count(); ++i) {
@@ -825,7 +831,10 @@ void AmsState::init_backends_from_hardware(const helix::PrinterDiscovery& hardwa
 void AmsState::set_backend(std::unique_ptr<AmsBackend> backend) {
     std::lock_guard<std::recursive_mutex> lock(mutex_);
 
+    // Swapping the backend object is not a new printer.
+    const bool ready_seen = klippy_ready_seen_;
     clear_backends();
+    klippy_ready_seen_ = ready_seen;
 
     if (backend) {
         auto type = backend->get_type();
@@ -899,6 +908,10 @@ int AmsState::backend_count() const {
 
 void AmsState::clear_backends() {
     std::lock_guard<std::recursive_mutex> lock(mutex_);
+
+    // Backends go when the printer does: the next READY is the next printer's
+    // connect.
+    klippy_ready_seen_ = false;
 
     // Unregister all FilamentConsumptionTracker sinks tied to these backends
     // BEFORE tearing down the backends themselves — the sinks will read each

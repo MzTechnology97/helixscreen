@@ -1879,6 +1879,10 @@ class AmsState {
     ObserverGuard klippy_state_observer_;
     /// The klippy_state the observer last saw; -1 before its first fire.
     int last_klippy_state_ = -1;
+    /// This printer has reported READY at least once. Until it has, a READY
+    /// is the connect, not a restart: the subject starts at SHUTDOWN, and a
+    /// printer can be mid-operation when the app or a new host first sees it.
+    bool klippy_ready_seen_ = false;
 
     /// Wire (or rewire) klippy_state_observer_. Idempotent.
     void install_klippy_state_observer();

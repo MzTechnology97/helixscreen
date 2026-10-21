@@ -66,6 +66,28 @@ class KlipperRestartFixture : public LVGLTestFixture {
     }
 };
 
+/// The app's own start: the klippy_state subject holds its SHUTDOWN default
+/// until Moonraker reports, so the first READY is a connect.
+class KlipperBootFixture : public LVGLTestFixture {
+  public:
+    KlipperBootFixture() {
+        get_printer_state().init_subjects(false);
+        get_printer_state().set_klippy_state_sync(KlippyState::SHUTDOWN);
+        AmsState::instance().init_subjects(true);
+        settle();
+    }
+
+    ~KlipperBootFixture() override {
+        AmsState::instance().set_backend(nullptr);
+        get_printer_state().set_klippy_state_sync(KlippyState::READY);
+        settle();
+    }
+
+    void settle() {
+        helix::ui::UpdateQueueTestAccess::drain_all(helix::ui::UpdateQueue::instance());
+    }
+};
+
 } // namespace
 
 TEST_CASE_METHOD(KlipperRestartFixture, "Klipper coming back ready ends the backends' operations",
@@ -129,4 +151,40 @@ TEST_CASE_METHOD(KlipperRestartFixture, "CFS ends its operation and phase tracki
 
     CHECK(backend.get_current_action() == AmsAction::IDLE);
     CHECK_FALSE(CfsTestAccess::phase_active(backend));
+}
+
+TEST_CASE_METHOD(KlipperBootFixture, "The first READY after the app starts is a connect",
+                 "[ams][klipper_restart_expiry]") {
+    auto owned = std::make_unique<RestartRecordingBackend>();
+    auto* backend = owned.get();
+    AmsState::instance().set_backend(std::move(owned));
+
+    get_printer_state().set_klippy_state_sync(KlippyState::READY);
+    settle();
+    CHECK(backend->restarts == 0);
+
+    get_printer_state().set_klippy_state_sync(KlippyState::STARTUP);
+    get_printer_state().set_klippy_state_sync(KlippyState::READY);
+    settle();
+    CHECK(backend->restarts == 1);
+}
+
+TEST_CASE_METHOD(KlipperRestartFixture, "A new printer's first READY is a connect",
+                 "[ams][klipper_restart_expiry]") {
+    // The change-host path: the old printer's backends go, Klipper reads as
+    // down until the new host reports, and its backends arrive with discovery.
+    settle();
+    AmsState::instance().clear_backends();
+    get_printer_state().set_klippy_state_sync(KlippyState::SHUTDOWN);
+    settle();
+    auto owned = std::make_unique<RestartRecordingBackend>();
+    auto* backend = owned.get();
+    AmsState::instance().add_backend(std::move(owned));
+
+    get_printer_state().set_klippy_state_sync(KlippyState::READY);
+    settle();
+    CHECK(backend->restarts == 0);
+
+    restart_klipper();
+    CHECK(backend->restarts == 1);
 }
