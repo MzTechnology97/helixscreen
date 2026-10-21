@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **The installer sees Klipper and Moonraker on systemd firmware** - on hosts such as a K2
+  running k2-improvements, the installer warned that Klipper and Moonraker were not running
+  when they were. It now checks the running processes and systemd services properly, and
+  no longer mistakes a log viewer, KlipperScreen or moonraker-obico for Klipper or
+  Moonraker.
+- **Update channel changes reach a stanza in an included file** - when
+  `[update_manager helixscreen]` lives in a file moonraker.conf includes (such as
+  mainsail.conf), the installer now updates and removes it there instead of adding a
+  second copy to moonraker.conf.
 - **Updates install on systemd printers that run HelixScreen as root** - on a K2 running
   systemd-based custom firmware (and any other root install under systemd), Install Update
   stopped at **Error: cannot write the service file in /etc/systemd/system**. The check
