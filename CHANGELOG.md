@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **ACE feed assist and manual feed/retract work on the Kobra-S1/ACEPRO driver** - the
+  Feed assist toggle and the manual feed and retract buttons failed with "Must specify
+  either T=<tool> or INSTANCE=<inst> INDEX=<slot>". They now name the ACE unit and its slot.
+  ValgACE and the native driver are unchanged. (#1821)
+- **Label printing to IPP printers and CUPS shares** - printers that send an interim
+  "100 Continue" (such as Canon PIXMA) no longer fail with **HTTP error: 100 Continue**, and
+  a printer shared through CUPS prints to the queue path it advertises instead of failing
+  with client-error-not-found. (#1822)
+- **AFC toolchangers load and change to the right toolhead** - Load and tool change named a
+  toolhead by position, so on setups where AFC's tool numbers don't follow extruder order
+  (a Snapmaker U1 with a ViViD, for example) they picked the wrong head. They now send
+  `CHANGE_TOOL LANE=` and `T<n>` and let AFC choose the head. (#1824)
 - **The installer sees Klipper and Moonraker on systemd firmware** - on hosts such as a K2
   running k2-improvements, the installer warned that Klipper and Moonraker were not running
   when they were. It now checks the running processes and systemd services properly, and
