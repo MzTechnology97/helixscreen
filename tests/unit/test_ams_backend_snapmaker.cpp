@@ -1034,6 +1034,32 @@ TEST_CASE_METHOD(SnapmakerKlipperRestartFixture,
 }
 
 TEST_CASE_METHOD(SnapmakerFixture,
+                 "Snapmaker an unload settled by channel_action_state demotes the loaded slot",
+                 "[ams][snapmaker][unload][action_state]") {
+    // The channel rests in a state that clears nothing itself (none), so only
+    // the unload_finish carried by channel_action_state can say the filament
+    // left the toolhead.
+    AmsBackendSnapmaker backend(nullptr, nullptr);
+    SnapmakerTestAccess::handle_status(
+        backend, json{{"toolhead", json{{"extruder", "extruder"}}},
+                      {"print_task_config",
+                       json{{"filament_exist", json::array({true, false, false, false})}}}});
+    SnapmakerTestAccess::handle_status(backend, make_feed_status(0, "load_finish"));
+    REQUIRE(backend.get_slot_info(0).status == SlotStatus::LOADED);
+    REQUIRE(backend.get_system_info().filament_loaded);
+
+    SnapmakerTestAccess::handle_status(backend,
+                                       feed_with_action(0, "unload_doing", "unload_doing"));
+    REQUIRE(backend.get_system_info().action == AmsAction::UNLOADING);
+
+    SnapmakerTestAccess::handle_status(backend, feed_with_action(0, "none", "unload_finish"));
+
+    CHECK(backend.get_system_info().action == AmsAction::IDLE);
+    CHECK(backend.get_slot_info(0).status == SlotStatus::AVAILABLE);
+    CHECK_FALSE(backend.get_system_info().filament_loaded);
+}
+
+TEST_CASE_METHOD(SnapmakerFixture,
                  "Snapmaker a previous op's channel_action_state never ends a new one",
                  "[ams][snapmaker][unload][action_state]") {
     AmsState::instance().clear_backends();
