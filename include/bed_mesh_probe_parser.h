@@ -100,7 +100,9 @@ struct ProbePosition {
  * passes MESH_MIN/MESH_MAX overrides (or ADAPTIVE=1) and bed_mesh.py reduces
  * the grid from configfile defaults.
  *
- * Format: "Adapted probe count: N,M" (preceded by "// " in gcode_response).
+ * Format: "Adapted probe count: (N,M)" from stock Klipper's bed_mesh.py, or
+ * "Adapted probe count: N,M." from KAMP's verbose macro; both are preceded by
+ * "// " in gcode_response.
  * The total = N * M, fired once before the first probe — usable as a live
  * denominator on stock Klipper / Voron / KAMP setups.
  *
@@ -112,7 +114,7 @@ struct ProbePosition {
  * @return Total probe count (N * M) or std::nullopt
  */
 inline std::optional<int> parse_adapted_probe_count(const std::string& line) {
-    static const std::regex adapt_regex(R"(Adapted probe count:\s*(\d+)\s*,\s*(\d+))");
+    static const std::regex adapt_regex(R"(Adapted probe count:\s*\(?\s*(\d+)\s*,\s*(\d+))");
     std::smatch match;
     if (std::regex_search(line, match, adapt_regex) && match.size() == 3) {
         try {
