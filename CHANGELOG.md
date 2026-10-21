@@ -5,22 +5,182 @@ All notable changes to HelixScreen will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.6] - Unreleased
+## [1.0.6] - 2026-10-21
+
+<!-- whatsnew
+- No more frozen screen when Wi-Fi hangs, and fixes for crashes on reprint and camera stop
+- Filament systems recover from a Klipper restart instead of sticking on busy
+- Snapmaker U1, K2 Plus CFS, ACE and AFC fixes: resume, tool changes, box readings
+- Runout recovery heats the nozzle first; Cool Down turns off every toolhead
+- Updates and installs that failed on K1 and systemd printers now work, and say why
+-->
+
+1.0.6 is a maintenance release, mostly fixes ported from 1.1 that a 1.0 user would run
+into. The main themes:
+
+- **A screen that stays responsive.** A Wi-Fi driver that stops answering can no longer
+  freeze the touchscreen, and crashes on reprinting from History and on stopping a camera
+  are fixed.
+- **Recovering from a Klipper restart.** A load, unload or tool change caught by a
+  restart no longer leaves the filament system stuck on busy, and a second restart can't
+  be fired while the first one is still running.
+- **Filament systems doing what you asked.** The Snapmaker U1 resumes after a slot edit
+  and finishes its unloads, a K2 Plus CFS on community firmware shows each box's own
+  readings, ACE feed assist works on the Kobra-S1/ACEPRO driver, and AFC toolchangers
+  pick the right head.
+- **Safer runouts and cool-downs.** Runout dialogs heat a cold nozzle before Load,
+  Unload or Purge, and Cool Down turns off every toolhead on a toolchanger.
+- **Updates and installs that work, or say why not.** Updates install on systemd printers
+  that run HelixScreen as root, the installer works on a K1 and on hosts with systemd,
+  and a failed update shows its reason.
+- **A complete Android app**, with every filament system, screensavers and label printing
+  built in.
+
+### Added
+
+- **Tap a toolhead to switch tools** - on printers with more than one tool, tapping
+  another tool's head on the filament system's screen offers to switch to it. A new
+  **Confirm tool changes** setting (Settings > Safety, on by default) decides whether the
+  home screen's tool switcher, the filament screen's toolheads and the Filament screen's
+  tool list ask before the printer moves. A paused print always asks, and a running print
+  refuses the change.
+- **FLSUN T1 Pro detection** (#1781) - the T1 Pro is recognized and gets its own preset.
+- **SUNLU ABS and ASA in the filament catalog**, with SUNLU's published temperatures.
+
+### Changed
+
+- **Anonymous telemetry** (only when you have opted in) reports usage as the change since
+  the last report, keeps the unsent part across a power cut, and records why an update
+  failed.
 
 ### Fixed
 
-- **ACE feed assist and manual feed/retract work on the Kobra-S1/ACEPRO driver** - the
-  Feed assist toggle and the manual feed and retract buttons failed with "Must specify
+**Stability and recovery**
+
+- **The screen no longer freezes when Wi-Fi stops answering** - Wi-Fi scans, joins, the
+  radio switch and status checks now run in the background, so a hung Wi-Fi driver can't
+  lock up the touchscreen or drop the UI mid-scan. If the Wi-Fi service stops responding,
+  Network Settings says **WiFi isn't responding**, keeps the last network list, and checks
+  again on its own until the service recovers. Forget opens one dialog per tap. (#1023)
+- **A Klipper restart ends a stuck filament operation** (#1832) - a load or unload that was
+  in progress when Klipper restarted no longer leaves the filament system busy.
+- **Firmware Restart and Restart Klipper refuse a second restart** (#1832) - tapping
+  restart again while Klipper is still coming up could leave it halted. The second tap now
+  says a restart is already running and leaves the recovery dialog open to retry from.
+- **Crash reprinting from History** - reprinting a job could crash the app (seen on a
+  Creator 5 Pro).
+- **Crash stopping a camera on Android** - the app no longer aborts when a camera stream
+  takes too long to stop after switching printers.
+
+**Filament systems**
+
+- **ACE feed assist and manual feed/retract work on the Kobra-S1/ACEPRO driver** (#1821) -
+  the Feed assist toggle and the manual feed and retract buttons failed with "Must specify
   either T=<tool> or INSTANCE=<inst> INDEX=<slot>". They now name the ACE unit and its slot.
-  ValgACE and the native driver are unchanged. (#1821)
-- **Label printing to IPP printers and CUPS shares** - printers that send an interim
-  "100 Continue" (such as Canon PIXMA) no longer fail with **HTTP error: 100 Continue**, and
-  a printer shared through CUPS prints to the queue path it advertises instead of failing
-  with client-error-not-found. (#1822)
-- **AFC toolchangers load and change to the right toolhead** - Load and tool change named a
-  toolhead by position, so on setups where AFC's tool numbers don't follow extruder order
-  (a Snapmaker U1 with a ViViD, for example) they picked the wrong head. They now send
-  `CHANGE_TOOL LANE=` and `T<n>` and let AFC choose the head. (#1824)
+  ValgACE and the native driver are unchanged.
+- **AFC toolchangers load and change to the right toolhead** (#1824) - Load and tool change
+  named a toolhead by position, so on setups where AFC's tool numbers don't follow extruder
+  order (a Snapmaker U1 with a ViViD, for example) they picked the wrong head. They now send
+  `CHANGE_TOOL LANE=` and `T<n>` and let AFC choose the head.
+- **AFC toolchanges keep their progress** - the brief Idle AFC reports between the unload
+  and load of one tool change no longer clears the operation status or restarts the step
+  progress partway through the change.
+- **Large AFC setups** - every lane of a rig with up to 64 lanes is shown and tracked;
+  slots past 20 no longer grey out.
+- **Runout dialogs heat a cold nozzle first** - Load, Unload and Purge from a runout dialog
+  failed on a cold nozzle with "Extrude below minimum temp". They now heat to the
+  filament's temperature first, and cool back down after an idle operation.
+- **K2 Plus CFS on community firmware** - box temperature and humidity show on the box
+  that reported them, survive slot edits instead of disappearing, and a material changed on
+  the box reaches the slot instead of being covered by the first material seen. A color
+  change is still recognized as a new spool when the firmware switches format.
+- **Snapmaker U1: RESUME is no longer refused** after editing a slot - edits write the
+  head's firmware filament record the way the printer expects, and heads the Extended
+  Firmware had locked are repaired once, outside a print.
+- **Snapmaker U1: tag readings** - a spool with no tag clears what the previous tag
+  wrote, and leaves a slot you set by hand alone.
+- **Snapmaker U1: unloads finish** (#1832) - an unload or a spool-insert preload no longer
+  leaves the filament system stuck on busy.
+- **Snapmaker U1: soft filament is saved as soft** - TPU, TPE, PEBA, PVA and Flex filament,
+  including grades the printer has no entry for such as TPU-85A, TPU95A or PVA+, are now
+  saved to the printer as soft filament.
+- **Snapmaker U1: no phantom heater** - the U1's extruder offset calibration module is no
+  longer listed as a heater, so it stops appearing as a Hotend Heater choice in the setup
+  wizard, and a saved hardware list that named it no longer warns that a heater went missing.
+- **Snapmaker U1 with multiACE** (#1426) - the U1's own filament system stays in use when
+  an ACE is also reported.
+- **AD5X: colors set by other tools** - a lane record written by another tool no longer
+  pins its color and material, so later color changes from the printer show again.
+- **Tool changes check again at Confirm** - a tool change decides whether it can run when
+  you confirm it, not when the dialog opened.
+- **Filament path values stay in range** - slot counts, path positions, progress and spool
+  fill levels above their maximum are now held at it, so a very large lane count can't draw
+  past the end of the filament path.
+- **Edit overlay label** - a slot that names its spool reads Brand · Line · Material
+  without repeating itself.
+- **The AMS sidebar's Unload button keeps working after switching printers.**
+
+**Printing**
+
+- **Cool Down turns off every toolhead** (#1768) - on toolchangers the active tool stayed
+  hot while the toast said Heaters off. The default Cool Down now turns off every extruder
+  and the chamber heater; a customized macro runs as written.
+- **Snapmaker U1: a dirty-bed pause is not a runout** - a pause for a dirty bed no longer
+  opens the runout guidance, and the print screen shows the printer's own reason. Runout is
+  judged only by the lane being fed.
+- **Resume refusals explain themselves** - when the printer refuses to resume for a known
+  reason, the screen says why instead of showing the raw error.
+- **Print Tune Z-offset hint** - the hint says "auto-saved by firmware" only where the
+  firmware really keeps the offset (AD5M / AD5X on ZMOD), and on the U1 that a baby step
+  lasts until the next tool change.
+- **Pre-print progress on AD5M Pro with Forge-X 1.4.2** - the nozzle cleaning, bed mesh
+  and priming line are named, the cool-down before probing is no longer called Heating
+  nozzle, and the time estimate holds through it.
+- **Snapmaker U1 pre-print** - tool Z touches read as Probing Z.
+- **Adaptive bed mesh progress** counts the grid Klipper actually probes.
+- **Exclude object works for non-English model names** - objects named in Chinese,
+  Japanese and other non-ASCII text can be excluded mid-print.
+**Screen and controls**
+
+- **Z-Mod color pickers** (#1806) - color prompts from Z-Mod, Fluidd and Mainsail show
+  each button in its color, and a picker with many colors is a grid of tappable swatches
+  instead of one row of slivers.
+- **Long macro prompts fit the screen** - text and buttons scroll above the footer, and
+  prompts with five or more buttons use a grid.
+- **ESC closes the spaghetti, runout and plugin-install prompts without choosing** an
+  answer for you.
+- **The on-screen keyboard keeps the field you tapped visible** when moving between fields.
+- **Typing in the middle of a field** no longer jumps the cursor to the end.
+- **Waking the screen** - the touch that wakes the display no longer presses whatever is
+  under your finger.
+- **Settings has a Printer row** - it opens the Printer Manager, which was otherwise only
+  reachable from the home screen's printer image widget.
+- **Power tiles keep updating after a Klipper restart** - a power device's home tile
+  stopped following its device once Klipper restarted, until the home screen was rebuilt.
+  Tiles now keep tracking their device across restarts.
+- **Barcode scanner for spools** (#1793) - with a barcode scanner configured, scanning a
+  spool asks for a scan with it instead of starting the camera and moving the bed.
+- **Screensaver setting after switching update channels** - a setting saved by a newer
+  release no longer comes back as Flying Toasters.
+- **Label printing to IPP printers and CUPS shares** (#1822) - printers that send an
+  interim "100 Continue" (such as Canon PIXMA) no longer fail with **HTTP error: 100
+  Continue**, and a printer shared through CUPS prints to the queue path it advertises
+  instead of failing with client-error-not-found.
+- **Print status preview buttons** line up in the corner.
+- **Printer detection** - a four-extruder machine or a MIPS host without any IFS sign is no
+  longer named an AD5X.
+
+**Updates and installing**
+
+- **Updates install on systemd printers that run HelixScreen as root** - on a K2 running
+  systemd-based custom firmware (and any other root install under systemd), Install Update
+  stopped at **Error: cannot write the service file in /etc/systemd/system**. The check
+  behind that message no longer runs where an update never writes that file.
+- **A failed update reopens its dialog** (#1727) - an update that failed after you closed
+  the download dialog now shows the error instead of nothing, and the reason for a failed
+  download or install is recorded. (#1813)
+- **Installing on Creality K1** (#1813) - the installer no longer mistakes the firmware's
+  stand-in `curl` for the real one.
 - **The installer sees Klipper and Moonraker on systemd firmware** - on hosts such as a K2
   running k2-improvements, the installer warned that Klipper and Moonraker were not running
   when they were. It now checks the running processes and systemd services properly, and
@@ -30,38 +190,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `[update_manager helixscreen]` lives in a file moonraker.conf includes (such as
   mainsail.conf), the installer now updates and removes it there instead of adding a
   second copy to moonraker.conf.
-- **Updates install on systemd printers that run HelixScreen as root** - on a K2 running
-  systemd-based custom firmware (and any other root install under systemd), Install Update
-  stopped at **Error: cannot write the service file in /etc/systemd/system**. The check
-  behind that message no longer runs where an update never writes that file.
-- **The screen no longer freezes when Wi-Fi stops answering** - Wi-Fi scans, joins, the
-  radio switch and status checks now run in the background, so a hung Wi-Fi driver can't
-  lock up the touchscreen or drop the UI mid-scan. If the Wi-Fi service stops responding,
-  Network Settings says **WiFi isn't responding**, keeps the last network list, and checks
-  again on its own until the service recovers.
-- **Settings has a Printer row** - it opens the Printer Manager, which was otherwise only
-  reachable from the home screen's printer image widget.
-- **Printer detection** - a four-extruder machine or a MIPS host without any IFS sign is no
-  longer named an AD5X.
-- **Android settings backups** - the app keeps its rolling settings backups in its own
-  storage instead of failing to write any, and an update no longer overwrites themes or
-  printer database overrides you saved.
-- **Power tiles keep updating after a Klipper restart** - a power device's home tile
-  stopped following its device once Klipper restarted, until the home screen was rebuilt.
-  Tiles now keep tracking their device across restarts.
-- **Snapmaker U1: no phantom heater** - the U1's extruder offset calibration module is no
-  longer listed as a heater, so it stops appearing as a Hotend Heater choice in the setup
-  wizard, and a saved hardware list that named it no longer warns that a heater went missing.
-- **AFC toolchanges keep their progress** - the brief Idle AFC reports between the unload
-  and load of one tool change no longer clears the operation status or restarts the step
-  progress partway through the change.
-- **Filament path values stay in range** - slot counts, path positions, progress and spool
-  fill levels above their maximum are now held at it, so a very large lane count can't draw
-  past the end of the filament path.
-- **Snapmaker U1: soft filament is saved as soft** - TPU, TPE, PEBA, PVA and Flex filament,
-  including grades the printer has no entry for such as TPU-85A, TPU95A or PVA+, are now
-  saved to the printer as soft filament.
-- **The AMS sidebar's Unload button keeps working after switching printers.**
+- **The installer never deletes a mounted scratch directory** when it can't tell whether
+  it is a mount.
+- **helixscreen.env is read more safely** (#1682) - its settings are read as plain values
+  from a known list, and only from a file owned by you or root.
+
+**Android**
+
+- **Every filament system is built in** - a K2 Plus with a CFS showed no filament system
+  on Android. CFS, IFS, ACE, QIDI and Snapmaker support are now included.
+- **Screensavers and label printing** are included in the Android app.
+- **Updates from Google Play** - the app announces only an update Play is actually serving.
+- **Settings backups** - the app keeps its rolling settings backups in its own storage
+  instead of failing to write any, and an update no longer overwrites themes or printer
+  database overrides you saved.
 
 ## [1.0.5] - 2026-10-13
 
@@ -6985,6 +7127,7 @@ Initial tagged release. Foundation for all subsequent development.
 - Automated GitHub Actions release pipeline
 - One-liner installation script with platform auto-detection
 
+[1.0.6]: https://github.com/prestonbrown/helixscreen/compare/v1.0.5...v1.0.6
 [1.0.5]: https://github.com/prestonbrown/helixscreen/compare/v1.0.4...v1.0.5
 [1.0.4]: https://github.com/prestonbrown/helixscreen/compare/v1.0.3...v1.0.4
 [1.0.3]: https://github.com/prestonbrown/helixscreen/compare/v1.0.2...v1.0.3
