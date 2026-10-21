@@ -93,6 +93,7 @@ translations:
   = Loosen: = 緩める
   = Tighten: = 締める
   A: A
+  A restart is already in progress: 再起動はすでに進行中です
   ABS: ABS
   ACCELEROMETERS: 加速度センサー
   ACE Moonraker bridge not found. Install ace_status.py for full support.: ACE Moonraker ブリッジが見つかりません。完全なサポートには ace_status.py をインストールしてください。

@@ -92,6 +92,7 @@
   <translation tag="= Loosen" zh="= 松开"/>
   <translation tag="= Tighten" zh="= 拧紧"/>
   <translation tag="A" zh="辅"/>
+  <translation tag="A restart is already in progress" zh="重启正在进行中"/>
   <translation tag="ABS" zh="ABS"/>
   <translation tag="ACCELEROMETERS" zh="加速度计"/>
   <translation tag="ACE Moonraker bridge not found. Install ace_status.py for full support." zh="未找到 ACE Moonraker 桥接。请安装 ace_status.py 以获得完整支持。"/>

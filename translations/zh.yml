@@ -92,6 +92,7 @@ translations:
   = Loosen: = 松开
   = Tighten: = 拧紧
   A: 辅
+  A restart is already in progress: 重启正在进行中
   ABS: ABS
   ACCELEROMETERS: 加速度计
   ACE Moonraker bridge not found. Install ace_status.py for full support.: 未找到 ACE Moonraker 桥接。请安装 ace_status.py 以获得完整支持。

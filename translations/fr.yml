@@ -100,6 +100,7 @@ translations:
   = Loosen: = Desserrer
   = Tighten: = Serrer
   A: A
+  A restart is already in progress: Un redémarrage est déjà en cours
   ABS: ABS
   ACCELEROMETERS: ACCÉLÉROMÈTRES
   ACE Moonraker bridge not found. Install ace_status.py for full support.: Pont

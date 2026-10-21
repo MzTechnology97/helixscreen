@@ -92,6 +92,7 @@
   <translation tag="= Loosen" pt="= Afrouxar"/>
   <translation tag="= Tighten" pt="= Apertar"/>
   <translation tag="A" pt="A"/>
+  <translation tag="A restart is already in progress" pt="Já há uma reinicialização em andamento"/>
   <translation tag="ABS" pt="ABS"/>
   <translation tag="ACCELEROMETERS" pt="ACELERÔMETROS"/>
   <translation tag="ACE Moonraker bridge not found. Install ace_status.py for full support." pt="Ponte ACE Moonraker não encontrada. Instale ace_status.py para suporte completo."/>

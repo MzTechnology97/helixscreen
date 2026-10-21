@@ -97,6 +97,7 @@ translations:
   = Loosen: = Aflojar
   = Tighten: = Apretar
   A: A
+  A restart is already in progress: Ya hay un reinicio en curso
   ABS: ABS
   ACCELEROMETERS: ACELERÓMETROS
   ACE Moonraker bridge not found. Install ace_status.py for full support.: Puente

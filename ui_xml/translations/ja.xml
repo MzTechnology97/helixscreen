@@ -92,6 +92,7 @@
   <translation tag="= Loosen" ja="= 緩める"/>
   <translation tag="= Tighten" ja="= 締める"/>
   <translation tag="A" ja="A"/>
+  <translation tag="A restart is already in progress" ja="再起動はすでに進行中です"/>
   <translation tag="ABS" ja="ABS"/>
   <translation tag="ACCELEROMETERS" ja="加速度センサー"/>
   <translation tag="ACE Moonraker bridge not found. Install ace_status.py for full support." ja="ACE Moonraker ブリッジが見つかりません。完全なサポートには ace_status.py をインストールしてください。"/>
