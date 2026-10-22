@@ -12,6 +12,7 @@
 #include <set>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 namespace helix {
@@ -103,6 +104,9 @@ struct ScanResult {
     size_t bytes_scanned = 0;
     bool reached_limit = false;     ///< True if scan stopped due to limits
     PrintStartCallInfo print_start; ///< Info about PRINT_START call (if found)
+    /// The upper-case command word of every scanned line that runs an
+    /// operation, with its type. Unlike `operations`, every occurrence counts.
+    std::set<std::pair<OperationType, std::string>> operation_commands;
 
     /**
      * @brief Check if a specific operation type was detected
