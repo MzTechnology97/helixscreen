@@ -76,4 +76,15 @@ struct PrintSelectPanelTestAccess {
     static void set_selected_colors(PrintSelectPanel& panel, std::vector<std::string> colors) {
         panel.selected_filament_colors_ = std::move(colors);
     }
+
+    /// The detail view setup() created, or null.
+    static helix::ui::PrintSelectDetailView* detail_view(PrintSelectPanel& panel) {
+        return panel.detail_view_.get();
+    }
+
+    /// Store the remap modal's OK result, as the modal's callback does.
+    static void apply_remap(PrintSelectPanel& panel,
+                            const std::vector<helix::ToolMapping>& updated) {
+        panel.apply_remap(updated);
+    }
 };

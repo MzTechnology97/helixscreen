@@ -1,12 +1,15 @@
 // Copyright (C) 2025-2026 356C LLC
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include "ui_filament_mapping_modal.h"
+#include "ui_panel_print_select.h"
 #include "ui_print_select_detail_view.h"
 #include "ui_print_start_controller.h"
 #include "ui_test_utils.h"
 #include "ui_update_queue.h"
 
 #include "../lvgl_test_fixture.h"
+#include "../lvgl_ui_test_fixture.h"
 #include "ams_backend_afc.h"
 #include "ams_state.h"
 #include "ams_types.h"
@@ -22,6 +25,8 @@
 #include "settings_manager.h"
 #include "test_helpers/afc_test_access.h"
 #include "test_helpers/config_dir_guard.h"
+#include "test_helpers/filament_mapping_modal_test_access.h"
+#include "test_helpers/print_select_panel_test_access.h"
 #include "test_helpers/print_start_controller_test_access.h"
 #include "test_helpers/registered_backend.h"
 #include "test_helpers/scoped_home_confirm_prompter.h"
@@ -1955,6 +1960,77 @@ TEST_CASE("AFC print start leaves a printer-side lane remap alone",
         CHECK(set_map_commands(h.reg->captured_gcodes) ==
               std::vector<std::string>{"SET_MAP LANE=lane3 MAP=T1"});
     }
+}
+
+TEST_CASE("AFC remap modal OK stores what its auto color toggle chose",
+          "[ams][afc][tool_mapping][print_start][filament_mapping]") {
+    // The card does not re-seed when the toggle flips, so the modal's list is
+    // the only copy that reflects it. Lane3 is the colour match for T1; the
+    // printer routes T1 to lane4.
+    LVGLUITestFixture lvgl;
+    ConfigDirGuard config_dir{"afc_remap_modal_ok"};
+    helix::test::RegisteredBackend<AmsBackendAfcTestHelper> reg;
+    MoonrakerClientMock client{MoonrakerClientMock::PrinterType::VORON_24};
+    MoonrakerAPIMock api{client, lvgl.state()};
+    feed_lane4_stands_in_for_lane2(*reg);
+    reg->feed_afc_stepper("lane1", {{"color", "#FF0000"}});
+    reg->feed_afc_stepper("lane3", {{"color", "#00FF00"}});
+    reg->feed_afc_stepper("lane4", {{"color", "#0000FF"}});
+    helix::ui::UpdateQueue::instance().drain();
+
+    auto& settings = SettingsManager::instance();
+    const bool auto_color_was = settings.get_auto_color_map();
+
+    PrintSelectPanel panel(lvgl.state(), &api);
+    panel.init_subjects();
+    auto* panel_obj =
+        static_cast<lv_obj_t*>(lv_xml_create(lvgl.test_screen(), "print_select_panel", nullptr));
+    REQUIRE(panel_obj != nullptr);
+    panel.setup(panel_obj, lvgl.test_screen());
+    auto* view = PrintSelectPanelTestAccess::detail_view(panel);
+    REQUIRE(view != nullptr);
+
+    helix::GcodeToolInfo t1{};
+    t1.tool_index = 1;
+    t1.color_rgb = 0x00FF00;
+    t1.color_known = true;
+    const std::vector<helix::GcodeToolInfo> tools{t1};
+    auto& ams = AmsState::instance();
+    const auto slots = ams.collect_available_slots();
+
+    helix::ui::PrintStartController controller{lvgl.state(), &api};
+    controller.set_detail_view(view);
+
+    auto run_modal = [&](bool card_auto, bool modal_auto) {
+        settings.set_auto_color_map(card_auto);
+        view->set_filament_mappings(ams.seed_tool_mappings(tools, slots, card_auto));
+        helix::ui::FilamentMappingModal modal;
+        modal.set_tool_info(tools);
+        modal.set_available_slots(slots);
+        modal.set_mappings(view->get_filament_mappings());
+        modal.set_on_mappings_updated([&panel](std::vector<helix::ToolMapping> updated) {
+            PrintSelectPanelTestAccess::apply_remap(panel, updated);
+        });
+        FilamentMappingModalTestAccess::toggle(modal, modal_auto);
+        FilamentMappingModalTestAccess::ok(modal);
+        reg->captured_gcodes.clear();
+    };
+
+    SECTION("toggle off: the old colour match is not sent") {
+        run_modal(true, false);
+        CHECK_FALSE(PrintStartControllerTestAccess::apply_remaps(controller));
+        CHECK(set_map_commands(reg->captured_gcodes) == std::vector<std::string>{});
+    }
+
+    SECTION("toggle on: the colour match is sent") {
+        run_modal(false, true);
+        CHECK(PrintStartControllerTestAccess::apply_remaps(controller));
+        CHECK(set_map_commands(reg->captured_gcodes) ==
+              std::vector<std::string>{"SET_MAP LANE=lane3 MAP=T1"});
+    }
+
+    controller.set_detail_view(nullptr);
+    settings.set_auto_color_map(auto_color_was);
 }
 
 TEST_CASE("AFC print using a tool no lane is mapped to is blocked, not rerouted",
