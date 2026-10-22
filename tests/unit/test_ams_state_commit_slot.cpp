@@ -339,3 +339,33 @@ TEST_CASE("commit_slot_edit clears active spool even when backend manages it",
     // REQUIRED: the clear fired anyway.
     REQUIRE(mock_api->spoolman_mock().get_mock_active_spool_id() == 0);
 }
+
+TEST_CASE("a fresh load re-sends its spool after the server's active spool was cleared",
+          "[ams][commit][spoolman_sync]") {
+    CommitFixture f;
+    MoonrakerAPIMock* mock_api = f.setup(9);
+    f.backend->set_operation_delay(0);
+    REQUIRE(f.backend->start().success());
+    auto& ams = AmsState::instance();
+
+    mock_api->spoolman_mock().set_active_spool(0, nullptr, nullptr);
+    ams.sync_current_loaded_from_backend();
+    helix::ui::UpdateQueue::instance().drain();
+    REQUIRE(f.backend->get_current_slot() == 0);
+    REQUIRE(mock_api->spoolman_mock().get_mock_active_spool_id() == 9);
+
+    // The print ends and something else clears the active spool, then the
+    // same lane loads again for the next print.
+    REQUIRE(f.backend->unload_filament(0).success());
+    f.backend->wait_for_operation_thread();
+    ams.sync_current_loaded_from_backend();
+    mock_api->spoolman_mock().set_active_spool(0, nullptr, nullptr);
+
+    REQUIRE(f.backend->load_filament(0).success());
+    f.backend->wait_for_operation_thread();
+    ams.sync_current_loaded_from_backend();
+    helix::ui::UpdateQueue::instance().drain();
+    REQUIRE(f.backend->get_current_slot() == 0);
+    REQUIRE(f.backend->is_filament_loaded());
+    CHECK(mock_api->spoolman_mock().get_mock_active_spool_id() == 9);
+}
