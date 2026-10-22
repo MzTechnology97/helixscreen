@@ -572,8 +572,14 @@ void AmsEditOverlay::render_spool_list(const std::string& filter) {
     // text prebuilt at fetch time (cached_searchables_ parallels the spools).
     auto filtered = filter_spools(cached_spools_, filter, cached_searchables_);
 
-    // Get spool IDs assigned to other tools (exclude current slot's tool)
-    auto in_use = ToolState::instance().assigned_spool_ids(slot_index_);
+    // A lane's spool sits in ToolState under the tool the lane feeds, whose
+    // number need not match the lane's. The external spool feeds through no
+    // lane, so every lane's spool is taken.
+    int own_tool = -1;
+    if (AmsBackend* backend = slot_index_ >= 0 ? AmsState::instance().get_backend() : nullptr) {
+        own_tool = backend->get_slot_info(slot_index_).mapped_tool;
+    }
+    auto in_use = ToolState::instance().assigned_spool_ids(own_tool);
 
     // Compact single-line rows on short panels (more rows visible)
     lv_subject_t* bp_subj = theme_manager_get_breakpoint_subject();
