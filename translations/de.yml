@@ -1306,6 +1306,7 @@ translations:
   Homing timed out: Referenzfahrt Zeitüberschreitung
   Homing timed out — printer may still be homing: Referenzfahrt Zeitüberschreitung
     — Drucker referenziert möglicherweise noch
+  Homing, then probing...: "Referenzfahrt, dann Messung..."
   Homing...: Referenzfahrt...
   Horizontal: Horizontal
   Host: Host
@@ -2815,6 +2816,7 @@ translations:
   The printer halted this print and cannot resume it. Restart from the beginning?: Der
     Drucker hat diesen Druck angehalten und kann ihn nicht fortsetzen. Von vorne neu
     starten?
+  The printer homes, then probes each screw position.: "Der Drucker fährt die Referenz an und misst dann jede Schraubenposition."
   The printer is not homed. Continuing will home all axes, moving the toolhead. Make sure the bed is clear.: Der Drucker ist nicht referenziert. Wenn Sie fortfahren, werden alle Achsen referenziert und der Werkzeugkopf bewegt sich. Stellen Sie sicher, dass das Heizbett frei ist.
   The printer lost power during a print. It can resume where it left off.: Der Drucker
     hatte während eines Drucks einen Stromausfall. Er kann dort fortsetzen, wo er aufgehört

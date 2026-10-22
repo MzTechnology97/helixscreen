@@ -1278,6 +1278,7 @@ translations:
   Homing timed out: Парковка — время ожидания истекло
   Homing timed out — printer may still be homing: Тайм-аут парковки — принтер может
     всё ещё выполнять парковку
+  Homing, then probing...: "Парковка, затем измерение..."
   Homing...: Парковка...
   Horizontal: Горизонтально
   Host: Хост
@@ -2777,6 +2778,7 @@ translations:
   : Печать на паузе. Смена инструмента сейчас переместит печатающую головку и заменит филамент в сопле. Возобновите печать после завершения смены.
   The printer halted this print and cannot resume it. Restart from the beginning?: Принтер
     остановил эту печать и не может её возобновить. Начать с начала?
+  The printer homes, then probes each screw position.: "Принтер выполняет парковку, затем измеряет каждую позицию винта."
   The printer is not homed. Continuing will home all axes, moving the toolhead. Make sure the bed is clear.: Принтер не запаркован. Продолжение выполнит парковку всех осей, печатающая головка переместится. Убедитесь, что стол свободен.
   The printer lost power during a print. It can resume where it left off.: Принтер потерял питание во время печати. Он может продолжить с места остановки.
   The printer lost power during a print. The resumed layer may not line up exactly.: Принтер потерял питание во время печати. Возобновлённый слой может не совпасть точно.
