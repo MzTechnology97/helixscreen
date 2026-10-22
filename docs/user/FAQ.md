@@ -260,10 +260,6 @@ Spoolman only records usage against its **active spool**. On a multi-filament sy
 
 It is already linked to another slot or tool. On the External Spool editor, every spool linked to a slot is grayed out: to link a spool to a CFS or AMS slot, edit that slot instead. See [Editing Filament Properties](guide/filament.md#editing-filament-properties).
 
-### Does my K2 run its bed mesh twice?
-
-Not normally. With **Auto Bed Mesh** on, HelixScreen sends the K2's `BED_MESH_CALIBRATE_START_PRINT` before the print, unless the file's start G-code already calls that same command. Other bed mesh commands in the file don't count. Details and limits: [Pre-Print Options](guide/printing.md#pre-print-options).
-
 ### Can I print spool labels?
 
 **Yes.** HelixScreen supports printing physical spool labels to thermal label printers:

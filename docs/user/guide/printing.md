@@ -85,10 +85,6 @@ These options modify the G-code on-the-fly — if you disable "Auto Bed Mesh" bu
 
 > **Tip:** Pre-print options remember your preferences per slicer. If you always run bed mesh before PrusaSlicer prints, that preference persists.
 
-**Creality K2 Plus and K2 Pro (stock firmware): Auto Bed Mesh.** Creality's start sequence has no setting HelixScreen can switch, so with **Auto Bed Mesh** on, HelixScreen sends the printer's own mesh-before-print command (`BED_MESH_CALIBRATE_START_PRINT`) just before the print starts. Auto Bed Mesh is on by default on these printers. With it off, HelixScreen sends nothing and the printer does whatever its own start sequence does. If the file's own start G-code already calls `BED_MESH_CALIBRATE_START_PRINT` itself, HelixScreen does not send it, so the bed is meshed once, not twice. Only that exact command counts: other bed mesh lines (such as `BED_MESH_PROFILE LOAD` or `BED_MESH_CLEAR`) and `START_PRINT` settings that ask for a mesh do not, and HelixScreen still sends its mesh command then. HelixScreen checks only the start of the file (the first 500 lines or 50 KB, thumbnails included, and nothing past the first extruding move); a call further in is not seen, and the mesh is sent. The check also needs the file's details screen to have finished reading the file, and works only for files in the top folder of your G-code files: for a file inside a folder, HelixScreen always sends the mesh command.
-
-This applies to prints started with the **Print** button on a file's details screen. A print started from your slicer, Mainsail, Fluidd, or the Job Queue never gets HelixScreen's pre-print options.
-
 ---
 
 ## Starting a Print
