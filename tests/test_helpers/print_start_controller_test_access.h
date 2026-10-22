@@ -93,4 +93,8 @@ class PrintStartControllerTestAccess {
     filament_colors(const helix::ui::PrintStartController& c) {
         return c.filament_colors_;
     }
+
+    static bool apply_remaps(helix::ui::PrintStartController& c) {
+        return c.apply_filament_remaps();
+    }
 };

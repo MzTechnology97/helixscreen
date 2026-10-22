@@ -8,13 +8,16 @@
 #include "ams_state.h"
 #include "ams_types.h"
 #include "config.h"
+#include "filament_mapper.h"
 #include "hh_defaults.h"
 #include "moonraker_api.h"
 #include "moonraker_api_mock.h"
 #include "moonraker_client_mock.h"
+#include "preflight_validator.h"
 #include "printer_state.h"
 #include "test_helpers/config_test_access.h"
 #include "test_helpers/happy_hare_test_access.h"
+#include "test_helpers/registered_backend.h"
 
 #include <algorithm>
 #include <optional>
@@ -4903,4 +4906,40 @@ TEST_CASE("Happy Hare v4 status frame names v4 before the config query answers",
     mm["unit_0"]["has_bypass"] = true;
     helper.test_apply_config_defaults(kV4Settings, mm);
     CHECK(helper.get_system_info().supports_bypass);
+}
+
+TEST_CASE("Happy Hare TTG remap is the routing an unremapped print runs with",
+          "[ams][happy_hare][tool_mapping][routing]") {
+    // Gate 1 out of service, gate 3 standing in for it via MMU_TTG_MAP. A print
+    // using T1 must seed gate 3, so print start sends no MMU_TTG_MAP undoing it.
+    helix::test::RegisteredBackend<AmsBackendHappyHareTestHelper> helper_reg;
+    AmsBackendHappyHareTestHelper& helper = *helper_reg;
+    nlohmann::json mmu_data = {{"gate", -1},
+                               {"tool", -1},
+                               {"filament", "Unloaded"},
+                               {"action", "Idle"},
+                               {"gate_status", {1, 0, 1, 1}},
+                               {"gate_color_rgb", {0xFF0000, 0x00FF00, 0x0000FF, 0xFFFF00}},
+                               {"gate_material", {"PLA", "PLA", "PLA", "PLA"}},
+                               {"ttg_map", {0, 3, 2, 1}}};
+    helper.test_parse_mmu_state(mmu_data);
+    helix::ui::UpdateQueue::instance().drain();
+
+    const auto live = helper.get_tool_mapping();
+    REQUIRE(live.size() == 4);
+    REQUIRE(live[1] == 3);
+    CHECK(helper.firmware_default_routing().head(1) == 3);
+    CHECK(helper.firmware_default_routing().head(3) == 1);
+
+    helix::GcodeToolInfo t1{};
+    t1.tool_index = 1;
+    t1.color_rgb = 0x808080;
+    t1.color_known = false;
+    const std::vector<helix::GcodeToolInfo> tools{t1};
+    auto& ams = AmsState::instance();
+    const auto slots = ams.collect_available_slots();
+    const auto seed = ams.seed_tool_mappings(tools, slots, false);
+    REQUIRE(seed.size() == 1);
+    CHECK(seed[0].mapped_slot == live[1]);
+    CHECK_FALSE(helix::PreflightValidator::validate(tools, slots, seed, false).has_block());
 }
