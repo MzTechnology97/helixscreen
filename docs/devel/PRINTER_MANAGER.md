@@ -324,7 +324,6 @@ The printer database (`config/printer_database.json`) is the source of truth for
 | `tool_change_resets_z_offset` | `true` when activating a tool re-applies that head's stored gcode offset absolutely, replacing any adjustment; Print Tune then says a tool change resets it. Omit (default `false`) otherwise, including klipper-toolchanger, whose tool offsets leave the babystep alone. |
 | `heuristics` | Array of detection rules with confidence scores |
 | `print_start_capabilities` | PRINT_START macro parameters |
-| `screws_tilt_direction` | `"cw"` or `"ccw"` — override for the bed-screw turn direction. Use when the vendor-shipped Klipper `screw_thread` makes `SCREWS_TILT_CALCULATE` name the wrong rotation. When set to `"ccw"`, HelixScreen flips CW↔CCW in the rotation arrows. The Tighten/Loosen wording comes from the probed heights and never reads this field. Omit the field (or set `"cw"`) for printers whose Klipper direction matches reality. Known use: FlashForge Adventurer 5M family. |
 
 ### Heuristic Types
 

@@ -2158,46 +2158,6 @@ nlohmann::json database_rules() {
 
 } // namespace helix::probe_prep
 
-std::string PrinterDetector::screws_tilt_direction_override() {
-    Config* config = Config::get_instance();
-    if (!config) {
-        return "";
-    }
-    std::string printer_name =
-        config->get<std::string>(config->df() + helix::wizard::PRINTER_TYPE, "");
-    if (printer_name.empty()) {
-        return "";
-    }
-
-    if (!g_database.load()) {
-        return "";
-    }
-    if (!g_database.data.contains("printers") || !g_database.data["printers"].is_array()) {
-        return "";
-    }
-
-    std::string name_lower = printer_name;
-    std::transform(name_lower.begin(), name_lower.end(), name_lower.begin(),
-                   [](unsigned char c) { return std::tolower(c); });
-
-    for (const auto& printer : g_database.data["printers"]) {
-        std::string db_name = printer.value("name", "");
-        std::string db_name_lower = db_name;
-        std::transform(db_name_lower.begin(), db_name_lower.end(), db_name_lower.begin(),
-                       [](unsigned char c) { return std::tolower(c); });
-        if (db_name_lower == name_lower) {
-            std::string value = printer.value("screws_tilt_direction", "");
-            std::transform(value.begin(), value.end(), value.begin(),
-                           [](unsigned char c) { return std::tolower(c); });
-            if (value == "cw" || value == "ccw") {
-                return value;
-            }
-            return "";
-        }
-    }
-    return "";
-}
-
 bool PrinterDetector::meets_autosave_threshold(const PrinterDetectionResult& result) {
     if (result.type_name.empty() || !result.detected())
         return false;
