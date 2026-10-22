@@ -619,6 +619,7 @@ void AboutSettingsOverlay::on_about_updates_unavailable_clicked(lv_event_t* /*e*
     // apply one itself. The command is the whole payload — without it the row
     // states a problem and offers nothing, which is what made the suppressed
     // state a dead end. The QR points at the docs for the longer story.
+    const std::string url = helix::docs_url("upgrading/");
     helix::ui::InfoQrModal::show_owned({
         .icon = "console",
         .title = lv_tr("Update from a Terminal"),
@@ -631,8 +632,8 @@ void AboutSettingsOverlay::on_about_updates_unavailable_clicked(lv_event_t* /*e*
         .message = lv_tr("Run the HelixScreen installer with --update from a "
                          "terminal on this printer. Scan for the command for "
                          "your platform."),
-        .url = "https://helixscreen.org/docs/guide/getting-started/",
-        .url_text = "helixscreen.org/docs",
+        .url = url,
+        .url_text = helix::docs_url_text(url),
     });
     LVGL_SAFE_EVENT_CB_END();
 }

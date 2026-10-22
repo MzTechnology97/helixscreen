@@ -888,13 +888,14 @@ void SettingsPanel::handle_discord_clicked() {
 
 void SettingsPanel::handle_docs_clicked() {
     spdlog::info("[SettingsPanel] Documentation clicked");
+    const std::string url = helix::docs_url("guide/");
     helix::ui::InfoQrModal::show_owned({
         .icon = "book",
         .title = lv_tr("Documentation"),
         .message = lv_tr("Browse guides, configuration references, and troubleshooting "
                          "resources for HelixScreen."),
-        .url = "https://helixscreen.org/docs/guide/getting-started/",
-        .url_text = "helixscreen.org/docs",
+        .url = url,
+        .url_text = helix::docs_url_text(url),
     });
 }
 

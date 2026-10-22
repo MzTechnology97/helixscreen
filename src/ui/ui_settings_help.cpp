@@ -16,6 +16,7 @@
 #include "ui_settings_about.h"
 
 #include "first_run_tour.h"
+#include "helix_version.h"
 #include "lvgl/src/others/translation/lv_translation.h"
 #include "static_panel_registry.h"
 
@@ -186,13 +187,14 @@ void HelpSettingsOverlay::on_discord_clicked(lv_event_t* /*e*/) {
 void HelpSettingsOverlay::on_docs_clicked(lv_event_t* /*e*/) {
     LVGL_SAFE_EVENT_CB_BEGIN("[HelpSettingsOverlay] on_docs_clicked");
     spdlog::info("[HelpSettingsOverlay] Documentation clicked");
+    const std::string url = helix::docs_url("guide/");
     helix::ui::InfoQrModal::show_owned({
         .icon = "book",
         .title = lv_tr("Documentation"),
         .message = lv_tr("Browse guides, configuration references, and troubleshooting "
                          "resources for HelixScreen."),
-        .url = "https://helixscreen.org/docs/guide/getting-started/",
-        .url_text = "helixscreen.org/docs",
+        .url = url,
+        .url_text = helix::docs_url_text(url),
     });
     LVGL_SAFE_EVENT_CB_END();
 }
