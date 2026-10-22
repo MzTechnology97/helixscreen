@@ -217,6 +217,8 @@ Tap **Spool Info** in the slot context menu to open the filament editor. This le
 **Spoolman actions** (when Spoolman is configured):
 
 - **Choose Saved Spool** — Browse your Spoolman database and assign a spool. This auto-fills the vendor, material, color, and temperatures.
+  - **Grayed-out spools** in the list are already linked to another slot (or tool) and can't be picked: one physical spool can't sit in two places. Unlink it from the other slot first, or pick a different spool. The External Spool editor grays out every spool that is linked to a slot, so to link a spool to a CFS or AMS slot, edit that slot rather than the external spool.
+  - Linking a spool to a slot also decides which spool Spoolman deducts usage from when that slot is loaded. See [Which spool Spoolman charges](filament-tracking.md#which-spool-spoolman-charges-on-a-multi-filament-system).
 - **Scan QR Code** — Scan a filament spool's QR code to look it up in Spoolman
 - **More actions button** (▾ dropdown) — Tap the dropdown arrow for additional actions:
   - **Spool Details** — View the full Spoolman spool record
