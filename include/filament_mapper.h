@@ -150,11 +150,6 @@ class FilamentMapper {
                                                      const std::vector<AvailableSlot>& slots,
                                                      const FirmwareRouting& routing = {});
 
-    /// Lay every entry of @p picks the user picked over @p current's entry for
-    /// the same tool, leaving the rest of @p current as it is.
-    static void apply_picks(std::vector<ToolMapping>& current,
-                            const std::vector<ToolMapping>& picks);
-
     /// Check if two colors are within matching tolerance.
     /// Uses weighted RGB distance (luminance-weighted) with tolerance of
     /// COLOR_MATCH_TOLERANCE (50) units.
