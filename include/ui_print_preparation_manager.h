@@ -775,10 +775,6 @@ class PrintPreparationManager {
      * Lines are returned in the same (category, order) order the option set is
      * sorted in, so callers can fire them sequentially before START_PRINT.
      *
-     * An enabled option whose line performs its step (no off form) is left out
-     * when the scan cache holds @p filename's own scan and that scan shows the
-     * file calls the same command itself, or the printer would run it twice.
-     *
      * @return Vector of rendered gcode lines, e.g. {"LOAD_AI_RUN SWITCH=1"}.
      */
     [[nodiscard]] std::vector<std::string>

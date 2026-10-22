@@ -300,9 +300,6 @@ void GCodeOpsDetector::check_line(const std::string& line, size_t line_number, s
         }
 
         if (found) {
-            result.operation_commands.emplace(pattern.type,
-                                              helix::to_upper(std::string(command_word(trimmed))));
-
             // Check if we already have this operation type (avoid duplicates)
             bool already_detected = std::any_of(
                 result.operations.begin(), result.operations.end(),
