@@ -34,6 +34,7 @@
 
 #include <spdlog/spdlog.h>
 
+#include <algorithm>
 #include <chrono>
 #include <filesystem>
 #include <fstream>
@@ -667,6 +668,17 @@ bool PrintStartController::should_warn_remap_unsupported(const AmsBackend& backe
     return !helix::printer::can_remap(backend);
 }
 
+namespace {
+// Only a lane the user picked, or one auto color matching chose, asks the
+// printer to change. Every other entry is a seed that means "follow the
+// printer", and a seed taken before the printer's table last moved would
+// overwrite it.
+bool sends_remap(const helix::ToolMapping& m) {
+    return !m.is_auto && m.mapped_slot >= 0 &&
+           (m.user_picked || m.reason == helix::ToolMapping::MatchReason::COLOR_MATCH);
+}
+} // namespace
+
 bool PrintStartController::apply_filament_remaps() {
     if (!detail_view_) {
         return false;
@@ -677,17 +689,9 @@ bool PrintStartController::apply_filament_remaps() {
         return false;
     }
 
-    // Check if any mapping is non-auto (user made explicit choices)
-    bool has_explicit_mapping = false;
-    for (const auto& m : mappings) {
-        if (!m.is_auto && m.mapped_slot >= 0) {
-            has_explicit_mapping = true;
-            break;
-        }
-    }
-
-    if (!has_explicit_mapping) {
-        spdlog::debug("[PrintStartController] All mappings are auto — no remaps needed");
+    if (std::none_of(mappings.begin(), mappings.end(), sends_remap)) {
+        spdlog::debug("[PrintStartController] No mapping asks for a remap — the printer's "
+                      "table stands");
         return false;
     }
 
@@ -759,8 +763,8 @@ bool PrintStartController::apply_filament_remaps() {
     // prep_manager->start_print() also sends an async request to Moonraker.
     int remaps_sent = 0;
     for (const auto& m : mappings) {
-        if (m.is_auto || m.mapped_slot < 0) {
-            continue; // Skip auto mappings — firmware decides
+        if (!sends_remap(m)) {
+            continue;
         }
 
         // Check if this mapping differs from current firmware mapping
