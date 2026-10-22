@@ -1706,7 +1706,7 @@ if [ -f "scripts/check_namespace_compliance.py" ]; then
   # The baseline above was maintained by hand against a gate that never
   # executed. The script is present now; 2347 is what the tree actually
   # measures, and it goes down from here.
-  if python3 scripts/check_namespace_compliance.py --max-allowed 2347 --summary >/tmp/namespace_check.out 2>&1; then
+  if python3 scripts/check_namespace_compliance.py --max-allowed 2346 --summary >/tmp/namespace_check.out 2>&1; then
     section_time $SECTION_START
     echo ""
     tail -1 /tmp/namespace_check.out
