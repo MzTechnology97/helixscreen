@@ -203,6 +203,31 @@ EOF
     [ ! -f "$DISABLED_SERVICES_FILE" ]
 }
 
+# --- preserve non-display services in the stock bin directory ---
+
+@test "qidi handler: disables screen entry points but preserves tuning and similarly named helpers" {
+    local systemctl_log="$BATS_TEST_TMPDIR/systemctl.log" unit
+    write_unit "qd-screen.service" "/home/mks/QD_Q2/bin/client --fullscreen" >/dev/null
+    write_unit "qd-start.service" "bash /home/qidi/QD_Q2/bin/start.sh" >/dev/null
+    write_unit "qd-quoted.service" "/bin/sh -c \"/home/mks/QD_Q2/bin/client;sleep 1\"" >/dev/null
+    write_unit "makerbase-tuning.service" "bash /home/mks/QD_Q2/bin/tuning.sh" >/dev/null
+    write_unit "client-helper.service" "/home/mks/QD_Q2/bin/client-helper" >/dev/null
+    write_unit "start-backup.service" "bash /home/mks/QD_Q2/bin/start.sh.bak" >/dev/null
+    mock_command_script "systemctl" "echo \"\$@\" >> \"$systemctl_log\"; exit 0"
+
+    found_any=false
+    run stop_qidi_competing_uis
+    [ "$status" -eq 0 ]
+
+    grep -qx "disable qd-screen.service" "$systemctl_log"
+    grep -qx "disable qd-start.service" "$systemctl_log"
+    grep -qx "disable qd-quoted.service" "$systemctl_log"
+    for unit in makerbase-tuning client-helper start-backup; do
+        refute_grep "$unit" "$systemctl_log"
+        refute_grep "$unit" "$DISABLED_SERVICES_FILE"
+    done
+}
+
 # --- the empty-sweep report ---
 #
 # log_warn is a no-op stub from helpers, so these capture it locally to assert
