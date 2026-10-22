@@ -74,7 +74,7 @@ TEST_CASE("ensure_homed_then with HomingPolicy::Always homes an already-homed to
     LVGLTestFixture fixture;
     helix::PrinterState& state = get_printer_state();
     state.init_subjects(false);
-    lv_subject_copy_string(state.motion_state().get_homed_axes_subject(), "xyz");
+    lv_subject_copy_string(state.get_homed_axes_subject(), "xyz");
 
     helix::AsyncLifetimeGuard guard;
     bool ran = false;
