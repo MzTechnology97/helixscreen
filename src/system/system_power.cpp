@@ -70,25 +70,32 @@ bool busybox_fallback(const char* path) {
 
 } // namespace
 
+// logind and systemctl only on a host systemd is running: a chroot's or SysV
+// box's systemctl can exit 0 without doing anything, which would read as
+// dispatched and leave the panel held black on a machine that stays up.
 bool SystemPower::reboot_local() {
     spdlog::info("[SystemPower] reboot_local");
+    if (host_runs_systemd()) {
 #ifdef HELIX_HAS_SYSTEMD
-    if (logind_call("Reboot"))
-        return true;
+        if (logind_call("Reboot"))
+            return true;
 #endif
-    if (exec_fallback("systemctl reboot", "systemctl reboot"))
-        return true;
+        if (exec_fallback("systemctl reboot", "systemctl reboot"))
+            return true;
+    }
     return busybox_fallback("/sbin/reboot");
 }
 
 bool SystemPower::shutdown_local() {
     spdlog::info("[SystemPower] shutdown_local");
+    if (host_runs_systemd()) {
 #ifdef HELIX_HAS_SYSTEMD
-    if (logind_call("PowerOff"))
-        return true;
+        if (logind_call("PowerOff"))
+            return true;
 #endif
-    if (exec_fallback("systemctl poweroff", "systemctl poweroff"))
-        return true;
+        if (exec_fallback("systemctl poweroff", "systemctl poweroff"))
+            return true;
+    }
     return busybox_fallback("/sbin/poweroff");
 }
 

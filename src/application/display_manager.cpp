@@ -1390,8 +1390,10 @@ void DisplayManager::restore_display_on_shutdown() {
     }
 
     // Clear framebuffer to black so the last rendered frame doesn't persist
-    // after the process exits (SIGTERM/SIGINT graceful shutdown)
-    if (m_backend) {
+    // after the process exits (SIGTERM/SIGINT graceful shutdown). A held
+    // power-off already wrote opaque black, which a zero fill would replace
+    // with transparent pixels on panels that read the X byte as alpha.
+    if (m_backend && !m_flush_held_for_power_off) {
         m_backend->clear_framebuffer(0x00000000);
     }
 

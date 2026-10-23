@@ -126,7 +126,7 @@ $(BUILD_DIR)/splash/fbdev_size_helper.o: src/api/fbdev_size_helper.cpp $(LIBHV_L
 	$(Q)$(CXX) $(SPLASH_CXXFLAGS) $(DEPFLAGS) -c $< -o $@
 
 # Signal-safe framebuffer blank (registered by display_backend_fbdev.cpp)
-$(BUILD_DIR)/splash/fbdev_signal_clear.o: src/api/fbdev_signal_clear.cpp $(ABI_STAMP) | $(BUILD_DIR)/splash
+$(BUILD_DIR)/splash/fbdev_signal_clear.o: src/api/fbdev_signal_clear.cpp $(LIBHV_LIB) $(LIBHV_JSON_HEADER) | $(BUILD_DIR)/splash
 	@echo "[CXX] $< (splash)"
 	$(Q)$(CXX) $(SPLASH_CXXFLAGS) $(DEPFLAGS) -c $< -o $@
 

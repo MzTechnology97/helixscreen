@@ -173,7 +173,7 @@ $(BUILD_DIR)/watchdog/fbdev_size_helper.o: src/api/fbdev_size_helper.cpp $(LIBHV
 	$(Q)$(CXX) $(WATCHDOG_CXXFLAGS) $(DEPFLAGS) -c $< -o $@
 
 # Signal-safe framebuffer blank (registered by display_backend_fbdev.cpp)
-$(BUILD_DIR)/watchdog/fbdev_signal_clear.o: src/api/fbdev_signal_clear.cpp $(ABI_STAMP) | $(BUILD_DIR)/watchdog
+$(BUILD_DIR)/watchdog/fbdev_signal_clear.o: src/api/fbdev_signal_clear.cpp $(LIBHV_LIB) $(LIBHV_JSON_HEADER) | $(BUILD_DIR)/watchdog
 	@echo "[CXX] $< (watchdog)"
 	$(Q)$(CXX) $(WATCHDOG_CXXFLAGS) $(DEPFLAGS) -c $< -o $@
 
