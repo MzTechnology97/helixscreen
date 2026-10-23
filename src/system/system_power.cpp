@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <string>
+#include <sys/stat.h>
 #include <sys/wait.h>
 
 #ifdef HELIX_HAS_SYSTEMD
@@ -15,6 +16,12 @@
 #endif
 
 namespace helix {
+
+bool host_runs_systemd(const std::string& root) {
+    struct stat st {};
+    return stat((root + "/run/systemd/system").c_str(), &st) == 0 && S_ISDIR(st.st_mode);
+}
+
 namespace {
 
 #ifdef HELIX_HAS_SYSTEMD

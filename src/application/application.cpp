@@ -28,6 +28,7 @@
 #include "display/lv_display_private.h"
 #include "display_manager.h"
 #include "environment_config.h"
+#include "fbdev_signal_clear.h"
 #include "gcode_error_router.h"
 #include "gcode_narration_router.h"
 #include "hardware_fingerprint.h"
@@ -409,7 +410,7 @@ void invalidate_all_recursive(lv_obj_t* obj) {
  * telemetry queue, crash history) is written on each change, so nothing is
  * lost by skipping the explicit flush.
  *
- * Async-signal-safe: only write(2) and _exit(2) used — no spdlog.
+ * Async-signal-safe: raw syscalls and _exit(2) only — no spdlog, no allocation.
  */
 void graceful_quit_signal_handler(int sig) {
     if (sig == SIGTERM) {
@@ -422,6 +423,9 @@ void graceful_quit_signal_handler(int sig) {
         // and HelixScreen refused to boot. unlink(2) is async-signal-safe;
         // the path was cached at startup so nothing is constructed here.
         helix::clear_crash_marker_signal_safe();
+        // Blank the panel, or the last frame shows through a reboot's boot
+        // screen. open/write/close only; a no-op unless fbdev registered it.
+        helix::clear_framebuffer_signal_safe();
         static const char msg[] = "[Application] SIGTERM — fast exit\n";
         ssize_t n = write(STDERR_FILENO, msg, sizeof(msg) - 1);
         (void)n; // suppress unused-result warning

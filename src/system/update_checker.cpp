@@ -39,6 +39,7 @@
 #include "system/sha256_util.h"
 #include "system/telemetry_manager.h"
 #include "system/tls_trust.h"
+#include "system_power.h"
 #ifdef __ANDROID__
 #include "system/android_update_source.h"
 #include "system/http_android.h"
@@ -686,11 +687,6 @@ std::string UpdateChecker::service_dest_probe_error(const std::string& init_dir)
     return fmt::format(lv_tr("Error: cannot write the service file in {}"), init_dir);
 }
 
-bool UpdateChecker::systemd_is_init() {
-    struct stat st {};
-    return stat("/run/systemd/system", &st) == 0 && S_ISDIR(st.st_mode);
-}
-
 bool UpdateChecker::update_writes_service_dest(bool is_root, bool systemd_init) {
     return is_root && !systemd_init;
 }
@@ -700,7 +696,8 @@ std::string UpdateChecker::init_service_dest_dir() {
     // it is running, else SysV. Empty means this host has no init destination
     // we know (a dev machine) and the installer's own pre-flight decides.
     struct stat st {};
-    if (systemd_is_init() && stat("/etc/systemd/system", &st) == 0 && S_ISDIR(st.st_mode)) {
+    if (helix::host_runs_systemd() && stat("/etc/systemd/system", &st) == 0 &&
+        S_ISDIR(st.st_mode)) {
         return "/etc/systemd/system";
     }
     if (stat("/etc/init.d", &st) == 0 && S_ISDIR(st.st_mode)) {
@@ -1391,7 +1388,7 @@ void UpdateChecker::start_download() {
     // AFTER the app has downloaded the whole archive. Only where the update
     // writes it (update_writes_service_dest); install.sh's pre-flight remains
     // the authority.
-    if (update_writes_service_dest(geteuid() == 0, systemd_is_init())) {
+    if (update_writes_service_dest(geteuid() == 0, helix::host_runs_systemd())) {
         const std::string failure = service_dest_probe_error(init_service_dest_dir());
         if (!failure.empty()) {
             spdlog::error("[UpdateChecker] Service destination unwritable, not "

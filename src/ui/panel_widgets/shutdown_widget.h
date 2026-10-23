@@ -46,6 +46,24 @@ class ShutdownWidget : public PanelWidget {
 
 void register_shutdown_widget();
 
+/// Which power dialog a screen gets.
+enum class ShutdownDialogMode {
+    SingleViaMoonraker,  ///< Same host, Moonraker up: machine.shutdown takes the device down.
+    SingleViaLocalPower, ///< Same host, Moonraker down or unable to: SystemPower on this host.
+    Dual,                ///< Different hosts: Both / Printer / Screen split buttons.
+};
+
+/// Pure. A screen on Moonraker's own host (@p configured_host_same, from
+/// is_moonraker_on_same_host()) gets one row of buttons; any other gets the
+/// split buttons.
+///
+/// A same-host screen goes straight to SystemPower when Moonraker is not
+/// connected, or when this host does not run systemd (@p this_host_runs_systemd,
+/// from host_runs_systemd()): Moonraker's machine.reboot/shutdown there shells
+/// out to sudo/systemctl and always fails.
+ShutdownDialogMode plan_shutdown_dialog(bool configured_host_same, bool api_connected,
+                                        bool this_host_runs_systemd);
+
 /// Configure @p modal with single-/dual-scope callbacks for @p api (matching
 /// the home-panel widget's behavior — including local-fallback when Moonraker
 /// is disconnected) and show it as a child of @p parent_screen.
@@ -59,9 +77,9 @@ void show_shutdown_dialog(IMoonrakerAPI* api, ShutdownModal& modal, AsyncLifetim
 /// Handle a failed Moonraker machine.reboot / machine.shutdown.
 ///
 /// Hosts running Moonraker with `provider: none` implement those RPCs as
-/// `sudo systemctl reboot|poweroff`. Non-systemd printer hosts (OpenWrt/procd
-/// K2, K1C, AD5M, CC1, U1) ship neither binary, so the RPC always fails even
-/// though busybox /sbin/reboot works — which is what SystemPower falls back to.
+/// `sudo systemctl reboot|poweroff`, which fails without passwordless sudo
+/// even where SystemPower can power the host itself. (A non-systemd host never
+/// sends the RPC: plan_shutdown_dialog() routes it to SystemPower directly.)
 ///
 /// @param err_message          Moonraker's error text, for the log.
 /// @param is_reboot            Reboot vs. shutdown, selects the user-facing toast.
