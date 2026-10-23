@@ -12,12 +12,15 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <thread>
+#include <vector>
 
 #include "../catch_amalgamated.hpp"
 
 using helix::Callback;
 using helix::callback_storage;
 using helix::CallbackStorage;
+using helix::SharedCallback;
 
 namespace {
 
@@ -185,5 +188,88 @@ TEST_CASE("Callback: empty states", "[helix_callback]") {
 
     // Desktop builds throw like std::function; the firmware aborts.
     Callback<void()> empty;
+    REQUIRE_THROWS_AS(empty(), std::bad_function_call);
+}
+
+TEST_CASE("SharedCallback: copies share one callable", "[helix_callback]") {
+    SharedCallback<int()> a = [n = 0, s = std::string("x")]() mutable { return ++n; };
+    SharedCallback<int()> b = a;
+    REQUIRE(a() == 1);
+    REQUIRE(b() == 2);
+}
+
+TEST_CASE("SharedCallback: a trivially copyable callable copies by value", "[helix_callback]") {
+    SharedCallback<int()> a = [n = 0]() mutable { return ++n; };
+    SharedCallback<int()> b = a;
+    REQUIRE(a() == 1);
+    REQUIRE(b() == 1);
+}
+
+TEST_CASE("SharedCallback: the callable is destroyed once, with the last copy",
+          "[helix_callback]") {
+    int dtors = 0;
+
+    SECTION("copies and moves") {
+        SharedCallback<void()> a = [c = std::make_shared<DtorCounter>(&dtors)]() {};
+        {
+            SharedCallback<void()> b = a;
+            SharedCallback<void()> c = std::move(b);
+            REQUIRE_FALSE(b);
+            SharedCallback<void()> d;
+            d = c;
+        }
+        REQUIRE(dtors == 0);
+        a = nullptr;
+        REQUIRE(dtors == 1);
+    }
+
+    SECTION("copy-assigned over a live callable") {
+        int other_dtors = 0;
+        SharedCallback<void()> a = [c = DtorCounter(&dtors)]() {};
+        SharedCallback<void()> b = [c = DtorCounter(&other_dtors)]() {};
+        b = a;
+        REQUIRE(other_dtors == 1);
+        REQUIRE(dtors == 0);
+        a = nullptr;
+        REQUIRE(dtors == 0);
+        b = nullptr;
+        REQUIRE(dtors == 1);
+    }
+
+    SECTION("copied and released on several threads") {
+        SharedCallback<void()> a = [c = DtorCounter(&dtors)]() {};
+        std::vector<std::thread> threads;
+        for (int t = 0; t < 4; ++t) {
+            threads.emplace_back([copy = a]() {
+                for (int i = 0; i < 2000; ++i) {
+                    SharedCallback<void()> local = copy;
+                    local();
+                }
+            });
+        }
+        for (auto& t : threads) {
+            t.join();
+        }
+        REQUIRE(dtors == 0);
+        a = nullptr;
+        REQUIRE(dtors == 1);
+    }
+}
+
+TEST_CASE("SharedCallback: holds a move-only capture", "[helix_callback]") {
+    int seen = 0;
+    SharedCallback<void()> a = [p = std::make_unique<int>(9), &seen]() { seen = *p; };
+    SharedCallback<void()> b = a;
+    b();
+    REQUIRE(seen == 9);
+}
+
+TEST_CASE("SharedCallback: empty states", "[helix_callback]") {
+    REQUIRE_FALSE(SharedCallback<void()>{});
+    REQUIRE(SharedCallback<void()>{nullptr} == nullptr);
+    REQUIRE_FALSE(SharedCallback<void()>{std::function<void()>{}});
+    REQUIRE_FALSE(Callback<void()>{SharedCallback<void()>{}});
+
+    SharedCallback<void()> empty;
     REQUIRE_THROWS_AS(empty(), std::bad_function_call);
 }
