@@ -8,7 +8,7 @@
 #include "ams_types.h"
 #include "filament_slot_override.h"
 #include "filament_slot_override_store.h"
-#include "helix_callback.h"
+#include "helix_shared_callback.h"
 #include "test_helpers/seeded_override.h"
 
 #include <functional>

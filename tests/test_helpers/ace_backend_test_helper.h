@@ -10,7 +10,7 @@
 #include "ams_backend_ace.h"
 #include "ams_types.h"
 #include "fake_moonraker_client.h"
-#include "helix_callback.h"
+#include "helix_shared_callback.h"
 #include "moonraker_types.h"
 
 #include <functional>

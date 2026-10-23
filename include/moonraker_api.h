@@ -45,7 +45,7 @@
 #pragma once
 
 #include "async_lifetime_guard.h"
-#include "helix_callback.h"
+#include "helix_shared_callback.h"
 #include "http_request_epoch.h"
 #include "i_moonraker_api.h"
 #include "i_moonraker_client.h"

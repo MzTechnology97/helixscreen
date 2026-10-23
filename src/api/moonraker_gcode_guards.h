@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include "helix_callback.h"
+#include "helix_shared_callback.h"
 #include "moonraker_error.h"
 
 #include <functional>

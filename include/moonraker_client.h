@@ -38,7 +38,7 @@
 #pragma once
 
 #include "connection_state.h"
-#include "helix_callback.h"
+#include "helix_shared_callback.h"
 #include "hv/Event.h" // TimerID
 #include "hv/WebSocketClient.h"
 #include "i_moonraker_client.h"

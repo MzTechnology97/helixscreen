@@ -4,7 +4,7 @@
 #pragma once
 
 #include "async_lifetime_guard.h"
-#include "helix_callback.h"
+#include "helix_shared_callback.h"
 #include "i_moonraker_client.h"   // for helix::ConnectionState, helix::SubscriptionId
 #include "i_moonraker_sub_apis.h" // sub-API interfaces returned by the accessors
 #include "json_fwd.h"

@@ -27,7 +27,7 @@
 #include "axis_move.h"
 #include "belt_tension_types.h"
 #include "calibration_types.h"
-#include "helix_callback.h"
+#include "helix_shared_callback.h"
 #include "json_fwd.h"
 #include "moonraker_error.h"
 #include "moonraker_types.h"

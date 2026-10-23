@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
-#include "helix_callback.h"
+#include "helix_shared_callback.h"
 
 // Real backend with gcode captured. client_ is null, so ensure_homed_then()
 // routes straight to execute_gcode().

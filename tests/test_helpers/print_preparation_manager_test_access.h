@@ -4,7 +4,7 @@
 #include "ui_print_preparation_manager.h"
 
 #include "gcode_ops_detector.h"
-#include "helix_callback.h"
+#include "helix_shared_callback.h"
 #include "lvgl.h"
 
 #include <chrono>

@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "helix_callback.h"
+#include "helix_shared_callback.h"
 
 /**
  * @file moonraker_validation.h

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
-#include "helix_callback.h"
+#include "helix_shared_callback.h"
 #include "moonraker_client_mock.h"
 
 namespace helix {

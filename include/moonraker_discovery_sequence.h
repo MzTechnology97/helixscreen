@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "helix_callback.h"
+#include "helix_shared_callback.h"
 #include "json_fwd.h"
 #include "printer_discovery.h"
 #include "webcam_selection.h"

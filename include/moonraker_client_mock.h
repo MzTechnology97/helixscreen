@@ -5,7 +5,7 @@
 
 #include "accel_batch_source_mock.h"
 #include "axis.h"
-#include "helix_callback.h"
+#include "helix_shared_callback.h"
 #include "mock_persona.h"
 #include "moonraker_client.h"
 #include "moonraker_client_mock_spoolman.h"

@@ -18,7 +18,7 @@
 
 #include "esp_timer.h"
 #include "esp_websocket_client.h"
-#include "helix_callback.h"
+#include "helix_shared_callback.h"
 #include "i_moonraker_client.h"
 #include "reconnect_backoff.h"
 #include "rpc_error_policy.h"

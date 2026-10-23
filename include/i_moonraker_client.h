@@ -4,7 +4,7 @@
 #pragma once
 
 #include "connection_state.h"
-#include "helix_callback.h"
+#include "helix_shared_callback.h"
 #include "json_fwd.h"
 #include "moonraker_error.h"
 #include "moonraker_events.h"          // for helix::MoonrakerEventCallback
