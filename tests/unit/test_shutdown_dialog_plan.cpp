@@ -12,6 +12,9 @@
 
 #include "../../src/ui/panel_widgets/shutdown_widget.h"
 
+#include <string>
+#include <vector>
+
 #include "../catch_amalgamated.hpp"
 
 using namespace helix;
@@ -50,4 +53,34 @@ TEST_CASE("Shutdown dialog plan: same host stays single-scope", "[shutdown][powe
                                    /*this_host_runs_systemd=*/true) ==
               ShutdownDialogMode::SingleViaLocalPower);
     }
+}
+
+TEST_CASE("Local power holds black only after the request dispatched", "[shutdown][power]") {
+    std::vector<std::string> steps;
+    auto power_returning = [&steps](bool dispatched) {
+        return [&steps, dispatched]() {
+            steps.push_back("power");
+            return dispatched;
+        };
+    };
+    auto stop_drawing = [&steps]() { steps.push_back("stop_drawing"); };
+    auto clear = [&steps]() { steps.push_back("clear"); };
+
+    SECTION("dispatched: power, then stop drawing, then clear") {
+        CHECK(power_then_hold_black(power_returning(true), stop_drawing, clear));
+        CHECK(steps == std::vector<std::string>{"power", "stop_drawing", "clear"});
+    }
+
+    SECTION("failed: the screen is left alone") {
+        CHECK_FALSE(power_then_hold_black(power_returning(false), stop_drawing, clear));
+        CHECK(steps == std::vector<std::string>{"power"});
+    }
+}
+
+TEST_CASE("A failed local power retries through a connected Moonraker", "[shutdown][power]") {
+    CHECK(host_power_follow_up(/*local_dispatched=*/true, true) == HostPowerFollowUp::Done);
+    CHECK(host_power_follow_up(/*local_dispatched=*/true, false) == HostPowerFollowUp::Done);
+    CHECK(host_power_follow_up(/*local_dispatched=*/false, true) ==
+          HostPowerFollowUp::RetryViaMoonraker);
+    CHECK(host_power_follow_up(/*local_dispatched=*/false, false) == HostPowerFollowUp::Toast);
 }

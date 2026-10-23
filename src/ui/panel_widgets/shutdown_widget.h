@@ -64,6 +64,26 @@ enum class ShutdownDialogMode {
 ShutdownDialogMode plan_shutdown_dialog(bool configured_host_same, bool api_connected,
                                         bool this_host_runs_systemd);
 
+/// Run @p power; only when it dispatched, @p stop_drawing and then @p clear.
+/// LVGL repaints over a clear within a frame unless drawing has stopped, and
+/// a clear made before a slow or failing request leaves a frozen black screen.
+/// Returns what @p power returned (true = dispatched). Pure apart from the
+/// callbacks.
+bool power_then_hold_black(const std::function<bool()>& power,
+                           const std::function<void()>& stop_drawing,
+                           const std::function<void()>& clear);
+
+/// What a same-host screen does after asking SystemPower to power this host.
+enum class HostPowerFollowUp {
+    Done,              ///< Dispatched; init takes it from here.
+    RetryViaMoonraker, ///< Failed locally; a connected Moonraker gets the request.
+    Toast,             ///< Failed with no Moonraker to ask: the machine's failure toast.
+};
+
+/// Pure. Dispatched is Done; a failure retries through a connected
+/// Moonraker, or toasts.
+HostPowerFollowUp host_power_follow_up(bool local_dispatched, bool api_connected);
+
 /// Configure @p modal with single-/dual-scope callbacks for @p api (matching
 /// the home-panel widget's behavior — including local-fallback when Moonraker
 /// is disconnected) and show it as a child of @p parent_screen.

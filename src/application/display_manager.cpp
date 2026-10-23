@@ -1003,8 +1003,13 @@ void DisplayManager::suppress_flush_for_sleep() {
     spdlog::debug("[DisplayManager] Flush suppressed while panel powered off");
 }
 
+void DisplayManager::hold_flush_for_power_off() {
+    suppress_flush_for_sleep();
+    m_flush_held_for_power_off = true;
+}
+
 void DisplayManager::restore_flush_after_sleep() {
-    if (!m_flush_suppressed_for_sleep) {
+    if (!m_flush_suppressed_for_sleep || m_flush_held_for_power_off) {
         return;
     }
     m_flush_suppressed_for_sleep = false;

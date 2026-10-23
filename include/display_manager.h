@@ -349,6 +349,15 @@ class DisplayManager : public helix::ICalibrationSink {
      */
     void restore_display_on_shutdown();
 
+    /**
+     * @brief Stop LVGL flushing for the rest of the process
+     *
+     * For a reboot or shutdown of this host that has already been dispatched:
+     * a framebuffer clear made after this holds until init stops us instead of
+     * being painted over on the next frame. No wake or touch undoes it.
+     */
+    void hold_flush_for_power_off();
+
 #ifdef HELIX_ENABLE_SCREENSAVER
     /**
      * @brief Start a screensaver immediately for preview/testing
@@ -744,6 +753,7 @@ class DisplayManager : public helix::ICalibrationSink {
     // proven splash flush-suppression). Restored on wake.
     lv_display_flush_cb_t m_saved_flush_cb_for_sleep = nullptr;
     bool m_flush_suppressed_for_sleep = false;
+    bool m_flush_held_for_power_off = false;
 
     // Original pointer read callback (before sleep-aware wrapper)
     lv_indev_read_cb_t m_original_pointer_read_cb = nullptr;
