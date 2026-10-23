@@ -194,3 +194,7 @@ CONFIG_ESP_IPC_TASK_STACK_SIZE=1792
 # Moonraker session up (84KB without; spec 2026-07-13 budget table).
 CONFIG_ESP_WIFI_IRAM_OPT=n
 CONFIG_ESP_WIFI_RX_IRAM_OPT=n
+
+# Flash auto-suspend keeps the cache on through flash erase/program, so the RGB
+# bounce refill can still read the PSRAM framebuffer while settings save.
+CONFIG_SPI_FLASH_AUTO_SUSPEND=y
