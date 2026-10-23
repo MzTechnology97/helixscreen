@@ -4,6 +4,7 @@
 #include "ui_print_preparation_manager.h"
 
 #include "gcode_ops_detector.h"
+#include "helix_callback.h"
 #include "lvgl.h"
 
 #include <chrono>
@@ -70,7 +71,7 @@ class PrintPreparationManagerTestAccess {
     /// failure exit and every other one retires the job the same way.
     static void modify_and_print(helix::ui::PrintPreparationManager& m,
                                  const std::string& file_path,
-                                 std::function<void()> on_navigate_to_status = nullptr,
+                                 helix::SharedCallback<void()> on_navigate_to_status = nullptr,
                                  helix::ui::PrintCompletionCallback on_completion = nullptr) {
         // start_print() hands its verified scan to the modify step; a test
         // entering at the modify step hands it the cached one the same way.

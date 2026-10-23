@@ -22,8 +22,8 @@ void register_print_handlers(std::unordered_map<std::string, MethodHandler>& reg
     // Like real Moonraker, returns error for out-of-range moves and other gcode failures
     registry["printer.gcode.script"] =
         [](MoonrakerClientMock* self, const json& params,
-           std::function<void(const json&)> success_cb,
-           std::function<void(const MoonrakerError&)> error_cb) -> bool {
+           helix::SharedCallback<void(const json&)> success_cb,
+           helix::SharedCallback<void(const MoonrakerError&)> error_cb) -> bool {
         std::string script;
         if (params.contains("script")) {
             script = params["script"].get<std::string>();
@@ -162,8 +162,8 @@ void register_print_handlers(std::unordered_map<std::string, MethodHandler>& reg
     // printer.print.start - Start a print job
     registry["printer.print.start"] =
         [](MoonrakerClientMock* self, const json& params,
-           std::function<void(const json&)> success_cb,
-           std::function<void(const MoonrakerError&)> error_cb) -> bool {
+           helix::SharedCallback<void(const json&)> success_cb,
+           helix::SharedCallback<void(const MoonrakerError&)> error_cb) -> bool {
         std::string filename;
         if (params.contains("filename")) {
             filename = params["filename"].get<std::string>();
@@ -189,8 +189,8 @@ void register_print_handlers(std::unordered_map<std::string, MethodHandler>& reg
     // printer.print.pause - Pause current print
     registry["printer.print.pause"] =
         [](MoonrakerClientMock* self, const json& params,
-           std::function<void(const json&)> success_cb,
-           std::function<void(const MoonrakerError&)> error_cb) -> bool {
+           helix::SharedCallback<void(const json&)> success_cb,
+           helix::SharedCallback<void(const MoonrakerError&)> error_cb) -> bool {
         (void)params;
         if (self->pause_print_internal()) {
             if (success_cb) {
@@ -207,8 +207,8 @@ void register_print_handlers(std::unordered_map<std::string, MethodHandler>& reg
     // printer.print.resume - Resume paused print
     registry["printer.print.resume"] =
         [](MoonrakerClientMock* self, const json& params,
-           std::function<void(const json&)> success_cb,
-           std::function<void(const MoonrakerError&)> error_cb) -> bool {
+           helix::SharedCallback<void(const json&)> success_cb,
+           helix::SharedCallback<void(const MoonrakerError&)> error_cb) -> bool {
         (void)params;
         if (self->resume_print_internal()) {
             if (success_cb) {
@@ -225,8 +225,8 @@ void register_print_handlers(std::unordered_map<std::string, MethodHandler>& reg
     // printer.print.cancel - Cancel current print
     registry["printer.print.cancel"] =
         [](MoonrakerClientMock* self, const json& params,
-           std::function<void(const json&)> success_cb,
-           std::function<void(const MoonrakerError&)> error_cb) -> bool {
+           helix::SharedCallback<void(const json&)> success_cb,
+           helix::SharedCallback<void(const MoonrakerError&)> error_cb) -> bool {
         (void)params;
         if (self->cancel_print_internal()) {
             if (success_cb) {
@@ -244,8 +244,8 @@ void register_print_handlers(std::unordered_map<std::string, MethodHandler>& reg
     // proxied by Moonraker. VENDOR_OK: the mock simulates that appliance.
     registry["printer.dragonbreath.set_target"] =
         [](MoonrakerClientMock* self, const json& params,
-           std::function<void(const json&)> success_cb,
-           [[maybe_unused]] std::function<void(const MoonrakerError&)> error_cb) -> bool {
+           helix::SharedCallback<void(const json&)> success_cb,
+           [[maybe_unused]] helix::SharedCallback<void(const MoonrakerError&)> error_cb) -> bool {
         const double target = params.contains("target") && params["target"].is_number()
                                   ? params["target"].get<double>()
                                   : 0.0;
@@ -259,8 +259,8 @@ void register_print_handlers(std::unordered_map<std::string, MethodHandler>& reg
     // printer.emergency_stop - Execute emergency stop (M112)
     registry["printer.emergency_stop"] =
         [](MoonrakerClientMock* self, [[maybe_unused]] const json& params,
-           std::function<void(const json&)> success_cb,
-           [[maybe_unused]] std::function<void(const MoonrakerError&)> error_cb) -> bool {
+           helix::SharedCallback<void(const json&)> success_cb,
+           [[maybe_unused]] helix::SharedCallback<void(const MoonrakerError&)> error_cb) -> bool {
         self->emergency_stop_internal();
 
         if (success_cb) {
@@ -290,8 +290,8 @@ void register_print_handlers(std::unordered_map<std::string, MethodHandler>& reg
     // through the generic printer.gcode.script path, which has no such catch.
     registry["printer.firmware_restart"] =
         [](MoonrakerClientMock* self, [[maybe_unused]] const json& params,
-           std::function<void(const json&)> success_cb,
-           [[maybe_unused]] std::function<void(const MoonrakerError&)> error_cb) -> bool {
+           helix::SharedCallback<void(const json&)> success_cb,
+           [[maybe_unused]] helix::SharedCallback<void(const MoonrakerError&)> error_cb) -> bool {
         self->trigger_restart(/*is_firmware=*/true);
 
         if (success_cb) {
@@ -304,8 +304,8 @@ void register_print_handlers(std::unordered_map<std::string, MethodHandler>& reg
     // handler above for why this delegates rather than simulating its own.
     registry["printer.restart"] =
         [](MoonrakerClientMock* self, [[maybe_unused]] const json& params,
-           std::function<void(const json&)> success_cb,
-           [[maybe_unused]] std::function<void(const MoonrakerError&)> error_cb) -> bool {
+           helix::SharedCallback<void(const json&)> success_cb,
+           [[maybe_unused]] helix::SharedCallback<void(const MoonrakerError&)> error_cb) -> bool {
         self->trigger_restart(/*is_firmware=*/false);
 
         if (success_cb) {

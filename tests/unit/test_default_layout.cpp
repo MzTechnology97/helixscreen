@@ -2158,7 +2158,7 @@ TEST_CASE("default_layout: every shipped candidate is gated on hardware or a cap
 TEST_CASE("default_layout: no shipped table places a generic filler", "[default_layout][shipped]") {
     const auto layout = load_shipped_layout();
     std::set<std::string> named;
-    std::function<void(const nlohmann::json&)> walk = [&](const nlohmann::json& j) {
+    helix::SharedCallback<void(const nlohmann::json&)> walk = [&](const nlohmann::json& j) {
         if (j.is_string()) {
             named.insert(j.get<std::string>());
         } else if (j.is_structured()) {
@@ -2311,7 +2311,7 @@ TEST_CASE("default_layout: no shipped table names toolhead, host_health or exclu
           "[default_layout][shipped]") {
     const auto layout = load_shipped_layout();
     std::vector<std::string> strings;
-    std::function<void(const nlohmann::json&)> walk = [&](const nlohmann::json& j) {
+    helix::SharedCallback<void(const nlohmann::json&)> walk = [&](const nlohmann::json& j) {
         if (j.is_string()) {
             strings.push_back(j.get<std::string>());
         } else if (j.is_structured()) {

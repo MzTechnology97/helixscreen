@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include "helix_callback.h"
+
 // Real backend with gcode captured. client_ is null, so ensure_homed_then()
 // routes straight to execute_gcode().
 
@@ -42,7 +44,8 @@ template <typename Base> class GcodeCaptureBackend : public Base {
         return AmsErrorHelper::success();
     }
 
-    AmsError execute_gcode(const std::string& gcode, std::function<void()> on_complete) override {
+    AmsError execute_gcode(const std::string& gcode,
+                           helix::SharedCallback<void()> on_complete) override {
         sent_.push_back(gcode);
         (void)on_complete;
         if (fail_gcode_) {

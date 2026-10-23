@@ -89,7 +89,7 @@ class ToolChangerDispatchHelper : public helix::AmsBackendToolChanger {
     }
 
     helix::AmsError execute_gcode(const std::string& gcode,
-                                  std::function<void()> on_complete) override {
+                                  helix::SharedCallback<void()> on_complete) override {
         sent_.push_back(gcode);
         pending_acks_.push_back(std::move(on_complete));
         return helix::AmsErrorHelper::success();
@@ -134,7 +134,7 @@ class ToolChangerDispatchHelper : public helix::AmsBackendToolChanger {
 
   private:
     std::vector<std::string> sent_;
-    std::vector<std::function<void()>> pending_acks_;
+    std::vector<helix::SharedCallback<void()>> pending_acks_;
     std::vector<helix::AmsAction> trace_;
 };
 

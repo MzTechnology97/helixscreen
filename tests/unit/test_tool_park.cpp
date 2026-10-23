@@ -74,7 +74,8 @@ class ParkingToolChanger : public AmsBackendToolChanger {
         sent.push_back(gcode);
         return AmsErrorHelper::success();
     }
-    AmsError execute_gcode(const std::string& gcode, std::function<void()> on_complete) override {
+    AmsError execute_gcode(const std::string& gcode,
+                           helix::SharedCallback<void()> on_complete) override {
         sent.push_back(gcode);
         if (on_complete) {
             on_complete();
