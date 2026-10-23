@@ -270,6 +270,7 @@ void LabelPrinterSettingsOverlay::show(lv_obj_t* parent_screen) {
 
 void LabelPrinterSettingsOverlay::on_activate() {
     OverlayBase::on_activate();
+    auto_picked_ = false;
 
     init_printer_type_dropdown();
     init_address_input();
@@ -323,6 +324,7 @@ void LabelPrinterSettingsOverlay::init_address_input() {
         lv_textarea_set_text(input, settings.get_printer_address().c_str());
         if (!inputs_initialized_) {
             lv_obj_add_event_cb(input, on_address_done, LV_EVENT_DEFOCUSED, nullptr);
+            lv_obj_add_event_cb(input, on_manual_entry_focused, LV_EVENT_FOCUSED, nullptr);
         }
         spdlog::trace("[{}] Address input initialized", get_name());
     }
@@ -343,6 +345,7 @@ void LabelPrinterSettingsOverlay::init_port_input() {
         lv_textarea_set_text(input, port_str.c_str());
         if (!inputs_initialized_) {
             lv_obj_add_event_cb(input, on_port_done, LV_EVENT_DEFOCUSED, nullptr);
+            lv_obj_add_event_cb(input, on_manual_entry_focused, LV_EVENT_FOCUSED, nullptr);
         }
         spdlog::trace("[{}] Port input initialized", get_name());
     }
@@ -576,15 +579,39 @@ void LabelPrinterSettingsOverlay::merge_and_update_discovery() {
     spdlog::debug("[{}] Discovery update: {} raw + {} ipp = {} merged printers", get_name(),
                   raw_printers_.size(), ipp_printers_.size(), discovered_network_printers_.size());
 
-    // Auto-select the first discovered printer if no address is configured yet
-    if (!discovered_network_printers_.empty()) {
-        auto& settings = LabelPrinterSettingsManager::instance();
-        if (!settings.is_configured()) {
-            handle_printer_selected(0);
-            spdlog::info("[{}] Auto-selected first discovered printer: {}", get_name(),
-                         discovered_network_printers_[0].printer.name);
-        }
+    auto& settings = LabelPrinterSettingsManager::instance();
+    std::vector<helix::RankedNetworkPrinter> ranked;
+    ranked.reserve(discovered_network_printers_.size());
+    for (const auto& np : discovered_network_printers_) {
+        ranked.push_back({np.printer.ip_address, np.protocol});
     }
+    const auto pick = helix::pick_discovered_printer(ranked, settings.get_printer_address(),
+                                                     settings.get_printer_protocol(),
+                                                     auto_picked_ || !settings.is_configured());
+    if (pick.select >= 0) {
+        auto_picked_ = true;
+        handle_printer_selected(pick.select);
+        spdlog::info("[{}] Auto-selected best discovered printer: {}", get_name(),
+                     discovered_network_printers_[pick.select].printer.name);
+    }
+    if (pick.show >= 0) {
+        lv_dropdown_set_selected(dropdown, static_cast<uint32_t>(pick.show));
+    }
+}
+
+void LabelPrinterSettingsOverlay::handle_user_printer_selected(int index) {
+    auto_picked_ = false;
+    handle_printer_selected(index);
+}
+
+// Typing an address or port takes the choice over from discovery, so a later
+// discovery report cannot replace what is being typed.
+void LabelPrinterSettingsOverlay::handle_manual_entry_started() {
+    auto_picked_ = false;
+}
+
+void LabelPrinterSettingsOverlay::on_manual_entry_focused(lv_event_t*) {
+    get_label_printer_settings_overlay().handle_manual_entry_started();
 }
 
 void LabelPrinterSettingsOverlay::handle_printer_selected(int index) {
@@ -893,8 +920,12 @@ void LabelPrinterSettingsOverlay::handle_address_changed() {
     if (input) {
         const char* text = lv_textarea_get_text(input);
         std::string addr = text ? text : "";
+        auto& settings = LabelPrinterSettingsManager::instance();
+        if (addr != settings.get_printer_address()) {
+            auto_picked_ = false;
+        }
         spdlog::info("[{}] Address changed: {}", get_name(), addr);
-        LabelPrinterSettingsManager::instance().set_printer_address(addr);
+        settings.set_printer_address(addr);
     }
 }
 
@@ -912,8 +943,12 @@ void LabelPrinterSettingsOverlay::handle_port_changed() {
         if (text && text[0] != '\0') {
             int port = std::atoi(text);
             if (port > 0 && port <= 65535) {
+                auto& settings = LabelPrinterSettingsManager::instance();
+                if (port != settings.get_printer_port()) {
+                    auto_picked_ = false;
+                }
                 spdlog::info("[{}] Port changed: {}", get_name(), port);
-                LabelPrinterSettingsManager::instance().set_printer_port(port);
+                settings.set_printer_port(port);
             } else {
                 spdlog::warn("[{}] Invalid port: {}", get_name(), text);
                 ToastManager::instance().show(ToastSeverity::WARNING, lv_tr("Invalid port number"));
@@ -1633,7 +1668,7 @@ void LabelPrinterSettingsOverlay::on_printer_selected(lv_event_t* e) {
     LVGL_SAFE_EVENT_CB_BEGIN("[LabelPrinterSettings] on_printer_selected");
     auto* dropdown = static_cast<lv_obj_t*>(lv_event_get_current_target(e));
     int index = static_cast<int>(lv_dropdown_get_selected(dropdown));
-    get_label_printer_settings_overlay().handle_printer_selected(index);
+    get_label_printer_settings_overlay().handle_user_printer_selected(index);
     LVGL_SAFE_EVENT_CB_END();
 }
 
