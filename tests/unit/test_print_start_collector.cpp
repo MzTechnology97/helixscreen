@@ -10,6 +10,8 @@
  * These tests don't require LVGL or Moonraker - they test pure regex logic.
  */
 
+#include "../test_helpers/print_start_collector_test_access.h"
+
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
@@ -82,6 +84,10 @@ static bool matches(const std::regex& pattern, const std::string& line) {
     return std::regex_search(line, pattern);
 }
 
+static bool is_respond_completion(const std::string& line) {
+    return PrintStartCollectorTestAccess::is_respond_completion(line);
+}
+
 // ============================================================================
 // PRINT_START Marker Tests
 // ============================================================================
@@ -152,6 +158,18 @@ TEST_CASE("PrintStart: RESPOND completion detection", "[core][print][respond]") 
         REQUIRE(matches(respond_completion_pattern, "print complete") == false);
         // Unrelated with both words far apart in different context
         REQUIRE(matches(respond_completion_pattern, "start heating the print bed") == false);
+    }
+
+    SECTION("A host prompt asking to start the print is not a print that started") {
+        // Z-Mod's material picker footer, emitted before any print exists
+        REQUIRE(!is_respond_completion(
+            "// action:prompt_footer_button Start print|PRINT_ZCOLOR LEVELING=0 "
+            "FILENAME=\"Button_PETG_6m32s.gcode\" ALLOWED_TOOL_COUNT=1"));
+        REQUIRE(!is_respond_completion("// action:prompt_button Start print|START_PRINT"));
+        REQUIRE(!is_respond_completion("// action:prompt_text Print starting soon"));
+        REQUIRE(!is_respond_completion("  // action:prompt_begin Start print?"));
+        // An action line that is not a prompt still carries a message
+        REQUIRE(is_respond_completion("// action:notification Print started"));
     }
 }
 
@@ -541,7 +559,6 @@ TEST_CASE("PrintStart: typical noise lines should not match phases", "[print][ne
 
 #include "../lvgl_test_fixture.h"
 #include "../test_helpers/preprint_config_scope.h"
-#include "../test_helpers/print_start_collector_test_access.h"
 #include "../test_helpers/update_queue_test_access.h"
 #include "config.h"
 #include "moonraker_client_mock.h"

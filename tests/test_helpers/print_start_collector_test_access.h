@@ -5,6 +5,10 @@
 
 class PrintStartCollectorTestAccess {
   public:
+    static bool is_respond_completion(const std::string& line) {
+        return PrintStartCollector::is_respond_completion(line);
+    }
+
     /// Wind back the start time to simulate elapsed seconds.
     ///
     /// Also winds back both activity stamps, so this models "N seconds passed

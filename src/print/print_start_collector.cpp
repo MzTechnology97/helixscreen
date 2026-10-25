@@ -6,6 +6,7 @@
 #include "ui_temperature_utils.h"
 #include "ui_update_queue.h"
 
+#include "action_prompt_manager.h"
 #include "config.h"
 #include "format_utils.h"
 #include "lvgl/src/others/translation/lv_translation.h"
@@ -80,6 +81,16 @@ const std::regex PrintStartCollector::completion_pattern_(
 const std::regex PrintStartCollector::respond_completion_pattern_(
     R"(\bprint\b\W+\b(start|started|starting)\b|\b(start|started|starting)\b\W+\bprint\b)",
     std::regex::icase);
+
+bool PrintStartCollector::is_respond_completion(const std::string& line) {
+    // A host prompt's lines are UI for a dialog, so a "Start print" button is
+    // the printer asking whether to start, not reporting that it did.
+    if (auto action = ActionPromptManager::parse_action_line(line);
+        action && action->command.rfind("prompt_", 0) == 0) {
+        return false;
+    }
+    return std::regex_search(line, respond_completion_pattern_);
+}
 
 // ============================================================================
 // CONSTRUCTOR / DESTRUCTOR
