@@ -3559,6 +3559,16 @@ void Application::setup_discovery_callbacks() {
                                                   "not the bypass — keeping external spool");
                                     return;
                                 }
+                                // A manual entry never set the server's active
+                                // spool, so a clear says nothing about it.
+                                // Unlinking the bypass spool commits one and then
+                                // clears the server, whose echo lands here.
+                                const auto existing = ams.get_external_spool_info();
+                                if (existing && existing->spoolman_id <= 0) {
+                                    spdlog::debug("[Application] Active spool cleared, bypass "
+                                                  "holds an unlinked entry, keeping it");
+                                    return;
+                                }
                                 spdlog::info("[Application] Active spool cleared via notification");
                                 ams.clear_external_spool_info();
                             });
