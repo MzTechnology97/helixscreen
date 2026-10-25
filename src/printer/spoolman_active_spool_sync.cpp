@@ -6,8 +6,10 @@
 #include "ui_update_queue.h"
 
 #include "ams_state.h"
+#include "app_globals.h"
 #include "i_moonraker_sub_apis.h"
 #include "moonraker_error.h"
+#include "printer_state.h"
 
 #include <spdlog/spdlog.h>
 
@@ -62,6 +64,25 @@ void sync_from_status(ISpoolmanAPI& spoolman, bool connected, int active_spool_i
             spdlog::warn("[Application] Failed to fetch active spool {}: {}", active_spool_id,
                          err.message);
         });
+}
+
+void on_status_notification(ISpoolmanAPI& spoolman, const nlohmann::json& msg, ApplySpoolFn apply) {
+    const auto& params = msg.contains("params") ? msg["params"] : msg;
+    if (!params.is_array() || params.empty() || !params[0].is_object()) {
+        return;
+    }
+    const auto& status = params[0];
+    const auto it = status.find("spoolman_connected");
+    if (it == status.end() || !it->is_boolean()) {
+        return;
+    }
+    const bool connected = it->get<bool>();
+    spdlog::info("[Application] Spoolman {} (status notification)",
+                 connected ? "connected" : "disconnected");
+    get_printer_state().set_spoolman_available(connected);
+    if (connected) {
+        request_startup_sync(spoolman, std::move(apply));
+    }
 }
 
 } // namespace helix::spoolman_sync

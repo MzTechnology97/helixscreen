@@ -9,6 +9,8 @@
 #include <functional>
 #include <string>
 
+#include "hv/json.hpp"
+
 /// Startup sync of the external spool slot from Moonraker's active Spoolman spool, so
 /// the filament panel shows the right spool even when it was changed from Spoolman's
 /// web UI or another client.
@@ -25,5 +27,10 @@ void request_startup_sync(ISpoolmanAPI& spoolman, ApplySpoolFn apply);
 /// fetches the spool and applies it. Main thread only: it reads AmsState.
 void sync_from_status(ISpoolmanAPI& spoolman, bool connected, int active_spool_id,
                       const ApplySpoolFn& apply);
+
+/// The notify_spoolman_status_changed handler: sets Spoolman availability, and on a
+/// connect reruns the startup sync. @p msg is the full JSON-RPC message; one without
+/// a boolean `spoolman_connected` is ignored. Callable from any thread.
+void on_status_notification(ISpoolmanAPI& spoolman, const nlohmann::json& msg, ApplySpoolFn apply);
 
 } // namespace helix::spoolman_sync

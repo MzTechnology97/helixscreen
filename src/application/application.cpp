@@ -3582,6 +3582,18 @@ void Application::setup_discovery_callbacks() {
                     });
             }
 
+            // Moonraker's link to Spoolman comes and goes on its own (Spoolman starts
+            // after Moonraker, the network drops), and discovery asks only once.
+            {
+                IMoonrakerAPI* api_for_status = api;
+                client->register_method_callback(
+                    "notify_spoolman_status_changed", "spoolman_status_sync",
+                    [api_for_status, sync_external_spool](const nlohmann::json& data) {
+                        helix::spoolman_sync::on_status_notification(api_for_status->spoolman(),
+                                                                     data, sync_external_spool);
+                    });
+            }
+
             // Fetch job queue now that WebSocket is actually connected
             if (app->m_job_queue_state) {
                 app->m_job_queue_state->fetch();

@@ -17,8 +17,10 @@
 #include "../test_helpers/update_queue_test_access.h"
 #include "ams_state.h"
 #include "app_constants.h"
+#include "app_globals.h"
 #include "config.h"
 #include "i_moonraker_sub_apis.h"
+#include "printer_state.h"
 #include "spoolman_active_spool_sync.h"
 #include "spoolman_types.h"
 
@@ -46,9 +48,11 @@ class RecordingSpoolman : public ISpoolmanAPI {
     };
     std::vector<SpoolRequest> spool_requests;
     std::function<void(bool, int)> status_callback;
+    int status_requests = 0;
 
     void get_spoolman_status(std::function<void(bool, int)> on_success, ErrorCallback,
                              bool) override {
+        ++status_requests;
         status_callback = std::move(on_success);
     }
     void get_spoolman_spool(int spool_id, helix::SpoolCallback on_success, ErrorCallback,
@@ -157,4 +161,58 @@ TEST_CASE_METHOD(SyncFixture, "a startup status the external slot already holds 
         pump();
         CHECK(spoolman.spool_requests.empty());
     }
+}
+
+namespace {
+
+json spoolman_status_message(const json& status) {
+    return json{{"method", "notify_spoolman_status_changed"}, {"params", json::array({status})}};
+}
+
+/// PrinterCapabilitiesState writes the flag through a deferral that lands on a
+/// later queue tick than the one that queued it.
+void settle() {
+    helix::ui::UpdateQueueTestAccess::drain_all(helix::ui::UpdateQueue::instance());
+}
+
+} // namespace
+
+// Moonraker can come up before Spoolman does, so discovery's one status query
+// answers "down" and only this notification ever says otherwise.
+TEST_CASE_METHOD(SyncFixture, "Spoolman connecting after startup makes it available",
+                 "[spoolman_sync][spoolman_status]") {
+    get_printer_state().init_subjects(false);
+    get_printer_state().set_spoolman_available(false);
+    settle();
+    REQUIRE_FALSE(get_printer_state().is_spoolman_available());
+    const int before = spoolman.status_requests;
+    auto apply = [this](const SpoolInfo& spool, std::string) { applied.push_back(spool.id); };
+
+    spool_sync::on_status_notification(
+        spoolman, spoolman_status_message(json{{"spoolman_connected", true}}), apply);
+    settle();
+    CHECK(get_printer_state().is_spoolman_available());
+    // The startup active-spool sync found Spoolman down and did nothing, so the
+    // reconnect runs it again.
+    CHECK(spoolman.status_requests == before + 1);
+
+    spool_sync::on_status_notification(
+        spoolman, spoolman_status_message(json{{"spoolman_connected", false}}), apply);
+    settle();
+    CHECK_FALSE(get_printer_state().is_spoolman_available());
+    CHECK(spoolman.status_requests == before + 1);
+}
+
+TEST_CASE_METHOD(SyncFixture, "a status notification without the field changes nothing",
+                 "[spoolman_sync][spoolman_status]") {
+    get_printer_state().init_subjects(false);
+    get_printer_state().set_spoolman_available(true);
+    settle();
+    const int before = spoolman.status_requests;
+
+    spool_sync::on_status_notification(spoolman, spoolman_status_message(json::object()),
+                                       [](const SpoolInfo&, std::string) {});
+    settle();
+    CHECK(get_printer_state().is_spoolman_available());
+    CHECK(spoolman.status_requests == before);
 }
