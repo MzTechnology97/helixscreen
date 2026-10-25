@@ -479,6 +479,24 @@ class UpdateChecker {
     static std::string get_platform_display_name(const std::string& key);
 
     /**
+     * @brief False when @p key's build updates through something other than a release asset
+     *
+     * The Android app updates as an APK from Google Play or the release page.
+     */
+    static bool installs_from_release_asset(const std::string& key);
+
+    /**
+     * @brief Parse an R2 or dev-channel release manifest for the @p platform_key build
+     *
+     * A build that installs from a release asset needs one under its key; one that
+     * does not (installs_from_release_asset()) reads the version alone and leaves
+     * the download fields empty.
+     * @return false with @p error set when the manifest is malformed or lacks the asset
+     */
+    static bool parse_release_manifest(const std::string& body, const std::string& platform_key,
+                                       ReleaseInfo& info, std::string& error);
+
+    /**
      * @brief Find a local install.sh by searching well-known paths
      * @param extra_search_paths Additional paths to search (prepended to default list)
      * @return Path to install.sh if found, empty string otherwise

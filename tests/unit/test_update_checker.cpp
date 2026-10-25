@@ -1594,8 +1594,8 @@ TEST_CASE("get_platform_key returns a known platform", "[update_checker][platfor
     // here — AND a matching #elif in get_platform_key — silently bricks
     // in-app updates for that platform (falls through to "pi", so the device
     // downloads the Pi tarball and ends up with missing shared libs).
-    std::vector<std::string> known_platforms = {"pi", "pi32", "x86", "ad5m",  "k1",
-                                                "k2", "ad5x", "cc1", "esp32", "snapmaker-u1"};
+    std::vector<std::string> known_platforms = {
+        "pi", "pi32", "x86", "ad5m", "k1", "k2", "ad5x", "cc1", "esp32", "snapmaker-u1", "android"};
     bool found = false;
     for (const auto& p : known_platforms) {
         if (platform == p) {
@@ -1647,14 +1647,42 @@ TEST_CASE("get_platform_display_name returns non-empty string for all known plat
     // Every key that get_platform_key() can return MUST have a display name.
     // Keep in sync with platform_canonical_model in debug_bundle_collector.cpp
     // (and UpdateChecker::get_platform_display_name once centralised).
-    std::vector<std::string> known_platforms = {"pi", "pi32", "x86", "ad5m",  "k1",
-                                                "k2", "ad5x", "cc1", "esp32", "snapmaker-u1"};
+    std::vector<std::string> known_platforms = {
+        "pi", "pi32", "x86", "ad5m", "k1", "k2", "ad5x", "cc1", "esp32", "snapmaker-u1", "android"};
 
     for (const auto& key : known_platforms) {
         INFO("platform key: " << key);
         std::string name = UpdateChecker::get_platform_display_name(key);
         REQUIRE(!name.empty());
     }
+}
+
+TEST_CASE("The Android app reads a manifest's version without needing a release asset",
+          "[update_checker][platform][android]") {
+    CHECK_FALSE(UpdateChecker::installs_from_release_asset("android"));
+    CHECK(UpdateChecker::installs_from_release_asset("pi"));
+    CHECK(UpdateChecker::get_platform_display_name("android") == "Android");
+
+    // The stable manifest lists Linux zips only.
+    const std::string manifest = R"({"version": "1.0.7", "tag": "v1.0.7", "assets": {
+        "pi": {"zip_url": "https://r/pi.zip", "zip_sha256": "pp"}}})";
+
+    UpdateChecker::ReleaseInfo info;
+    std::string error;
+    REQUIRE(UpdateChecker::parse_release_manifest(manifest, "android", info, error));
+    CHECK(info.version == "1.0.7");
+    CHECK(info.tag_name == "v1.0.7");
+    CHECK(info.download_url.empty());
+
+    // A Linux build missing from the same manifest is still refused.
+    UpdateChecker::ReleaseInfo pi32_info;
+    CHECK_FALSE(UpdateChecker::parse_release_manifest(manifest, "pi32", pi32_info, error));
+    CHECK(error.find("pi32") != std::string::npos);
+
+    UpdateChecker::ReleaseInfo pi_info;
+    REQUIRE(UpdateChecker::parse_release_manifest(manifest, "pi", pi_info, error));
+    CHECK(pi_info.download_url == "https://r/pi.zip");
+    CHECK(pi_info.sha256 == "pp");
 }
 
 TEST_CASE("get_platform_display_name returns correct strings for known platforms",
