@@ -253,6 +253,7 @@ export function isVersionShapeValid(version: string): boolean {
 const KNOWN_PLATFORMS = new Set([
   "ad5m",
   "ad5x",
+  "android",
   "cc1",
   "esp32",
   "k1",
