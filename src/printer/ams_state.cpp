@@ -807,6 +807,7 @@ void AmsState::init_backends_from_hardware(const helix::PrinterDiscovery& hardwa
         backend->set_tool_sensor(helix::toolchanger_addon::resolve_tool_sensor(hardware));
         backend->set_tool_commands(helix::toolchanger_addon::resolve_tool_commands(hardware));
         backend->set_discovered_sensors(hardware.filament_sensor_names());
+        backend->set_firmware_maps_tools_per_print(hardware.firmware_maps_tools_per_print());
 
         int index = add_backend(std::move(backend));
 

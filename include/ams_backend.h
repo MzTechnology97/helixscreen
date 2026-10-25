@@ -2596,6 +2596,14 @@ class AmsBackend {
         (void)sensor_names;
     }
 
+    /**
+     * @brief Tell the backend its firmware maps tools per print and refuses a
+     *        written mapping table (an AFC shim over Z-Mod).
+     */
+    virtual void set_firmware_maps_tools_per_print(bool per_print) {
+        (void)per_print;
+    }
+
     // ========================================================================
     // Mock Support
     // ========================================================================

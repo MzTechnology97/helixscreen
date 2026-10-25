@@ -283,6 +283,12 @@ class PrinterDiscovery {
                 has_mmu_ = true;
                 mmu_type_ = AmsType::AFC;
             }
+            // Z-Mod's afclite extra registers the `AFC` object above through
+            // its own name; recorded separately so the AFC backend can tell the
+            // shim from real AFC, which never publishes this object.
+            else if (name == "zmod_afclite") {
+                has_zmod_afclite_ = true;
+            }
             // CFS detection (Creality Filament System).
             //
             // Both K1 and K2 series publish a `box` Klipper object when the
@@ -863,6 +869,7 @@ class PrinterDiscovery {
         has_mmu_ = false;
         has_snapmaker_ = false;
         has_afc_lite_ = false;
+        has_zmod_afclite_ = false;
         has_tool_changer_ = false;
         has_pin_watch_ = false;
         pin_watch_object_name_.clear();
@@ -977,6 +984,17 @@ class PrinterDiscovery {
     /// selection is decided alongside has_snapmaker().
     [[nodiscard]] bool has_afc_lite() const {
         return has_afc_lite_;
+    }
+
+    /// Z-Mod's AFC shim (`zmod_afclite`) is present.
+    [[nodiscard]] bool has_zmod_afclite() const {
+        return has_zmod_afclite_;
+    }
+
+    /// The filament system's firmware maps tools per print in its own prompt
+    /// and refuses a written mapping table (Z-Mod's AFC shim).
+    [[nodiscard]] bool firmware_maps_tools_per_print() const {
+        return has_zmod_afclite_;
     }
 
     /// Full Klipper object name of the pin_watch section (e.g. "pin_watch io"),
@@ -1674,6 +1692,7 @@ class PrinterDiscovery {
     bool has_mmu_ = false;
     bool has_snapmaker_ = false;
     bool has_afc_lite_ = false;
+    bool has_zmod_afclite_ = false;
     bool has_tool_changer_ = false;
     bool has_pin_watch_ = false;
     std::string pin_watch_object_name_;

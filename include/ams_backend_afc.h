@@ -355,8 +355,12 @@ class AmsBackendAfc : public AmsSubscriptionBackend {
         return true;
     }
 
+    /// None where the firmware maps tools per print itself and refuses SET_MAP:
+    /// a pick sent there only raises an error before the firmware asks anyway.
     [[nodiscard]] RemapStrategy get_remap_strategy() const override {
-        return RemapStrategy::Native;
+        return firmware_maps_tools_per_print_.load(std::memory_order_relaxed)
+                   ? RemapStrategy::None
+                   : RemapStrategy::Native;
     }
 
     /// AFC owns the lane->tool map (SET_MAP) and get_tool_mapping() returns it.
@@ -466,6 +470,9 @@ class AmsBackendAfc : public AmsSubscriptionBackend {
                               const std::vector<std::string>& hub_names) override;
 
     void set_discovered_sensors(const std::vector<std::string>& sensor_names) override;
+    void set_firmware_maps_tools_per_print(bool per_print) override {
+        firmware_maps_tools_per_print_.store(per_print, std::memory_order_relaxed);
+    }
 
     // Device-Specific Actions
     /**
@@ -1347,7 +1354,11 @@ class AmsBackendAfc : public AmsSubscriptionBackend {
     // helix::Config file managers (lazy-loaded on first device action access)
     std::unique_ptr<AfcConfigManager> afc_config_;        ///< AFC/AFC.cfg
     std::unique_ptr<AfcConfigManager> macro_vars_config_; ///< AFC/AFC_Macro_Vars.cfg
-    std::atomic<bool> configs_loading_{false};            ///< Currently loading config files
+    /// The AFC object is a shim over a firmware that owns tool mapping per
+    /// print (Z-Mod's afclite): its SET_MAP raises an error by design.
+    std::atomic<bool> firmware_maps_tools_per_print_{false};
+
+    std::atomic<bool> configs_loading_{false}; ///< Currently loading config files
     std::atomic<bool> configs_loaded_{
         false}; ///< helix::Config files have been loaded (acquire/release barrier)
 

@@ -1213,6 +1213,23 @@ TEST_CASE("AFC persistence: SET_MAP fires when mapped_tool changes via set_slot_
     REQUIRE(helper.has_gcode("SET_MAP LANE=lane1 MAP=T2"));
 }
 
+TEST_CASE("AFC over a firmware that maps tools per print offers no remap and sends no SET_MAP",
+          "[ams][afc][tool_mapping]") {
+    AmsBackendAfcTestHelper helper;
+    helper.set_afc_version("1.0.20");
+    helper.set_firmware_maps_tools_per_print(true);
+    helper.initialize_test_lanes_with_slots(4);
+
+    CHECK(helper.get_remap_strategy() == AmsBackend::RemapStrategy::None);
+    CHECK(helper.set_tool_mapping(0, 1).result == AmsResult::NOT_SUPPORTED);
+
+    SlotInfo info;
+    info.mapped_tool = 2;
+    helper.set_slot_info(0, info);
+
+    CHECK_FALSE(helper.has_gcode_starting_with("SET_MAP "));
+}
+
 TEST_CASE("AFC persistence: SET_MAP not fired when mapped_tool unchanged",
           "[ams][afc][persistence]") {
     AmsBackendAfcTestHelper helper;

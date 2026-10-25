@@ -5488,7 +5488,8 @@ AmsError AmsBackendAfc::set_slot_info(int slot_index, const SlotInfo& info, bool
                 // Tool mapping (lane → tool number) via SET_MAP.
                 // Mirrors set_tool_mapping() but is reachable from the slot edit modal,
                 // which routes all changes through set_slot_info().
-                if (info.mapped_tool != old_mapped_tool && info.mapped_tool >= 0) {
+                if (info.mapped_tool != old_mapped_tool && info.mapped_tool >= 0 &&
+                    !firmware_maps_tools_per_print_.load(std::memory_order_relaxed)) {
                     execute_gcode(
                         fmt::format("SET_MAP LANE={} MAP=T{}", lane_name, info.mapped_tool));
                 }
@@ -5529,6 +5530,9 @@ void AmsBackendAfc::persist_slot_weight(int slot_index, float remaining_weight_g
 }
 
 AmsError AmsBackendAfc::set_tool_mapping(int tool_number, int slot_index) {
+    if (firmware_maps_tools_per_print_.load(std::memory_order_relaxed)) {
+        return AmsErrorHelper::not_supported("The firmware maps tools per print");
+    }
     std::string lane_name; // Declare outside lock for use after release
     {
         std::lock_guard<std::mutex> lock(mutex_);

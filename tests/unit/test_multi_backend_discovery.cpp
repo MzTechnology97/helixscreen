@@ -510,6 +510,24 @@ TEST_CASE_METHOD(MultiBackendFixture, "AmsState: init_backends_from_hardware wit
     ams.deinit_subjects();
 }
 
+TEST_CASE_METHOD(MultiBackendFixture,
+                 "PrinterDiscovery: an AFC shim that maps tools per print keeps AFC",
+                 "[ams][multi-backend][tool_mapping]") {
+    // An AD5X on Z-Mod with its AFC shim: the AFC claim stands, and the
+    // firmware owns tool mapping.
+    helix::PrinterDiscovery hw;
+    hw.parse_objects(nlohmann::json::array({"AFC", "AFC_unit IFS", "AFC_lane E0", "AFC_lane E1",
+                                            "zmod_afclite", "extruder", "heater_bed"}));
+    CHECK(hw.mmu_type() == AmsType::AFC);
+    CHECK(hw.firmware_maps_tools_per_print());
+
+    // Real AFC publishes no such object and keeps its own SET_MAP.
+    helix::PrinterDiscovery plain;
+    plain.parse_objects(nlohmann::json::array({"AFC", "AFC_lane lane1", "extruder"}));
+    CHECK(plain.mmu_type() == AmsType::AFC);
+    CHECK_FALSE(plain.firmware_maps_tools_per_print());
+}
+
 TEST_CASE_METHOD(MultiBackendFixture, "AmsState: init_backends skips when no systems detected",
                  "[ams][multi-backend]") {
     lv_init_safe();
