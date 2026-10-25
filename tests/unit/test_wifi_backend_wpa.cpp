@@ -35,7 +35,9 @@
 #include <filesystem>
 #include <mutex>
 #include <optional>
+#include <sys/stat.h>
 #include <thread>
+#include <unistd.h>
 
 #include "../catch_amalgamated.hpp"
 
@@ -181,6 +183,36 @@ TEST_CASE("wpa stop with a scan outstanding stays silent and reusable", "[networ
 // beacon-based scan selection: the join only completes when the backend asks
 // for a directed probe via scan_ssid=1. The visible join must not ask, or
 // every ordinary connect pays a full-channel probe sweep.
+// The standard control directory is root:netdev 0750, so a service user
+// outside netdev cannot list it. That is a permission problem with a fix the
+// user can apply, not a missing daemon.
+TEST_CASE("wpa reports an unreadable control directory as permission denied", "[network][wpa]") {
+    if (::geteuid() == 0) {
+        SKIP("root reads a mode-0000 directory, so the denial cannot be staged");
+    }
+    // The backend always also searches the standard system directories, so a
+    // host running a real supplicant would answer with its socket instead.
+    for (const char* system_dir :
+         {"/run/wpa_supplicant", "/var/run/wpa_supplicant", "/etc/wifi/wpa_supplicant/sockets"}) {
+        if (std::filesystem::exists(system_dir)) {
+            SKIP("host has a real wpa_supplicant control directory: " << system_dir);
+        }
+    }
+    WpaFakeFixture fx;
+    const std::string locked = fx.dir + "/locked";
+    REQUIRE(std::filesystem::create_directory(locked));
+    REQUIRE(::chmod(locked.c_str(), 0) == 0);
+    fx.env_guard.emplace(locked);
+
+    WifiBackendWpaSupplicant backend(kWatchdogMs);
+    backend.set_silent(true);
+    WiFiError result = backend.start();
+    ::chmod(locked.c_str(), 0700);
+    ::rmdir(locked.c_str());
+
+    CHECK(result.result == WiFiResult::PERMISSION_DENIED);
+}
+
 TEST_CASE("wpa hidden join sends scan_ssid 1; a visible join omits it", "[network][wpa][hidden]") {
     WpaFakeFixture fx;
 
