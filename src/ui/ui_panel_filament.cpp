@@ -371,8 +371,7 @@ void FilamentPanel::deinit_subjects() {
     if (pending_preheat_op_ != PreheatOp::NONE) {
         pending_preheat_op_ = PreheatOp::NONE;
         pending_preheat_target_ = 0;
-        // Same leak this abandonment path guards against in cancel_pending_preheat().
-        load_home_confirmed_ = false;
+        home_before_load_macro_ = false;
         // Don't schedule delayed cooldown during teardown — just cool down immediately
         if (prior_nozzle_target_ == 0) {
             if (auto* c = get_temperature_controller()) {
@@ -1319,27 +1318,17 @@ void FilamentPanel::handle_load_button() {
     snapshot_prior_heater_target();
 
     if (!is_extrusion_allowed()) {
-        // Ask "home printer first?" BEFORE the preheat, so a decline never wastes
-        // a preheat cycle. The G28 itself goes out at dispatch, once the preheat
-        // is done: execute_load() carries the answer to whichever tier runs. A raw
-        // extrude moves only E, which Klipper allows unhomed, so it never asks.
+        // An unhomed load homes with no confirmation: asking for the load is
+        // consent to the home it requires. The G28 goes out at dispatch, once the
+        // preheat is done: a backend load homes inside its own ensure_homed_then(),
+        // and execute_load() homes before the macro tier. A raw extrude moves only
+        // E, which Klipper allows unhomed, so it never homes.
         AmsBackend* delegating_backend = AmsState::instance().get_backend();
-        if (plan_current_load().tier != helix::ui::FilamentTier::RawGcode &&
+        if (plan_current_load().tier == helix::ui::FilamentTier::Macro &&
             !helix::toolhead_is_homed(printer_state_) &&
             !(delegating_backend && delegating_backend->delegates_homing_to_printer())) {
-            spdlog::info("[{}] Toolhead not homed -- asking before starting preheat for load",
-                         get_name());
-            // FilamentPanel is an immortal singleton [L012] -- capturing
-            // [this] directly is safe with no AsyncLifetimeGuard token.
-            helix::ui::request_home_confirmation(
-                [this]() {
-                    load_home_confirmed_ = true;
-                    start_preheat_for_op(PreheatOp::LOAD);
-                },
-                [this]() {
-                    spdlog::info("[{}] User declined pre-load home; no heat commanded", get_name());
-                });
-            return;
+            spdlog::info("[{}] Toolhead not homed -- homing before the load macro", get_name());
+            home_before_load_macro_ = true;
         }
         start_preheat_for_op(PreheatOp::LOAD);
         return;
@@ -2588,9 +2577,8 @@ void FilamentPanel::cancel_pending_preheat() {
     pending_preheat_op_ = PreheatOp::NONE;
     pending_preheat_target_ = 0;
 
-    // A confirmed-then-abandoned load must not carry its home consent into a
-    // later, unrelated load.
-    load_home_confirmed_ = false;
+    // An abandoned load must not carry its home into a later, unrelated load.
+    home_before_load_macro_ = false;
 
     // Cancel any pending cooldown timer
     PostOpCooldownManager::instance().cancel();
@@ -2773,9 +2761,9 @@ helix::ui::FilamentOpPlan FilamentPanel::plan_current_load() const {
 }
 
 void FilamentPanel::execute_load() {
-    // Consumed by every load, whichever tier it takes, so a consent given for one
-    // load never reaches a later one.
-    const bool home_confirmed = std::exchange(load_home_confirmed_, false);
+    // Consumed by every load, whichever tier it takes, so one load's home never
+    // reaches a later one.
+    const bool home_first = std::exchange(home_before_load_macro_, false);
     AmsBackend* backend = AmsState::instance().get_backend();
     const helix::ui::FilamentOpPlan plan = plan_current_load();
     const auto& info = StandardMacros::instance().get(StandardMacroSlot::LoadFilament);
@@ -2794,11 +2782,6 @@ void FilamentPanel::execute_load() {
         backend_op_active_ = true;
         op_in_flight_ = FilamentOp::Load;
         op_started(FilamentOp::Load);
-        // The user already agreed to home for this load. The backend homes right
-        // before its own dispatch, and must not ask a second time.
-        if (home_confirmed && !helix::toolhead_is_homed(printer_state_)) {
-            backend->arm_home_preconfirmed();
-        }
         AmsError err;
         switch (outcome.call) {
         case helix::ui::AmsCall::ChangeTool:
@@ -2814,11 +2797,6 @@ void FilamentPanel::execute_load() {
             break;
         }
         if (!err.success()) {
-            // The dispatch this home consent was armed for never ran, and the arm
-            // is consumed single-shot by whichever operation dispatches next —
-            // leaving it set would home a later one without asking. Idempotent
-            // no-op when nothing was armed.
-            backend->clear_home_preconfirmed();
             operation_guard_.end();
             backend_op_active_ = false;
             op_in_flight_.reset();
@@ -2859,13 +2837,13 @@ void FilamentPanel::execute_load() {
         // bounded lifetime must guard this callback with a LifetimeToken.
         helix::ui::dispatch_filament_macro(
             macro_name, helix::ui::ParamPolicy::Prompt,
-            [this, macro_name, home_confirmed](const MacroParamResult& result) {
-                if (!home_confirmed) {
+            [this, macro_name, home_first](const MacroParamResult& result) {
+                if (!home_first) {
                     run_filament_macro(macro_name, "Load", result);
                     return;
                 }
-                // The user agreed to home first: the macro goes out only once
-                // G28 has, as a backend homes right before its own dispatch.
+                // The macro goes out only once G28 has, as a backend homes right
+                // before its own dispatch.
                 helix::ensure_homed_then(
                     api_, lifetime_,
                     [this, macro_name, result]() {

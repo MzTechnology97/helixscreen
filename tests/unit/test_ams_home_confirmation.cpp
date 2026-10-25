@@ -15,7 +15,6 @@
 #include "test_helpers/filament_panel_test_access.h"
 #include "test_helpers/lane_material_backend.h"
 #include "test_helpers/printer_state_test_access.h"
-#include "test_helpers/scoped_home_confirm_prompter.h"
 #include "test_helpers/toolchanger_test_access.h"
 #include "test_helpers/update_queue_test_access.h"
 
@@ -121,267 +120,12 @@ TEST_CASE("ensure_homed_then reports G28 failure through on_error", "[ams][homin
 }
 
 // =====================================================================
-// The confirmation prompt (Task 8)
+// A tool changer mount on an unhomed printer
 // =====================================================================
-// HomingProbeBackend's api_ is null, so these stay on the synchronous
-// fixture-only leg of ensure_homed_then() -- the prompter itself, and
-// on_confirm/on_cancel, all run inline with no queue drain needed. That is
-// exactly what proves the no-prompter default in test 4 below: nothing here
-// (or in any of the ~4600 other pre-existing tests) installs a prompter, so
-// request_home_confirmation() invoking on_confirm() synchronously is the only
-// thing keeping today's "just home it" behaviour intact.
-
-TEST_CASE("unhomed load asks before homing, and confirming proceeds", "[ams][homing][confirm]") {
-    LVGLTestFixture fixture;
-    HomingProbeBackend backend;
-    backend.homed = false;
-
-    int prompts = 0;
-    ScopedHomeConfirmPrompter guard(
-        [&prompts](std::function<void()> confirm, std::function<void()>) {
-            ++prompts;
-            confirm();
-        });
-
-    backend.ensure_homed_then("CHANGE_TOOL LANE=lane1");
-
-    CHECK(prompts == 1);
-    REQUIRE(backend.captured.size() == 2);
-    CHECK(backend.captured[0] == "G28");
-    CHECK(backend.captured[1] == "CHANGE_TOOL LANE=lane1");
-}
-
-TEST_CASE("cancelling the home sends nothing and lands IDLE", "[ams][homing][confirm]") {
-    LVGLTestFixture fixture;
-    HomingProbeBackend backend;
-    backend.homed = false;
-
-    ScopedHomeConfirmPrompter guard(
-        [](std::function<void()>, std::function<void()> cancel) { cancel(); });
-
-    backend.ensure_homed_then("CHANGE_TOOL LANE=lane1");
-
-    CHECK(backend.captured.empty());
-    CHECK(backend.get_system_info().action == AmsAction::IDLE);
-
-    // A cancelled op must not wedge the backend: the next load still works.
-    // homed=true means ensure_homed_then() never consults the prompter, so
-    // the still-installed cancel lambda above is simply never invoked.
-    backend.homed = true;
-    backend.ensure_homed_then("CHANGE_TOOL LANE=lane2");
-    REQUIRE(backend.captured.size() == 1);
-    CHECK(backend.captured[0] == "CHANGE_TOOL LANE=lane2");
-}
-
-TEST_CASE("an already-homed printer is never prompted", "[ams][homing][confirm]") {
-    LVGLTestFixture fixture;
-    HomingProbeBackend backend;
-    backend.homed = true;
-
-    int prompts = 0;
-    ScopedHomeConfirmPrompter guard(
-        [&prompts](std::function<void()> confirm, std::function<void()>) {
-            ++prompts;
-            confirm();
-        });
-
-    backend.ensure_homed_then("CHANGE_TOOL LANE=lane1");
-
-    CHECK(prompts == 0);
-    REQUIRE(backend.captured.size() == 1);
-}
-
-TEST_CASE("with no prompter installed the home proceeds silently", "[ams][homing][confirm]") {
-    LVGLTestFixture fixture;
-    HomingProbeBackend backend;
-    backend.homed = false;
-    ScopedHomeConfirmPrompter guard;
-
-    backend.ensure_homed_then("CHANGE_TOOL LANE=lane1");
-
-    REQUIRE(backend.captured.size() == 2);
-    CHECK(backend.captured[0] == "G28");
-}
-
-// =====================================================================
-// arm_home_preconfirmed() / clear_home_preconfirmed() -- the pre-preheat
-// confirmation seam (toolhead-homing-dry, option B)
-// =====================================================================
-// A UI surface that preheats before dispatching (FilamentPanel::LOAD,
-// AmsOperationSidebar::handle_load_with_preheat) asks "home printer first?"
-// BEFORE it starts heating, so a decline never wastes a heat cycle. On
-// confirm it arms this flag and starts the preheat; ensure_homed_then() -
-// called later, after the preheat, right before the tier-1 dispatch - must
-// then skip asking AGAIN, but the physical G28 still fires exactly where it
-// always has: nothing here is a substitute for toolhead_homed(), only for
-// the prompt.
-
-TEST_CASE("arm_home_preconfirmed is consumed single-shot", "[ams][homing][preconfirm]") {
-    LVGLTestFixture fixture;
-    HomingProbeBackend backend;
-    backend.homed = false;
-
-    int prompts = 0;
-    ScopedHomeConfirmPrompter guard(
-        [&prompts](std::function<void()> confirm, std::function<void()>) {
-            ++prompts;
-            confirm();
-        });
-
-    backend.arm_home_preconfirmed();
-
-    // First dispatch: pre-confirmed, so no prompt -- but G28 still fires,
-    // unchanged, because the toolhead is genuinely unhomed.
-    backend.ensure_homed_then("CHANGE_TOOL LANE=lane1");
-    CHECK(prompts == 0);
-    REQUIRE(backend.captured.size() == 2);
-    CHECK(backend.captured[0] == "G28");
-    CHECK(backend.captured[1] == "CHANGE_TOOL LANE=lane1");
-
-    // Second dispatch, still unhomed: the flag was consumed by the first
-    // call, so this one DOES prompt again.
-    backend.captured.clear();
-    backend.ensure_homed_then("CHANGE_TOOL LANE=lane2");
-    CHECK(prompts == 1);
-    REQUIRE(backend.captured.size() == 2);
-    CHECK(backend.captured[0] == "G28");
-    CHECK(backend.captured[1] == "CHANGE_TOOL LANE=lane2");
-}
-
-TEST_CASE("arm_home_preconfirmed is NOT consumed by a dispatch on an already-homed toolhead",
-          "[ams][homing][preconfirm]") {
-    // The ordering trap: a guard written as
-    //   skip_homing || std::exchange(home_preconfirmed_, false) || toolhead_homed()
-    // consumes the flag on ANY call, homed or not, because operator|| evaluates
-    // left to right. The correct guard checks toolhead_homed() first, so the
-    // homed branch short-circuits before ever touching the flag.
-    LVGLTestFixture fixture;
-    HomingProbeBackend backend;
-    backend.homed = true;
-
-    int prompts = 0;
-    ScopedHomeConfirmPrompter guard(
-        [&prompts](std::function<void()> confirm, std::function<void()>) {
-            ++prompts;
-            confirm();
-        });
-
-    backend.arm_home_preconfirmed();
-
-    // Homed: dispatches straight through the toolhead_homed() branch, which
-    // must leave the armed flag untouched.
-    backend.ensure_homed_then("CHANGE_TOOL LANE=lane1");
-    CHECK(prompts == 0);
-    REQUIRE(backend.captured.size() == 1);
-    CHECK(backend.captured[0] == "CHANGE_TOOL LANE=lane1");
-
-    // Now go unhomed. If the homed call above had wrongly consumed the flag,
-    // this one would prompt. It must not -- the still-armed flag from before
-    // is what should skip the prompt here (and it's the one that gets
-    // consumed by THIS call).
-    backend.captured.clear();
-    backend.homed = false;
-    backend.ensure_homed_then("CHANGE_TOOL LANE=lane2");
-    CHECK(prompts == 0);
-    REQUIRE(backend.captured.size() == 2);
-    CHECK(backend.captured[0] == "G28");
-    CHECK(backend.captured[1] == "CHANGE_TOOL LANE=lane2");
-}
-
-TEST_CASE("clear_home_preconfirmed undoes an armed-but-abandoned confirmation",
-          "[ams][homing][preconfirm]") {
-    // Models a UI surface that armed consent, then abandoned the load before
-    // it ever dispatched (preheat cancelled, panel torn down, op aborted).
-    // Without an explicit clear, the armed flag would leak forward into a
-    // later, completely unrelated dispatch on the same backend.
-    LVGLTestFixture fixture;
-    HomingProbeBackend backend;
-    backend.homed = false;
-
-    int prompts = 0;
-    ScopedHomeConfirmPrompter guard(
-        [&prompts](std::function<void()> confirm, std::function<void()>) {
-            ++prompts;
-            confirm();
-        });
-
-    backend.arm_home_preconfirmed();
-    backend.clear_home_preconfirmed();
-
-    backend.ensure_homed_then("CHANGE_TOOL LANE=lane1");
-    CHECK(prompts == 1); // the abandoned confirmation must not have leaked forward
-    REQUIRE(backend.captured.size() == 2);
-    CHECK(backend.captured[0] == "G28");
-    CHECK(backend.captured[1] == "CHANGE_TOOL LANE=lane1");
-}
-
-TEST_CASE("declining before a dispatch never arms anything for a later one",
-          "[ams][homing][preconfirm]") {
-    LVGLTestFixture fixture;
-    HomingProbeBackend backend;
-    backend.homed = false;
-
-    int prompts = 0;
-    ScopedHomeConfirmPrompter guard(
-        [&prompts](std::function<void()> confirm, std::function<void()> cancel) {
-            ++prompts;
-            if (prompts == 1) {
-                cancel(); // first dispatch: user declines
-            } else {
-                confirm(); // second dispatch: user confirms this time
-            }
-        });
-
-    // Declined: no G28, no payload -- "commands no heat" at the backend
-    // contract level (the UI-surface preheat call is covered by the live
-    // ctl transcript, since FilamentPanel/AmsOperationSidebar are not
-    // unit-instantiable -- see test_filament_load_preheat.cpp).
-    backend.ensure_homed_then("CHANGE_TOOL LANE=lane1");
-    CHECK(backend.captured.empty());
-    CHECK(backend.get_system_info().action == AmsAction::IDLE);
-
-    // A later, unrelated dispatch must still ask -- the decline armed nothing.
-    backend.ensure_homed_then("CHANGE_TOOL LANE=lane2");
-    CHECK(prompts == 2);
-    REQUIRE(backend.captured.size() == 2);
-    CHECK(backend.captured[0] == "G28");
-    CHECK(backend.captured[1] == "CHANGE_TOOL LANE=lane2");
-}
-
-// =====================================================================
-// A dismissal that never resolves synchronously must still unwedge
-// dispatch_operation's optimistic action (Task 8 review fix)
-// =====================================================================
-// The tests above all use ensure_homed_then() directly on a HomingProbeBackend
-// whose AmsAction starts and stays IDLE -- ensure_homed_then() itself never
-// touches system_info_.action except on its own cancel/failure branches, so
-// none of them can express the bug a reviewer found in the first cut of the
-// real prompter (src/application/subject_initializer.cpp): it wired the
-// legacy lv_event_cb_t form, modal_show_confirmation(), through the STATIC
-// Modal::show() path, and on that path backdrop-tap and ESC call
-// Modal::hide(dialog) directly -- bypassing the confirm/cancel callbacks
-// entirely. Neither callback ever
-// fired, so a dismissal by anything other than the two dialog buttons left
-// whichever AmsBackend that had called dispatch_operation() stuck: its
-// begin_dispatch_locked() sets the AmsAction optimistically *before*
-// ensure_homed_then() ever runs, and only the confirm/cancel callback can
-// resolve it -- ensure_homed_then() always returns success() once it decides
-// to prompt, so dispatch_operation()'s own `if (!result) abandon_dispatch()`
-// safety net can't fire either. AmsBackendToolChanger has no other watchdog
-// at all (unlike AFC's stuck-action timeout), so this was a permanent lockout
-// short of an app restart.
-//
-// A prompter that truly never calls back, ever, cannot be expressed as a
-// terminating test -- the busy state would really be permanent, by
-// construction, with or without a fix. So this models what a real dialog
-// does instead: request_home_confirmation() returns having invoked NEITHER
-// callback synchronously (exactly what showing a modal does -- resolution
-// comes later, from an LVGL event), and the test holds onto the callback pair
-// itself, standing in for "the dialog is still open." Resolving it later
-// proves the same unwind the Cancel button uses also runs for a dismissal
-// that isn't a direct, synchronous confirm()/cancel() call in the same
-// stack frame -- which is exactly the shape backdrop-tap/ESC/the fixed
-// HomeConfirmModal's on_hide() fallback net all have.
+// dispatch_operation() stamps SELECTING before it calls ensure_homed_then(),
+// so any gap between the two leaves the backend busy with nothing on the way.
+// With no confirmation to wait on, the G28 and the swap go out in the same
+// call and the operation is never parked.
 class ToolChangerHomingProbeBackend : public AmsBackendToolChanger {
   public:
     ToolChangerHomingProbeBackend() : AmsBackendToolChanger(nullptr, nullptr) {}
@@ -405,59 +149,23 @@ class ToolChangerHomingProbeBackend : public AmsBackendToolChanger {
     std::vector<std::string> captured;
 };
 
-TEST_CASE("a dismissal that resolves asynchronously still unwedges dispatch_operation's "
-          "optimistic action, exactly like the Cancel button",
-          "[ams][homing][confirm]") {
+TEST_CASE("an unhomed tool changer mount homes and sends the swap in the same call",
+          "[ams][homing][toolchanger]") {
     LVGLTestFixture fixture;
     ToolChangerHomingProbeBackend backend;
     backend.homed = false;
 
-    std::function<void()> pending_cancel;
-    ScopedHomeConfirmPrompter guard(
-        [&pending_cancel](std::function<void()>, std::function<void()> cancel) {
-            // Neither callback is invoked here -- the dialog is "open" and
-            // will resolve later, from an LVGL event (button, ESC, or
-            // backdrop-tap), not from this call.
-            pending_cancel = std::move(cancel);
-        });
-
-    ToolChangerTestAccess::call_dispatch_operation(backend, "SELECT_TOOL T=1",
-                                                   AmsAction::SELECTING);
-
-    // The prompter didn't resolve synchronously, so the optimistic action
-    // dispatch_operation() set before ever reaching ensure_homed_then() is
-    // still busy -- expected while the dialog is open, not the bug.
-    REQUIRE(pending_cancel);
-    CHECK(backend.get_system_info().action == AmsAction::SELECTING);
-    CHECK(ToolChangerTestAccess::has_pending_dispatch(backend));
-    CHECK(backend.captured.empty());
-
-    // Resolve it -- standing in for backdrop-tap/ESC/Cancel, all of which
-    // reach this same callback through HomeConfirmModal's fallback net,
-    // which (final-review I2) routes through AmsBackendToolChanger::
-    // on_home_confirmation_declined() -> abandon_dispatch() -- the SAME
-    // unwind a direct Cancel-button tap uses. Check more than just the
-    // action: a partial unwind that only reset action to IDLE would leave
-    // pending_dispatch_action_ armed (so the next macro ack, or a newer
-    // dispatch, would resolve against a generation nothing is tracking
-    // anymore) and operation_detail stale (the sidebar would keep showing
-    // "Tool swap" under an IDLE action) -- that gap is exactly what made the
-    // "exactly like the Cancel button" claim in this test's name untrue
-    // before the fix.
-    pending_cancel();
-
-    CHECK(backend.get_system_info().action == AmsAction::IDLE);
-    CHECK_FALSE(ToolChangerTestAccess::has_pending_dispatch(backend));
-    CHECK(backend.get_system_info().operation_detail.empty());
-    CHECK(backend.captured.empty());
-
-    // Not wedged: a subsequent dispatch still works.
-    backend.homed = true;
-    auto err = ToolChangerTestAccess::call_dispatch_operation(backend, "SELECT_TOOL T=2",
+    auto err = ToolChangerTestAccess::call_dispatch_operation(backend, "SELECT_TOOL T=1",
                                                               AmsAction::SELECTING);
+
     REQUIRE(err.success());
-    REQUIRE(backend.captured.size() == 1);
-    CHECK(backend.captured[0] == "SELECT_TOOL T=2");
+    REQUIRE(backend.captured.size() == 2);
+    CHECK(backend.captured[0] == "G28");
+    CHECK(backend.captured[1] == "SELECT_TOOL T=1");
+    // The macro ack resolves the hold through the main-thread queue.
+    helix::ui::UpdateQueueTestAccess::drain_all(helix::ui::UpdateQueue::instance());
+    CHECK_FALSE(ToolChangerTestAccess::has_pending_dispatch(backend));
+    CHECK(backend.get_system_info().action == AmsAction::IDLE);
 }
 
 // =====================================================================
@@ -580,12 +288,11 @@ TEST_CASE("CFS Fork variant never homes via dispatch_action_script", "[ams][homi
 }
 
 // =====================================================================
-// FilamentPanel: what confirming "Home printer first?" leads to
+// FilamentPanel: an unhomed cold load homes with no prompt
 // =====================================================================
-// The panel asks before its preheat, and the tier the load then takes decides
-// who homes: a backend homes right before its own dispatch, the macro tier
-// homes right before the macro, and a raw extrude, which moves only E, never
-// asks.
+// The tier the load takes decides who homes: a backend homes right before its
+// own dispatch, the macro tier homes right before the macro, and a raw
+// extrude, which moves only E, never homes.
 
 namespace {
 
@@ -594,17 +301,13 @@ using helix::ui::FilamentPanelTestAccess;
 /// A load macro with no parameters, so it runs without a parameter dialog.
 constexpr const char* PLAIN_LOAD_MACRO = "G1 E50 F300";
 
-/// A lane backend that records the home consent and the loads it is handed, and
-/// moves nothing. @p wants_slot decides whether plan_load() gives it the load or
-/// hands the load to a configured macro.
-class ConsentRecordingLaneBackend : public helix::test::LaneMaterialBackend {
+/// A lane backend that records the loads it is handed, and moves nothing. @p wants_slot decides
+/// whether plan_load() gives it the load or hands the load to a configured macro.
+class LoadRecordingLaneBackend : public helix::test::LaneMaterialBackend {
   public:
-    explicit ConsentRecordingLaneBackend(bool wants_slot)
+    explicit LoadRecordingLaneBackend(bool wants_slot)
         : LaneMaterialBackend(/*lane=*/1, /*nozzle_c=*/220), wants_slot_(wants_slot) {}
 
-    void arm_home_preconfirmed() override {
-        ++armed;
-    }
     AmsError load_filament(int) override {
         ++loads;
         return AmsErrorHelper::success();
@@ -617,7 +320,6 @@ class ConsentRecordingLaneBackend : public helix::test::LaneMaterialBackend {
         return wants_slot_;
     }
 
-    int armed = 0;
     int loads = 0;
 
   private:
@@ -640,19 +342,8 @@ void clear_load_macros() {
     REQUIRE(StandardMacros::instance().get(StandardMacroSlot::LoadFilament).is_empty());
 }
 
-/// Press Load on the harness's cold, unhomed printer, answer the home prompt with
-/// @p confirm, and let the preheat finish. Returns how often the prompt was raised.
-int press_load_cold(helix::test::FilamentPanelHarness& h, bool confirm) {
-    int prompts = 0;
-    ScopedHomeConfirmPrompter prompter(
-        [&prompts, confirm](std::function<void()> on_confirm, std::function<void()> on_cancel) {
-            ++prompts;
-            if (confirm) {
-                on_confirm();
-            } else {
-                on_cancel();
-            }
-        });
+/// Press Load on the harness's cold, unhomed printer and let the preheat finish.
+void press_load_cold(helix::test::FilamentPanelHarness& h) {
     auto& queue = helix::ui::UpdateQueue::instance();
     h.state.update_from_status({{"extruder", {{"temperature", 25.0}}}});
     helix::ui::UpdateQueueTestAccess::drain_all(queue);
@@ -662,7 +353,6 @@ int press_load_cold(helix::test::FilamentPanelHarness& h, bool confirm) {
     helix::ui::UpdateQueueTestAccess::drain_all(queue);
     FilamentPanelTestAccess::check_pending_preheat(*h.panel);
     helix::ui::UpdateQueueTestAccess::drain_all(queue);
-    return prompts;
 }
 
 /// Position of the first script sent whose first word is @p word, or -1.
@@ -679,13 +369,13 @@ long first_sent(const helix::test::FilamentPanelHarness& h, const std::string& w
 } // namespace
 
 TEST_CASE_METHOD(LVGLUITestFixture,
-                 "Filament panel: a confirmed home before a macro load sends G28, then the macro",
+                 "Filament panel: an unhomed macro load sends G28, then the macro, with no prompt",
                  "[ams][homing][filament]") {
     unhome_process_toolhead();
     helix::test::FilamentPanelHarness h;
     h.cache_macros({{"LOAD_FILAMENT", PLAIN_LOAD_MACRO}});
 
-    REQUIRE(press_load_cold(h, /*confirm=*/true) == 1);
+    press_load_cold(h);
 
     const long home = first_sent(h, "G28");
     const long macro = first_sent(h, "LOAD_FILAMENT");
@@ -703,32 +393,20 @@ TEST_CASE_METHOD(LVGLUITestFixture,
     h.client.force_next_gcode_error(MoonrakerErrorType::JSON_RPC_ERROR, "Must home axis first",
                                     "G28");
 
-    REQUIRE(press_load_cold(h, /*confirm=*/true) == 1);
+    press_load_cold(h);
 
     REQUIRE(first_sent(h, "G28") >= 0);
     CHECK(first_sent(h, "LOAD_FILAMENT") < 0);
     CHECK_FALSE(FilamentPanelTestAccess::operation_active(*h.panel));
 }
 
-TEST_CASE_METHOD(LVGLUITestFixture,
-                 "Filament panel: declining the home before a macro load sends nothing",
-                 "[ams][homing][filament]") {
-    unhome_process_toolhead();
-    helix::test::FilamentPanelHarness h;
-    h.cache_macros({{"LOAD_FILAMENT", PLAIN_LOAD_MACRO}});
-
-    REQUIRE(press_load_cold(h, /*confirm=*/false) == 1);
-
-    CHECK(h.client.gcode_script_history().empty());
-}
-
-TEST_CASE_METHOD(LVGLUITestFixture, "Filament panel: a raw extrude load never asks to home",
+TEST_CASE_METHOD(LVGLUITestFixture, "Filament panel: a raw extrude load never homes",
                  "[ams][homing][filament]") {
     unhome_process_toolhead();
     helix::test::FilamentPanelHarness h;
     clear_load_macros();
 
-    CHECK(press_load_cold(h, /*confirm=*/true) == 0);
+    press_load_cold(h);
 
     CHECK(first_sent(h, "G28") < 0);
     const auto& sent = h.client.gcode_script_history();
@@ -745,35 +423,32 @@ TEST_CASE_METHOD(LVGLUITestFixture, "Filament panel: a raw extrude load never as
     }));
 }
 
-TEST_CASE_METHOD(LVGLUITestFixture,
-                 "Filament panel: only a backend load is handed the home consent",
+TEST_CASE_METHOD(LVGLUITestFixture, "Filament panel: only the macro tier is homed by the panel",
                  "[ams][homing][filament]") {
     unhome_process_toolhead();
 
-    SECTION("a macro load homes before the macro and arms nothing") {
-        auto owned = std::make_unique<ConsentRecordingLaneBackend>(/*wants_slot=*/false);
-        ConsentRecordingLaneBackend* backend = owned.get();
+    SECTION("a macro load homes before the macro") {
+        auto owned = std::make_unique<LoadRecordingLaneBackend>(/*wants_slot=*/false);
+        LoadRecordingLaneBackend* backend = owned.get();
         helix::test::FilamentPanelHarness h(std::move(owned));
         h.cache_macros({{"LOAD_FILAMENT", PLAIN_LOAD_MACRO}});
 
-        REQUIRE(press_load_cold(h, /*confirm=*/true) == 1);
+        press_load_cold(h);
 
         REQUIRE(first_sent(h, "LOAD_FILAMENT") >= 0);
         CHECK(first_sent(h, "G28") >= 0);
         CHECK(backend->loads == 0);
-        CHECK(backend->armed == 0);
     }
 
-    SECTION("a backend load is armed, so the backend homes without asking again") {
-        auto owned = std::make_unique<ConsentRecordingLaneBackend>(/*wants_slot=*/true);
-        ConsentRecordingLaneBackend* backend = owned.get();
+    SECTION("a backend load is handed to the backend, which homes itself") {
+        auto owned = std::make_unique<LoadRecordingLaneBackend>(/*wants_slot=*/true);
+        LoadRecordingLaneBackend* backend = owned.get();
         helix::test::FilamentPanelHarness h(std::move(owned));
         clear_load_macros();
 
-        REQUIRE(press_load_cold(h, /*confirm=*/true) == 1);
+        press_load_cold(h);
 
         REQUIRE(backend->loads == 1);
-        CHECK(backend->armed == 1);
         CHECK(first_sent(h, "G28") < 0);
     }
 }

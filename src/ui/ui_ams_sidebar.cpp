@@ -30,7 +30,6 @@
 #include "standard_macros.h"
 #include "static_subject_registry.h"
 #include "temperature_controller.h"
-#include "toolhead_homing.h"
 #include "ui/ui_cleanup_helpers.h"
 
 #include <spdlog/spdlog.h>
@@ -41,13 +40,6 @@
 namespace helix::ui {
 
 namespace {
-
-/// UpdateQueue tags for the guarded home-confirm callbacks in
-/// handle_load_with_preheat(). String literals: the skip counter interns by
-/// pointer identity.
-constexpr const char* HOME_CONFIRM_LOAD_TAG = "AmsOperationSidebar::home_confirm_load";
-constexpr const char* HOME_CONFIRM_LOAD_DECLINE_TAG =
-    "AmsOperationSidebar::home_confirm_load_decline";
 
 /**
  * @brief Drives the sidebar Unload button's disabled state (1 = disabled).
@@ -484,17 +476,11 @@ void AmsOperationSidebar::cleanup() {
     // trigger callbacks on already-null widget pointers.
     clog_meter_.reset();
 
-    // Clear all pending state. clear_home_preconfirmed() undoes a confirmed
-    // but now-abandoned pre-load home prompt (panel closing mid-preheat) so
-    // consent doesn't leak into a later, unrelated operation on this backend
-    // -- idempotent no-op when nothing was armed.
+    // Clear all pending state.
     bypass_toggle_.cancel_pending();
     pending_load_slot_ = -1;
     pending_load_target_temp_ = 0;
     ui_initiated_heat_ = false;
-    if (AmsBackend* backend = AmsState::instance().get_backend()) {
-        backend->clear_home_preconfirmed();
-    }
     prev_ams_action_ = AmsAction::IDLE;
     step_index_subject_ = nullptr;
     live_temp_step_index_ = -1;
@@ -955,13 +941,6 @@ void AmsOperationSidebar::fail_started_operation(const AmsError& error) {
     spdlog::warn("[AmsSidebar] Operation dispatch failed: {} ({})", error.user_msg,
                  error.technical_msg);
     helix::ui::notify_ams_error(error, lv_tr("Filament operation failed"));
-    // The dispatch this home consent was armed for never ran, and the arm is
-    // consumed single-shot by whichever operation dispatches next — leaving it
-    // set would home a later one without asking. Idempotent no-op when nothing
-    // was armed.
-    if (AmsBackend* backend = AmsState::instance().get_backend()) {
-        backend->clear_home_preconfirmed();
-    }
     target_load_slot_ = -1;
     AmsState::instance().set_pending_target_slot(-1);
     // Backend never left IDLE; pull its truth back into the UI so the action
@@ -1425,56 +1404,21 @@ void AmsOperationSidebar::handle_load_with_preheat(int slot_index) {
         return;
     }
 
-    // Start preheating. get_temperature_controller() captured by value below
-    // since it's a plain accessor, not a stashed pointer across the async gap.
-    auto start_preheat = [this, slot_index, target, effective_target, latch]() {
-        pending_load_slot_ = slot_index;
-        pending_load_target_temp_ = effective_target;
-        ui_initiated_heat_ = true;
+    // Start preheating. The backend's load homes inside its own
+    // ensure_homed_then() once the nozzle is up to temperature.
+    pending_load_slot_ = slot_index;
+    pending_load_target_temp_ = effective_target;
+    ui_initiated_heat_ = true;
 
-        if (auto* c = get_temperature_controller()) {
-            c->set_target(helix::HeaterType::Nozzle, static_cast<double>(target),
-                          {.toast = false, .keep_previous_hot = true});
-        }
-
-        show_preheat_feedback(slot_index, effective_target);
-
-        spdlog::info(
-            "[AmsSidebar] Starting preheat to {}C (requested {}, latch {}) for slot {} load",
-            effective_target, target, latch, slot_index);
-    };
-
-    // Ask "home printer first?" BEFORE the preheat, not after: the physical
-    // G28 still fires later, inside AmsSubscriptionBackend::ensure_homed_then()
-    // right before the tier-1 dispatch (unchanged) -- only the confirmation
-    // moves earlier, so a decline never wastes a preheat cycle.
-    if (!helix::toolhead_is_homed(printer_state_) &&
-        !(backend && backend->delegates_homing_to_printer())) {
-        spdlog::info("[AmsSidebar] Toolhead not homed -- asking before starting preheat for "
-                     "slot {} load",
-                     slot_index);
-        // The shared MacroParamModal comment above explains why this sidebar
-        // is NOT immortal (dies with the AMS panel) -- route through
-        // lifetime_.token()/defer() rather than a bare captured [this].
-        auto token = lifetime_.token();
-        helix::ui::request_home_confirmation(
-            [this, token, start_preheat]() {
-                token.defer(HOME_CONFIRM_LOAD_TAG, [this, start_preheat]() {
-                    if (AmsBackend* backend = AmsState::instance().get_backend()) {
-                        backend->arm_home_preconfirmed();
-                    }
-                    start_preheat();
-                });
-            },
-            [this, token]() {
-                token.defer(HOME_CONFIRM_LOAD_DECLINE_TAG, [this]() {
-                    spdlog::info("[AmsSidebar] User declined pre-load home; no heat commanded");
-                });
-            });
-        return;
+    if (auto* c = get_temperature_controller()) {
+        c->set_target(helix::HeaterType::Nozzle, static_cast<double>(target),
+                      {.toast = false, .keep_previous_hot = true});
     }
 
-    start_preheat();
+    show_preheat_feedback(slot_index, effective_target);
+
+    spdlog::info("[AmsSidebar] Starting preheat to {}C (requested {}, latch {}) for slot {} load",
+                 effective_target, target, latch, slot_index);
 }
 
 void AmsOperationSidebar::check_pending_load() {

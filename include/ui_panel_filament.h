@@ -453,8 +453,9 @@ class FilamentPanel : public PanelBase {
     PreheatOp pending_preheat_op_ = PreheatOp::NONE;
     int pending_preheat_target_ = 0; ///< Target temp in °C for pending preheat
     int prior_nozzle_target_ = 0; ///< Nozzle target before preheat (0 = was off → cool down after)
-    /// The user agreed to home before the pending load; execute_load() consumes it.
-    bool load_home_confirmed_ = false;
+    /// The pending load takes the macro tier on an unhomed toolhead, so
+    /// execute_load() homes right before the macro is sent and consumes this.
+    bool home_before_load_macro_ = false;
 
     // Filament macros now resolved via StandardMacros singleton (load, unload, purge)
 
