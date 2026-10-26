@@ -180,6 +180,7 @@ class CameraStream {
     void stream_thread_func();
     void snapshot_poll_loop();
     void fetch_snapshot();
+    void note_snapshot_failure(const helix::LifetimeToken& token);
     bool decode_jpeg(const uint8_t* data, size_t len);
     bool decode_jpeg_turbojpeg(const uint8_t* data, size_t len);
     bool decode_jpeg_stb(const uint8_t* data, size_t len);
@@ -257,6 +258,7 @@ class CameraStream {
     std::atomic<bool> running_{false};
     std::atomic<bool> got_stream_data_{false}; // Set by http_cb when data arrives
     int stream_fail_count_ = 0;
+    int snapshot_fail_count_ = 0;  // consecutive; touched only by the worker thread
     bool thread_detached_ = false; // Set by stop() if thread join times out
     std::chrono::milliseconds join_timeout_{
         std::chrono::seconds(5)}; // stop()'s wait for the worker
@@ -264,6 +266,10 @@ class CameraStream {
 
     static constexpr int MAX_STREAM_FAILURES = 3;
     static constexpr int SNAPSHOT_INTERVAL_MS = 2000;
+    static constexpr int MAX_SNAPSHOT_FAILURES = 3;
+    // A platform-TLS snapshot cannot be cancelled, so its budget stays under
+    // stop()'s join wait.
+    static constexpr int PLATFORM_SNAPSHOT_TIMEOUT_SEC = 4;
     static constexpr int STREAM_CONNECT_TIMEOUT_SEC = 5; // Initial connection attempt
     static constexpr int STREAM_TIMEOUT_SEC = 300;       // Active stream — reconnects on timeout
 
