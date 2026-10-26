@@ -106,6 +106,11 @@ class AmsBackendAd5xIfs : public AmsSubscriptionBackend {
     static constexpr int NUM_PORTS = 4;
     static constexpr int TOOL_MAP_SIZE = 16;
     static constexpr int UNMAPPED_PORT = 5;
+    /// The module's _IFS_CLEAR_EXTRUDER refuses below this nozzle temperature.
+    static constexpr int CLEAR_TOOLHEAD_MIN_TEMP_C = 150;
+    /// Extruder-clear temperature when no lane names a material and the nozzle
+    /// has no usable target: ZMOD's own default for the same clear.
+    static constexpr int CLEAR_TOOLHEAD_FALLBACK_TEMP_C = 220;
 
     /// Which auto-switchover macro package is driving the IFS, if any.
     ///
@@ -639,6 +644,11 @@ class AmsBackendAd5xIfs : public AmsSubscriptionBackend {
     /// published, and we have neither hardware nor an `ad5x` mock profile.
     /// Caller MUST hold mutex_.
     [[nodiscard]] bool head_empty_for_unload_routing_locked() const;
+
+    /// Temperature for an extruder clear no lane's material can name: the
+    /// nozzle's own target when the clear accepts it, else the fallback.
+    [[nodiscard]] static int clear_toolhead_temp_c(int nozzle_target_deci);
+
     // One-shot fetch of /mod_data/user.cfg. Parses the [zmod_ifs] section for
     // `filament_<NAME>: <TEMP>` entries — zmod's mechanism for user-defined
     // material types beyond the AD5X firmware whitelist (e.g., PLA+, RPLA,

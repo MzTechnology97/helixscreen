@@ -2071,6 +2071,11 @@ AmsError AmsBackendAd5xIfs::eject_lane(int slot_index) {
     int len = filament_eject_default_.first;
     int speed = filament_eject_default_.second;
     std::string material;
+    // The module's IFS_EJECT of its own loaded lane also clears the extruder,
+    // heated to TEMP=, else the slot material's temperature, else the nozzle
+    // target, and raises an error with none of them. An unlabelled lane has no
+    // material temperature, so name one.
+    std::optional<int> eject_temp_c;
     {
         std::lock_guard<std::mutex> lock(mutex_);
 
@@ -2118,6 +2123,9 @@ AmsError AmsBackendAd5xIfs::eject_lane(int slot_index) {
                 speed = it->second.second;
             }
         }
+        if (module_loaded_ == std::optional<int>(slot_index + 1) && material.empty()) {
+            eject_temp_c = clear_toolhead_temp_c(last_extruder_target_deci_);
+        }
     }
 
     int port = slot_index + 1;
@@ -2130,7 +2138,8 @@ AmsError AmsBackendAd5xIfs::eject_lane(int slot_index) {
         // is the loaded one. One command, one ack.
         spdlog::info("{} Eject lane {} (port {}) -> IFS_EJECT", backend_log_tag(), slot_index,
                      port);
-        err39 = execute_gcode("IFS_EJECT SLOT=" + port_str);
+        err39 = execute_gcode("IFS_EJECT SLOT=" + port_str +
+                              (eject_temp_c ? " TEMP=" + std::to_string(*eject_temp_c) : ""));
     } else {
         spdlog::info("{} Cold eject lane {} (port {}, material '{}') -> IFS_F24 / IFS_F11 LEN={} "
                      "SPEED={} / IFS_F39",
@@ -2356,6 +2365,14 @@ std::optional<bool> AmsBackendAd5xIfs::toolhead_filament_unaccounted() const {
         return std::nullopt;
     }
     return head_switch_present_ && system_info_.current_slot < 0;
+}
+
+int AmsBackendAd5xIfs::clear_toolhead_temp_c(int nozzle_target_deci) {
+    // No lane names a material to take a temperature from, so a nozzle the
+    // user already heated keeps its target. The module's clear refuses below
+    // 150C.
+    const int target_c = helix::ui::temperature::deci_to_degrees(nozzle_target_deci);
+    return target_c >= CLEAR_TOOLHEAD_MIN_TEMP_C ? target_c : CLEAR_TOOLHEAD_FALLBACK_TEMP_C;
 }
 
 // --- Plugin visibility (lessWaste / bambufy auto switchover) ---
