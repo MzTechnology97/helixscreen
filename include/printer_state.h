@@ -933,6 +933,10 @@ class PrinterState {
      * Integer subject holding PrintStartPhase enum value.
      * Use with bind_flag_if_eq/not_eq in XML to show/hide progress overlay.
      */
+    /// The print domain, for the preparing-start bookkeeping Stop reads.
+    PrinterPrintState& print_state() {
+        return print_domain_;
+    }
     void begin_preparing(const PrintJobRef& job) {
         print_domain_.begin_preparing(job);
     }

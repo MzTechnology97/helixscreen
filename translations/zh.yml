@@ -389,6 +389,7 @@ translations:
   Cancel Escalation: 取消升级
   Cancel Print: 取消打印
   Cancel macro not configured: 取消宏未配置
+  Cancel sent. The printer finishes its start sequence, then stops before printing.: '已发送取消。打印机会先完成启动流程，然后在打印前停止。'
   Cancelled: 已取消
   Cannot be changed from here on a multi-unit MMU: 多单元 MMU 无法在此处更改
   'Cannot control timelapse: printer not connected': '无法控制延时摄影: 打印机未连接'
@@ -2571,8 +2572,10 @@ translations:
   ? The print is paused. Changing tools now moves the toolhead and swaps the filament at the nozzle. Resume the print once the change finishes.
   : 打印已暂停。现在切换工具会移动工具头并更换喷嘴处的耗材。切换完成后请恢复打印。
   The printer halted this print and cannot resume it. Restart from the beginning?: 打印机已停止此打印且无法恢复。从头重新开始？
+  The printer has not answered the cancel yet. It stops once its start sequence finishes.: '打印机尚未响应取消。启动流程完成后会停止。'
   The printer homes, then probes each screw position.: "打印机先归位，然后探测每个螺丝位置。"
   The printer is not homed. Continuing will home all axes, moving the toolhead. Make sure the bed is clear.: 打印机尚未归位。继续将对所有轴执行归位操作，移动工具头。请确保热床上没有障碍物。
+  The printer kept printing after the cancel.: '取消后打印机仍在继续打印。'
   The printer lost power during a print. It can resume where it left off.: 打印机在打印过程中断电。可以从中断处继续。
   The printer lost power during a print. The resumed layer may not line up exactly.: 打印机在打印过程中断电。恢复后的层可能无法完全对准。
   The printer lost power while printing {}. Resume where it left off?: 打印机在打印 {} 时断电。是否从中断处继续？

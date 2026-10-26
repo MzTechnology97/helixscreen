@@ -16,6 +16,20 @@ inline constexpr const char* CONTROL_ICON_PAUSE = "\xF3\xB0\x8F\xA4";
 inline constexpr const char* CONTROL_ICON_PLAY = "\xF3\xB0\x90\x8A";
 inline constexpr const char* CONTROL_ICON_HOURGLASS = "\xF3\xB0\x94\x9F";
 
+/// What Stop does when confirmed.
+enum class StopRoute {
+    /// The printer holds the job: AbortManager runs the cancel sequence.
+    Abort,
+    /// The job has not been handed to the printer yet: withdrawing it locally
+    /// is enough, because nothing on the printer will start it.
+    RetirePreparing,
+    /// The start was sent but the printer has not reported the job, which is
+    /// what a print-start sequence run inside SDCARD_PRINT_FILE looks like.
+    /// Only the printer can stop it now: the cancel queues behind the running
+    /// macro and lands before the first print move.
+    CancelSentStart,
+};
+
 /// Pure view model for the two print-control buttons. No LVGL, no globals.
 /// `primary_label` is an English string — callers pass it through lv_tr(),
 /// which falls back to the string itself when no translation exists.
@@ -24,10 +38,9 @@ struct ControlButtonView {
     const char* primary_label = "Pause";
     bool primary_enabled = false;
     bool stop_enabled = false;
-    /// Stop must retire the preparing job rather than send CANCEL_PRINT.
     /// Computed here, not at the call site, so the button's enablement and the
     /// handler's routing can never disagree about which mechanism applies.
-    bool stop_retires_preparing = false;
+    StopRoute stop_route = StopRoute::Abort;
 };
 
 /// Everything the two buttons depend on.
@@ -47,6 +60,10 @@ struct ControlButtonInputs {
     bool pause_available = false;
     bool resume_available = false;
     bool cancel_available = false;
+    /// The preparing job's start command has gone to the printer.
+    bool start_sent = false;
+    /// A cancel is on its way to the printer and has not been answered.
+    bool cancel_requested = false;
 };
 
 /// Decide both buttons.

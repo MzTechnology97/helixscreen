@@ -1495,6 +1495,61 @@ void PrintPreparationManager::abandon_start(const char* where) {
     printer_state_->retire_preparing(helix::PreparingExit::Failed);
 }
 
+namespace {
+
+/// Record a start's answer for the job armed at @p epoch. Safe from any
+/// thread: the write hops to the main thread. PrinterState outlives every
+/// start, so the bare pointer cannot dangle.
+void note_start_answered(helix::PrinterState* ps, int epoch, bool accepted) {
+    if (!ps) {
+        return;
+    }
+    helix::ui::queue_update("PrintPreparationManager::start_answered", [ps, epoch, accepted]() {
+        ps->print_state().note_preparing_start_answered(epoch, accepted);
+    });
+}
+
+/// Main thread. A start whose answer was lost while Stop waits to cancel it is
+/// held for that cancel rather than failed: the printer may well have it, and
+/// a timeout means Klipper is busy running it. True when held.
+bool held_for_cancel(helix::PrinterState* ps, int epoch, const MoonrakerError& error) {
+    return ps && error.is_transport_loss() && ps->print_state().hold_for_requested_cancel(epoch);
+}
+
+} // namespace
+
+int PrintPreparationManager::current_preparing_epoch() const {
+    return printer_state_
+               ? lv_subject_get_int(printer_state_->print_state().get_preparing_epoch_subject())
+               : 0;
+}
+
+bool PrintPreparationManager::start_withdrawn(int preparing_epoch) const {
+    return preparing_epoch != 0 && current_preparing_epoch() != preparing_epoch;
+}
+
+void PrintPreparationManager::note_start_sent() {
+    if (printer_state_) {
+        printer_state_->print_state().note_preparing_start_sent();
+    }
+}
+
+bool PrintPreparationManager::abandon_withdrawn_start(int preparing_epoch,
+                                                      const std::string& file_path,
+                                                      const std::string& remote_temp_path) {
+    if (!start_withdrawn(preparing_epoch)) {
+        return false;
+    }
+    spdlog::info("[PrintPreparationManager] Start abandoned - '{}' is no longer being prepared",
+                 file_path);
+    BusyOverlay::hide();
+    if (!remote_temp_path.empty() && api_) {
+        api_->files().delete_file(
+            "gcodes/" + remote_temp_path, []() {}, [](const MoonrakerError& /*del_err*/) {});
+    }
+    return true;
+}
+
 void PrintPreparationManager::modify_and_print(
     const std::string& file_path, const std::vector<gcode::OperationType>& ops_to_disable,
     const std::vector<std::pair<std::string, std::string>>& macro_skip_params,
@@ -1575,6 +1630,9 @@ void PrintPreparationManager::modify_and_print_streaming(
     auto timestamp = std::to_string(std::time(nullptr));
     std::string local_download_path = temp_dir + "/helix_download_" + timestamp + ".gcode";
     std::string remote_temp_path = ".helix_temp/modified_" + timestamp + "_" + display_filename;
+    // Download, rewrite and upload can take minutes; a job cancelled during
+    // them must not start once they finish.
+    const int epoch = current_preparing_epoch();
 
     spdlog::info("[PrintPreparationManager] Streaming modification: downloading to {}",
                  local_download_path);
@@ -1603,8 +1661,8 @@ void PrintPreparationManager::modify_and_print_streaming(
         // cleanup) runs locally; the `this->` accesses (printer_state_,
         // api_->) are wrapped in token.defer().
         [this, token, file_path, display_filename, ops_to_disable, macro_skip_params, mod_names,
-         scan_result, local_download_path, remote_temp_path, on_navigate_to_status,
-         use_plugin](const std::string& /*dest_path*/) {
+         scan_result, local_download_path, remote_temp_path, on_navigate_to_status, use_plugin,
+         epoch](const std::string& /*dest_path*/) {
             spdlog::info("[PrintPreparationManager] Downloaded to disk, applying streaming "
                          "modification");
 
@@ -1658,14 +1716,14 @@ void PrintPreparationManager::modify_and_print_streaming(
                                                                            remote_temp_path,
                                                                            file_path, mod_names,
                                                                            on_navigate_to_status,
-                                                                           use_plugin]() {
+                                                                           use_plugin, epoch]() {
                 api_->transfers().upload_file_from_path(
                     "gcodes", remote_temp_path, modified_path,
                     // Upload success - NOTE: runs on HTTP thread, defer LVGL ops.
                     // L081 Mechanism C: filesystem cleanup runs locally; `this->`
                     // (api_->) work is deferred to main.
                     [this, token, modified_path, display_filename, remote_temp_path, file_path,
-                     mod_names, on_navigate_to_status, use_plugin]() {
+                     mod_names, on_navigate_to_status, use_plugin, epoch]() {
                         // Clean up local modified file (safe - filesystem op, always do it)
                         std::error_code ec;
                         std::filesystem::remove(modified_path, ec);
@@ -1687,17 +1745,29 @@ void PrintPreparationManager::modify_and_print_streaming(
                         token.defer(
                             "PrintPreparationManager::start_print_kickoff",
                             [this, token, display_filename, remote_temp_path, file_path, mod_names,
-                             on_navigate_to_status, use_plugin]() {
+                             on_navigate_to_status, use_plugin, epoch]() {
+                                if (abandon_withdrawn_start(epoch, file_path, remote_temp_path)) {
+                                    return;
+                                }
+                                note_start_sent();
+                                // The transfer is done. A firmware that runs its start
+                                // sequence inside SDCARD_PRINT_FILE answers the start only
+                                // once that sequence ends, and the overlay would keep Stop
+                                // out of reach for all of it.
+                                BusyOverlay::hide();
+                                helix::PrinterState* ps = printer_state_;
+
                                 // If plugin available, use path-based API for
                                 // symlink/history patching. Otherwise, use standard
                                 // start_print.
 
                                 // Define common callbacks to avoid code duplication
                                 auto on_print_success = [this, token, on_navigate_to_status,
-                                                         display_filename, file_path]() {
+                                                         display_filename, file_path, ps, epoch]() {
                                     spdlog::info("[PrintPreparationManager] Print started with "
                                                  "modified G-code (streaming, original: {})",
                                                  display_filename);
+                                    note_start_answered(ps, epoch, true);
 
                                     // L081 Mechanism C: printer_state_ is a this->member;
                                     // start_print success cb fires on HTTP bg.
@@ -1732,23 +1802,23 @@ void PrintPreparationManager::modify_and_print_streaming(
                                         });
                                 };
 
-                                auto on_print_error = [this, token, remote_temp_path](
-                                                          const MoonrakerError& error) {
-                                    // Hide overlay on error (defer to main thread)
-                                    helix::ui::async_call([](void*) { BusyOverlay::hide(); },
-                                                          nullptr);
-
-                                    NOTIFY_ERROR(lv_tr("Failed to start print: {}"), error.message);
-                                    LOG_ERROR_INTERNAL(
-                                        "[PrintPreparationManager] Print start failed for {}: {}",
-                                        remote_temp_path, error.message);
-
+                                auto on_print_error = [this, token, remote_temp_path, ps,
+                                                       epoch](const MoonrakerError& error) {
                                     // L081 Mechanism C: printer_state_ is a this->member +
                                     // api_->files() touches this->api_; both deferred together.
                                     // start_print_* error cb fires on HTTP bg.
                                     token.defer(
                                         "PrintPreparationManager::start_print_error_cleanup",
-                                        [this, remote_temp_path]() {
+                                        [this, remote_temp_path, ps, epoch, error]() {
+                                            if (held_for_cancel(ps, epoch, error)) {
+                                                return;
+                                            }
+                                            BusyOverlay::hide();
+                                            NOTIFY_ERROR(lv_tr("Failed to start print: {}"),
+                                                         error.message);
+                                            LOG_ERROR_INTERNAL("[PrintPreparationManager] Print "
+                                                               "start failed for {}: {}",
+                                                               remote_temp_path, error.message);
                                             abandon_start("print_start_failed");
                                             // Clean up remote temp file on failure
                                             // Moonraker's delete_file requires full path
@@ -1870,6 +1940,9 @@ void PrintPreparationManager::modify_and_print_with_remap(
     auto timestamp = std::to_string(std::time(nullptr));
     std::string local_download_path = temp_dir + "/helix_remap_dl_" + timestamp + ".gcode";
     std::string remote_temp_path = ".helix_temp/remapped_" + timestamp + "_" + display_filename;
+    // Download, rewrite and upload can take minutes; a job cancelled during
+    // them must not start once they finish.
+    const int epoch = current_preparing_epoch();
 
     spdlog::info("[PrintPreparationManager] Remap modification: {} tool mapping(s), downloading {}",
                  remap.size(), file_path);
@@ -1895,7 +1968,7 @@ void PrintPreparationManager::modify_and_print_with_remap(
         // (read file, compute replacements, apply_streaming) runs here; every
         // this->/api_-> access is deferred to the main thread via token.defer.
         [this, token, file_path, display_filename, remap, local_download_path, remote_temp_path,
-         on_navigate_to_status](const std::string& /*dest_path*/) {
+         on_navigate_to_status, epoch](const std::string& /*dest_path*/) {
             // Read the downloaded gcode into memory to feed the remapper. The
             // remapper needs full content to map each line from its ORIGINAL
             // index in one collision-safe pass.
@@ -1931,8 +2004,11 @@ void PrintPreparationManager::modify_and_print_with_remap(
                              "printing original {}",
                              file_path);
                 token.defer("PrintPreparationManager::remap_identity_start",
-                            [this, file_path, on_navigate_to_status]() {
+                            [this, file_path, on_navigate_to_status, epoch]() {
                                 BusyOverlay::hide();
+                                if (abandon_withdrawn_start(epoch, file_path, "")) {
+                                    return;
+                                }
                                 // No completion callback needed: this is the
                                 // SUCCESS path - the remap was a no-op, so the
                                 // original file starts and the printer's own
@@ -1987,12 +2063,13 @@ void PrintPreparationManager::modify_and_print_with_remap(
                                                                           file_path,
                                                                           display_filename,
                                                                           mod_names,
-                                                                          on_navigate_to_status]() {
+                                                                          on_navigate_to_status,
+                                                                          epoch]() {
                 api_->transfers().upload_file_from_path(
                     "gcodes", remote_temp_path, modified_path,
                     // Upload success - runs on HTTP bg thread.
                     [this, token, modified_path, remote_temp_path, file_path, display_filename,
-                     mod_names, on_navigate_to_status]() {
+                     mod_names, on_navigate_to_status, epoch]() {
                         std::error_code ec;
                         std::filesystem::remove(modified_path, ec);
 
@@ -2002,12 +2079,20 @@ void PrintPreparationManager::modify_and_print_with_remap(
                         token.defer(
                             "PrintPreparationManager::remap_start_kickoff",
                             [this, token, remote_temp_path, file_path, display_filename, mod_names,
-                             on_navigate_to_status]() {
+                             on_navigate_to_status, epoch]() {
+                                if (abandon_withdrawn_start(epoch, file_path, remote_temp_path)) {
+                                    return;
+                                }
+                                note_start_sent();
+                                BusyOverlay::hide();
+                                helix::PrinterState* ps = printer_state_;
+
                                 auto on_print_success = [this, token, on_navigate_to_status,
-                                                         display_filename, file_path]() {
+                                                         display_filename, file_path, ps, epoch]() {
                                     spdlog::info("[PrintPreparationManager] Remapped print "
                                                  "started (original: {})",
                                                  display_filename);
+                                    note_start_answered(ps, epoch, true);
                                     token.defer("PrintPreparationManager::remap_success_clear",
                                                 [this]() {});
 
@@ -2028,18 +2113,21 @@ void PrintPreparationManager::modify_and_print_with_remap(
                                         });
                                 };
 
-                                auto on_print_error = [this, token, remote_temp_path](
-                                                          const MoonrakerError& error) {
-                                    helix::ui::async_call([](void*) { BusyOverlay::hide(); },
-                                                          nullptr);
-                                    NOTIFY_ERROR(lv_tr("Failed to start print: {}"), error.message);
-                                    LOG_ERROR_INTERNAL(
-                                        "[PrintPreparationManager] Remapped print start "
-                                        "failed for {}: {}",
-                                        remote_temp_path, error.message);
+                                auto on_print_error = [this, token, remote_temp_path, ps,
+                                                       epoch](const MoonrakerError& error) {
                                     token.defer(
                                         "PrintPreparationManager::remap_start_error_cleanup",
-                                        [this, remote_temp_path]() {
+                                        [this, remote_temp_path, ps, epoch, error]() {
+                                            if (held_for_cancel(ps, epoch, error)) {
+                                                return;
+                                            }
+                                            BusyOverlay::hide();
+                                            NOTIFY_ERROR(lv_tr("Failed to start print: {}"),
+                                                         error.message);
+                                            LOG_ERROR_INTERNAL("[PrintPreparationManager] "
+                                                               "Remapped print start failed for "
+                                                               "{}: {}",
+                                                               remote_temp_path, error.message);
                                             abandon_start("remap_print_start_failed");
                                             std::string full_path = "gcodes/" + remote_temp_path;
                                             api_->files().delete_file(
@@ -2108,11 +2196,15 @@ void PrintPreparationManager::modify_and_print_with_remap(
 void PrintPreparationManager::start_print_directly(const std::string& filename,
                                                    NavigateToStatusCallback on_navigate_to_status,
                                                    PrintCompletionCallback on_completion) {
+    note_start_sent();
+    helix::PrinterState* ps = printer_state_;
+    const int epoch = current_preparing_epoch();
     api_->job().start_print(
         filename,
         // Success callback
-        [on_navigate_to_status, on_completion]() {
+        [on_navigate_to_status, on_completion, ps, epoch]() {
             spdlog::debug("[PrintPreparationManager] Print started successfully");
+            note_start_answered(ps, epoch, true);
 
             if (on_navigate_to_status) {
                 on_navigate_to_status();
@@ -2123,14 +2215,27 @@ void PrintPreparationManager::start_print_directly(const std::string& filename,
             }
         },
         // Error callback
-        [filename, on_completion](const MoonrakerError& error) {
-            NOTIFY_ERROR(lv_tr("Failed to start print: {}"), error.message);
-            LOG_ERROR_INTERNAL("[PrintPreparationManager] Print start failed for {}: {} ({})",
-                               filename, error.message, error.get_type_string());
-
-            if (on_completion) {
-                on_completion(false, error.message);
+        [filename, on_completion, ps, epoch](const MoonrakerError& error) {
+            // A refusal (spool latch, bad path) means nothing reached the
+            // printer, so Stop must not cancel there. A transport loss says
+            // nothing about whether it did.
+            if (!error.is_transport_loss()) {
+                note_start_answered(ps, epoch, false);
             }
+            helix::ui::queue_update(
+                "PrintPreparationManager::start_failed",
+                [filename, on_completion, ps, epoch, error]() {
+                    if (held_for_cancel(ps, epoch, error)) {
+                        return;
+                    }
+                    NOTIFY_ERROR(lv_tr("Failed to start print: {}"), error.message);
+                    LOG_ERROR_INTERNAL("[PrintPreparationManager] Print start failed for {}: {} "
+                                       "({})",
+                                       filename, error.message, error.get_type_string());
+                    if (on_completion) {
+                        on_completion(false, error.message);
+                    }
+                });
         });
 }
 

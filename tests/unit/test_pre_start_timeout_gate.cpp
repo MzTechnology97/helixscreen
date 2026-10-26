@@ -15,6 +15,7 @@
  */
 
 #include "ui_print_preparation_manager.h"
+#include "ui_print_start_controller.h"
 #include "ui_update_queue.h"
 
 #include "lvgl_test_fixture.h"
@@ -25,6 +26,9 @@
 #include "print_job_ref.h"
 #include "printer_state.h"
 #include "test_helpers/printer_state_test_access.h"
+
+#include <map>
+#include <optional>
 
 #include "../catch_amalgamated.hpp"
 
@@ -44,14 +48,42 @@ struct RecordingJobAPI : public MoonrakerJobAPI {
     explicit RecordingJobAPI(helix::IMoonrakerClient& client) : MoonrakerJobAPI(client) {}
 
     int start_print_calls = 0;
+    int start_modified_print_calls = 0;
     std::string last_filename;
+    /// Answer start_print and start_modified_print with this instead of success.
+    std::optional<MoonrakerError> fail_with;
 
     void start_print(const std::string& filename, IMoonrakerAPI::SuccessCallback on_success,
-                     IMoonrakerAPI::ErrorCallback /*on_error*/) override {
+                     IMoonrakerAPI::ErrorCallback on_error) override {
         ++start_print_calls;
         last_filename = filename;
+        if (fail_with) {
+            if (on_error)
+                on_error(*fail_with);
+            return;
+        }
         if (on_success)
             on_success();
+    }
+
+    void start_modified_print(const std::string& original_filename,
+                              const std::string& temp_file_path,
+                              const std::vector<std::string>& /*modifications*/,
+                              ModifiedPrintCallback on_success,
+                              IMoonrakerAPI::ErrorCallback on_error) override {
+        ++start_modified_print_calls;
+        last_filename = original_filename;
+        if (fail_with) {
+            if (on_error)
+                on_error(*fail_with);
+            return;
+        }
+        if (on_success) {
+            ModifiedPrintResult result;
+            result.original_filename = original_filename;
+            result.print_filename = temp_file_path;
+            on_success(result);
+        }
     }
 };
 
@@ -273,4 +305,139 @@ TEST_CASE_METHOD(PreStartGateFixture, "A start with no preparing job still runs"
     drain();
 
     CHECK(jobs.start_print_calls == 1);
+}
+
+TEST_CASE_METHOD(PreStartGateFixture, "A start sent to the printer marks the preparing job",
+                 "[print_preparation][preparing_cancel]") {
+    // From the send on, withdrawing the job locally stops nothing, so Stop
+    // must know to cancel on the printer instead (#1890).
+    state.print_state().begin_preparing(helix::PrintJobRef{"part.gcode", "", ""});
+    set_busy(false);
+
+    manager.start_print("part.gcode", "", []() {}, completion());
+    REQUIRE(api->captured_success);
+    // The pre-start block is still running.
+    CHECK(state.print_state().preparing_start() == helix::PreparingStart::None);
+    api->captured_success();
+    drain();
+
+    REQUIRE(jobs.start_print_calls == 1);
+    CHECK(state.print_state().has_preparing_job());
+    CHECK(state.print_state().preparing_start() == helix::PreparingStart::Accepted);
+}
+
+TEST_CASE_METHOD(PreStartGateFixture, "A refused start clears the sent mark; a lost one keeps it",
+                 "[print_preparation][preparing_cancel]") {
+    // A refusal never reached the printer, so Stop must not cancel there. A
+    // timeout says nothing about whether it did.
+    const bool refused = GENERATE(true, false);
+    CAPTURE(refused);
+    jobs.fail_with = refused ? MoonrakerError::validation_error("printer.print.start", "Spools")
+                             : MoonrakerError::timeout("printer.print.start", 600000);
+    state.print_state().begin_preparing(helix::PrintJobRef{"part.gcode", "", ""});
+    set_busy(false);
+
+    manager.start_print("part.gcode", "", []() {}, completion());
+    REQUIRE(api->captured_success);
+    api->captured_success();
+    drain();
+
+    REQUIRE(jobs.start_print_calls == 1);
+    CHECK(state.print_state().preparing_start() ==
+          (refused ? helix::PreparingStart::None : helix::PreparingStart::InFlight));
+}
+
+TEST_CASE_METHOD(PreStartGateFixture, "A start that times out while Stop waits is held, not failed",
+                 "[print_preparation][preparing_cancel]") {
+    jobs.fail_with = MoonrakerError::timeout("printer.print.start", 600000);
+    state.print_state().begin_preparing(helix::PrintJobRef{"part.gcode", "", ""});
+    set_busy(false);
+
+    manager.start_print("part.gcode", "", []() {}, completion());
+    REQUIRE(api->captured_success);
+    state.print_state().note_preparing_cancel_requested(); // Stop while it runs
+    api->captured_success();
+    drain();
+
+    REQUIRE(jobs.start_print_calls == 1);
+    CHECK(state.print_state().has_preparing_job());
+    CHECK(state.print_state().preparing_start() == helix::PreparingStart::Unanswered);
+    CHECK_FALSE(completed); // no failure reported for a start the printer may be running
+}
+
+namespace {
+
+/// The four-colour U1 fixture the file-transfer mock resolves by basename.
+constexpr const char* kRemapFixture = "u1_4color_ring.gcode";
+
+} // namespace
+
+TEST_CASE_METHOD(PreStartGateFixture, "A remap cancelled during the transfer never starts",
+                 "[print_preparation][remap][preparing_cancel]") {
+    state.print_state().begin_preparing(helix::PrintJobRef{kRemapFixture, "gcodes", ""});
+    // T1 -> T2 rewrites and uploads a copy; T5 is not in the file, so the
+    // original starts unchanged.
+    const bool rewritten = GENERATE(true, false);
+    CAPTURE(rewritten);
+    const std::map<int, int> remap =
+        rewritten ? std::map<int, int>{{1, 2}} : std::map<int, int>{{5, 6}};
+    const bool withdraw = GENERATE(true, false);
+    CAPTURE(withdraw);
+    api->transfers_mock().mock_hold_path_uploads();
+
+    manager.modify_and_print_with_remap(kRemapFixture, remap, nullptr);
+    if (withdraw) {
+        // Stop while the copy is still on its way.
+        state.print_state().retire_preparing(helix::PreparingExit::Cancelled);
+    }
+    for (int i = 0; i < 4; ++i) {
+        drain();
+    }
+    api->transfers_mock().release_held_path_uploads();
+    for (int i = 0; i < 4; ++i) {
+        drain();
+    }
+
+    CHECK(api->transfers_mock().path_uploads().size() == (rewritten ? 1u : 0u));
+    const int sent = jobs.start_print_calls + jobs.start_modified_print_calls;
+    CHECK(sent == (withdraw ? 0 : 1));
+    if (!withdraw) {
+        CHECK(state.print_state().preparing_start() == helix::PreparingStart::Accepted);
+    }
+}
+
+TEST_CASE_METHOD(PreStartGateFixture,
+                 "A rewritten start that loses its answer while Stop waits is held",
+                 "[print_preparation][remap][preparing_cancel]") {
+    // A timeout means Klipper is busy running the start: the job is held for
+    // the cancel, not failed.
+    jobs.fail_with = MoonrakerError::timeout("server.helix.print", 600000);
+    state.print_state().begin_preparing(helix::PrintJobRef{kRemapFixture, "gcodes", ""});
+    state.print_state().note_preparing_cancel_requested();
+
+    manager.modify_and_print_with_remap(kRemapFixture, {{1, 2}}, nullptr);
+    for (int i = 0; i < 6; ++i) {
+        drain();
+    }
+
+    REQUIRE(jobs.start_modified_print_calls == 1);
+    CHECK(state.print_state().has_preparing_job());
+    CHECK(state.print_state().preparing_start() == helix::PreparingStart::Unanswered);
+}
+
+TEST_CASE_METHOD(PreStartGateFixture, "A reprint whose start times out while Stop waits is held",
+                 "[print_preparation][preparing_cancel]") {
+    jobs.fail_with = MoonrakerError::timeout("printer.print.start", 600000);
+    helix::ui::PrintStartController controller{state, api.get()};
+
+    bool errored = false;
+    controller.initiate_reprint(
+        "part.gcode", "part.gcode", {}, []() {}, [&errored]() { errored = true; });
+    state.print_state().note_preparing_cancel_requested();
+    drain();
+
+    REQUIRE(jobs.start_print_calls == 1);
+    CHECK(state.print_state().has_preparing_job());
+    CHECK(state.print_state().preparing_start() == helix::PreparingStart::Unanswered);
+    CHECK_FALSE(errored);
 }

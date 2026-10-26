@@ -43,6 +43,17 @@ struct MoonrakerError {
     }
 
     /**
+     * @brief Did the transport vanish, rather than the printer answering?
+     *
+     * A dropped WebSocket and an RPC timeout a slow command outlived both say
+     * nothing about what the printer did with the command: it may still be
+     * running.
+     */
+    bool is_transport_loss() const {
+        return type == MoonrakerErrorType::TIMEOUT || type == MoonrakerErrorType::CONNECTION_LOST;
+    }
+
+    /**
      * @brief Did Moonraker answer that the thing asked for does not exist?
      *
      * Moonraker's JSON-RPC layer turns a ServerError with status 404 into code

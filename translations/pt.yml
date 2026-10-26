@@ -432,6 +432,7 @@ translations:
   Cancel Escalation: Cancelar Escalação
   Cancel Print: Cancelar Impressão
   Cancel macro not configured: Macro de cancelar não configurado
+  Cancel sent. The printer finishes its start sequence, then stops before printing.: 'Cancelamento enviado. A impressora conclui a sequência de início e para antes de imprimir.'
   Cancelled: Cancelado
   Cannot be changed from here on a multi-unit MMU: Não pode ser alterado aqui em um MMU de várias unidades
   'Cannot control timelapse: printer not connected': 'Não é possível controlar timelapse:
@@ -2816,8 +2817,10 @@ translations:
     filamento no bico. Retome a impressão assim que a troca terminar.
   The printer halted this print and cannot resume it. Restart from the beginning?: A
     impressora parou esta impressão e não pode retomá-la. Reiniciar do início?
+  The printer has not answered the cancel yet. It stops once its start sequence finishes.: 'A impressora ainda não respondeu ao cancelamento. Ela para assim que concluir a sequência de início.'
   The printer homes, then probes each screw position.: "A impressora faz home e depois sonda cada posição de parafuso."
   The printer is not homed. Continuing will home all axes, moving the toolhead. Make sure the bed is clear.: A impressora não fez home. Continuar fará home em todos os eixos, movendo o cabeçote. Certifique-se de que a mesa esteja livre.
+  The printer kept printing after the cancel.: 'A impressora continuou imprimindo após o cancelamento.'
   The printer lost power during a print. It can resume where it left off.: A impressora
     perdeu energia durante uma impressão. Ela pode retomar de onde parou.
   The printer lost power during a print. The resumed layer may not line up exactly.: A impressora perdeu energia durante uma impressão. A camada retomada pode não se alinhar exatamente.

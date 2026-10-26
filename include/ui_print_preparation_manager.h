@@ -727,6 +727,25 @@ class PrintPreparationManager {
      */
     void abandon_start(const char* where);
 
+    /// The preparing job @p preparing_epoch named is gone: cancelled, failed
+    /// or replaced while the work in front of the start ran. False for 0,
+    /// which no armed job carries.
+    [[nodiscard]] bool start_withdrawn(int preparing_epoch) const;
+
+    /// The preparing epoch PrinterPrintState publishes, 0 without a state.
+    [[nodiscard]] int current_preparing_epoch() const;
+
+    /// Record that the preparing job's start is going to the printer, after
+    /// which only the printer can stop it. Called beside every start send.
+    void note_start_sent();
+
+    /// Main thread, in front of a rewritten start's send. When the job
+    /// @p preparing_epoch named was withdrawn while the download, rewrite and
+    /// upload ran, hide the busy overlay, delete the uploaded copy at
+    /// @p remote_temp_path (none when empty) and return true: nothing starts.
+    bool abandon_withdrawn_start(int preparing_epoch, const std::string& file_path,
+                                 const std::string& remote_temp_path);
+
     /**
      * @brief Lazy-initialize the prep-time estimate subject.
      *
