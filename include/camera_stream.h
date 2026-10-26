@@ -270,16 +270,17 @@ class CameraStream {
     int stream_fail_count_ = 0;
     int snapshot_fail_count_ = 0;  // consecutive; touched only by the worker thread
     bool thread_detached_ = false; // Set by stop() if thread join times out
-    std::chrono::milliseconds join_timeout_{
-        std::chrono::seconds(5)}; // stop()'s wait for the worker
+    std::chrono::milliseconds join_timeout_{JOIN_TIMEOUT}; // stop()'s wait for the worker
     std::thread stream_thread_;
 
     static constexpr int MAX_STREAM_FAILURES = 3;
     static constexpr int SNAPSHOT_INTERVAL_MS = 2000;
     static constexpr int MAX_SNAPSHOT_FAILURES = 3;
-    // A platform-TLS snapshot cannot be cancelled, so its budget stays under
-    // stop()'s join wait.
+    static constexpr std::chrono::seconds JOIN_TIMEOUT{5};
+    // A platform-TLS snapshot cannot be cancelled by stop(); its deadline stays
+    // under the join wait so stop() never has to detach the worker for it.
     static constexpr int PLATFORM_SNAPSHOT_TIMEOUT_SEC = 4;
+    static_assert(std::chrono::seconds(PLATFORM_SNAPSHOT_TIMEOUT_SEC) < JOIN_TIMEOUT);
     static constexpr int STREAM_CONNECT_TIMEOUT_SEC = 5; // Initial connection attempt
     static constexpr int STREAM_TIMEOUT_SEC = 300;       // Active stream — reconnects on timeout
 
