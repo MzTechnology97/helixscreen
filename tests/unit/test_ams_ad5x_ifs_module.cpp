@@ -434,7 +434,8 @@ TEST_CASE("AD5X IFS module's own lane record outranks the remembered seated lane
 
     backend.captured_gcodes.clear();
     REQUIRE(backend.unload_filament(-1).success());
-    CHECK(backend.has_gcode("IFS_UNLOAD SLOT=2"));
+    // The bare macro defaults SLOT= from the same ifs_loaded record.
+    CHECK(backend.captured_gcodes == std::vector<std::string>{"IFS_UNLOAD"});
     CHECK_FALSE(backend.has_gcode_containing("SLOT=4"));
 }
 
@@ -469,9 +470,7 @@ TEST_CASE("AD5X IFS module with no lane record keeps the remembered-lane fallbac
     Ad5xIfsTestAccess::handle_status(backend, module_ifs_frame(0, {1, 2, 3, 4}));
 
     CHECK(Ad5xIfsTestAccess::seated_chan(backend) == 4);
-    backend.captured_gcodes.clear();
-    REQUIRE(backend.unload_filament(-1).success());
-    CHECK(backend.has_gcode("IFS_UNLOAD SLOT=4"));
+    CHECK(backend.get_current_slot() == 3);
 }
 
 TEST_CASE("AD5X IFS module ignores an ifs_loaded that names no real lane",
@@ -512,7 +511,7 @@ TEST_CASE("AD5X IFS module keeps the ifs_loaded lane while another lane's eject 
     CHECK(backend.get_current_slot() == 1);
     backend.captured_gcodes.clear();
     REQUIRE(backend.unload_filament(-1).success());
-    CHECK(backend.has_gcode("IFS_UNLOAD SLOT=2"));
+    CHECK(backend.captured_gcodes == std::vector<std::string>{"IFS_UNLOAD"});
     CHECK_FALSE(backend.has_gcode_containing("SLOT=3"));
 }
 
