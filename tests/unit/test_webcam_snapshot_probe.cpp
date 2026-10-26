@@ -23,7 +23,7 @@
  */
 
 #include "../../include/moonraker_discovery_sequence.h"
-#include "hv/HttpServer.h"
+#include "../test_helpers/loopback_http_server.h"
 #include "system/platform_tls.h"
 
 #include <chrono>
@@ -36,11 +36,6 @@ using namespace helix;
 
 namespace {
 
-/// Ports for the probe fixtures. High and fixed — the suite is single-process and
-/// these are bound only for the lifetime of one TEST_CASE.
-constexpr int PROBE_SERVER_PORT = 19731;
-constexpr int DEAD_PORT = 19732; // deliberately never bound
-
 /// Milliseconds the "slow camera" endpoint stalls before answering. Above the 2s
 /// connect budget so it fails under the old single-timeout scheme, and comfortably
 /// under the total budget so it must pass under the new one.
@@ -50,52 +45,27 @@ constexpr int SLOW_RESPONSE_MS = 2500;
 /// only reads the status code) but a realistic body keeps the fixture honest.
 const std::string JPEG_BODY = "\xFF\xD8\xFF\xE0 fake jpeg payload \xFF\xD9";
 
-/// A libhv HTTP server that serves the probe fixtures for the life of the object.
-class ProbeServer {
+/// The probe fixtures, served for the life of the object.
+class ProbeServer : public test::LoopbackHttpServer {
   public:
     ProbeServer() {
-        service_.GET("/fast.jpg", [](HttpRequest*, HttpResponse* resp) {
+        service().GET("/fast.jpg", [](HttpRequest*, HttpResponse* resp) {
             resp->content_type = APPLICATION_OCTET_STREAM;
             resp->body = JPEG_BODY;
             return 200;
         });
-        service_.GET("/slow.jpg", [](HttpRequest*, HttpResponse* resp) {
+        service().GET("/slow.jpg", [](HttpRequest*, HttpResponse* resp) {
             std::this_thread::sleep_for(std::chrono::milliseconds(SLOW_RESPONSE_MS));
             resp->content_type = APPLICATION_OCTET_STREAM;
             resp->body = JPEG_BODY;
             return 200;
         });
-        service_.GET("/missing.jpg", [](HttpRequest*, HttpResponse* resp) {
+        service().GET("/missing.jpg", [](HttpRequest*, HttpResponse* resp) {
             resp->body = "no such camera";
             return 404;
         });
-
-        server_.registerHttpService(&service_);
-        server_.setPort(PROBE_SERVER_PORT);
-        // Each stalled handler occupies a worker for SLOW_RESPONSE_MS; give the
-        // server enough threads that one slow request cannot starve the others.
-        server_.setThreadNum(4);
-        started_ = server_.start() == 0;
-        // start() is asynchronous — let the listener come up before probing.
-        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+        start();
     }
-
-    ~ProbeServer() {
-        server_.stop();
-    }
-
-    [[nodiscard]] bool started() const {
-        return started_;
-    }
-
-    static std::string url(const std::string& path) {
-        return "http://127.0.0.1:" + std::to_string(PROBE_SERVER_PORT) + path;
-    }
-
-  private:
-    hv::HttpService service_;
-    hv::HttpServer server_;
-    bool started_ = false;
 };
 
 /// Run fn and report how long it took, in milliseconds.
@@ -116,7 +86,7 @@ TEST_CASE("Snapshot probe accepts an endpoint slower than the connect budget",
 
     // The regression for #1205: a live go2rtc camera that needs ~2.5s to produce
     // its first keyframe must be kept, not discarded as unreachable.
-    REQUIRE(probe_snapshot_reachable(ProbeServer::url("/slow.jpg")));
+    REQUIRE(probe_snapshot_reachable(server.url("/slow.jpg")));
 }
 
 TEST_CASE("Snapshot probe accepts an endpoint that answers immediately",
@@ -124,7 +94,7 @@ TEST_CASE("Snapshot probe accepts an endpoint that answers immediately",
     ProbeServer server;
     REQUIRE(server.started());
 
-    REQUIRE(probe_snapshot_reachable(ProbeServer::url("/fast.jpg")));
+    REQUIRE(probe_snapshot_reachable(server.url("/fast.jpg")));
 }
 
 TEST_CASE("Snapshot probe rejects a reachable host that has no camera there",
@@ -134,12 +104,13 @@ TEST_CASE("Snapshot probe rejects a reachable host that has no camera there",
 
     // A 200 is the only acceptable answer — a 404 means the URL is stale even
     // though something is listening.
-    REQUIRE_FALSE(probe_snapshot_reachable(ProbeServer::url("/missing.jpg")));
+    REQUIRE_FALSE(probe_snapshot_reachable(server.url("/missing.jpg")));
 }
 
 TEST_CASE("Snapshot probe rejects a dead address without waiting out the response budget",
           "[webcam][discovery][probe][1205]") {
-    const std::string dead = "http://127.0.0.1:" + std::to_string(DEAD_PORT) + "/frame.jpeg";
+    const std::string dead =
+        "http://127.0.0.1:" + std::to_string(test::free_loopback_port()) + "/frame.jpeg";
 
     bool reachable = true;
     const long long elapsed_ms = time_ms([&] { reachable = probe_snapshot_reachable(dead); });
