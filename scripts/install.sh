@@ -2583,6 +2583,13 @@ check_service_dest_space() {
     fi
     $SUDO rm -f "$probe" 2>/dev/null || true
 
+    # The K2's procd shim also lands in this dir on a self-update; its
+    # install is non-fatal, so it does not make the write required.
+    if ! _self_update_needs_service_write; then
+        log_warn "Cannot write to ${dest_dir} (full or read-only); continuing, the self-update leaves the installed service definition as it is."
+        return 0
+    fi
+
     local upper
     upper=$(_overlay_upperdir)
 
@@ -6881,10 +6888,24 @@ _has_no_new_privs() {
 _migrate_init_script_hooks_path() {
     local init_script="${INIT_SCRIPT_DEST:-}"
     [ -n "$init_script" ] && [ -f "$init_script" ] || return 0
-    if grep -q 'assets/config/platform/hooks\.sh' "$init_script" 2>/dev/null; then
+    if _init_script_has_stale_hooks_path "$init_script"; then
         log_info "Migrating stale PLATFORM_HOOKS path in $init_script"
         _sed_inplace 's|assets/config/platform/hooks\.sh|platform/hooks.sh|' "$init_script"
     fi
+}
+
+_init_script_has_stale_hooks_path() {
+    grep -q 'assets/config/platform/hooks\.sh' "$1" 2>/dev/null
+}
+
+# True when this run writes the SysV init script: a fresh install, a
+# self-update with no script installed, or a self-update whose
+# install_service_sysv rewrites the stale hooks path. Any other self-update
+# leaves the script exactly as it is.
+_self_update_needs_service_write() {
+    _is_self_update || return 0
+    [ -n "${INIT_SCRIPT_DEST:-}" ] && [ -f "$INIT_SCRIPT_DEST" ] || return 0
+    _init_script_has_stale_hooks_path "$INIT_SCRIPT_DEST"
 }
 
 # Install service (dispatcher)
