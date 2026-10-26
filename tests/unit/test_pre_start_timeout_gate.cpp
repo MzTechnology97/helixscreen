@@ -26,6 +26,7 @@
 #include "moonraker_request_tracker.h"
 #include "print_job_ref.h"
 #include "printer_state.h"
+#include "test_helpers/moonraker_client_mock_test_access.h"
 #include "test_helpers/printer_state_test_access.h"
 
 #include <map>
@@ -67,12 +68,21 @@ struct RecordingJobAPI : public MoonrakerJobAPI {
             on_success();
     }
 
+    /// Send start_modified_print through MoonrakerJobAPI's own implementation,
+    /// so the client's scripted answer and the plugin fallback both run.
+    bool real_modified_print = false;
+
     void start_modified_print(const std::string& original_filename,
                               const std::string& temp_file_path,
-                              const std::vector<std::string>& /*modifications*/,
+                              const std::vector<std::string>& modifications,
                               ModifiedPrintCallback on_success,
                               IMoonrakerAPI::ErrorCallback on_error) override {
         ++start_modified_print_calls;
+        if (real_modified_print) {
+            MoonrakerJobAPI::start_modified_print(original_filename, temp_file_path, modifications,
+                                                  std::move(on_success), std::move(on_error));
+            return;
+        }
         last_filename = original_filename;
         if (fail_with) {
             if (on_error)
@@ -441,32 +451,62 @@ TEST_CASE_METHOD(PreStartGateFixture, "A reprint whose start times out while Sto
     CHECK(state.print_state().has_preparing_job());
     CHECK(state.print_state().preparing_start() == helix::PreparingStart::Unanswered);
     CHECK_FALSE(errored);
+}
 
-    // ============================================================================
-    // printer.print.start's own RPC ceiling
-    // ============================================================================
+// ============================================================================
+// printer.print.start's own RPC ceiling
+// ============================================================================
 
-    TEST_CASE("start_print outlives a print-start macro that heats synchronously",
-              "[moonraker][job][pre_start][1451]") {
-        // Moonraker confirms printer.print.start only once Klipper acknowledges
-        // SDCARD_PRINT_FILE. A print-start macro that blocks on M109/M190 holds
-        // that ack for the whole heat-up, so on a cold machine the RPC answers
-        // minutes after the print is already running. At the tracker's default
-        // ceiling the app reports a timeout over a print that started fine.
-        MoonrakerClientMock client(MoonrakerClientMock::PrinterType::VORON_24);
-        client.connect("ws://mock/websocket", []() {}, []() {});
+TEST_CASE("start_print outlives a print-start macro that heats synchronously",
+          "[moonraker][job][pre_start][1451]") {
+    // Moonraker confirms printer.print.start only once Klipper acknowledges
+    // SDCARD_PRINT_FILE. A print-start macro that blocks on M109/M190 holds
+    // that ack for the whole heat-up, so on a cold machine the RPC answers
+    // minutes after the print is already running. At the tracker's default
+    // ceiling the app reports a timeout over a print that started fine.
+    MoonrakerClientMock client(MoonrakerClientMock::PrinterType::VORON_24);
+    client.connect("ws://mock/websocket", []() {}, []() {});
 
-        MoonrakerJobAPI job(client);
+    MoonrakerJobAPI job(client);
 
-        bool started = false;
-        job.start_print(
-            "part.gcode", [&started]() { started = true; }, [](const MoonrakerError&) {});
+    bool started = false;
+    job.start_print("part.gcode", [&started]() { started = true; }, [](const MoonrakerError&) {});
 
-        REQUIRE(started);
-        REQUIRE(client.last_send_method() == "printer.print.start");
-        CHECK(client.last_send_timeout_ms() == MoonrakerJobAPI::PRINT_START_TIMEOUT_MS);
-        CHECK(MoonrakerJobAPI::PRINT_START_TIMEOUT_MS == 600000u);
-        // The ceiling only helps while it clears the default — pin the relation too.
-        CHECK(MoonrakerJobAPI::PRINT_START_TIMEOUT_MS >
-              helix::MoonrakerRequestTracker::DEFAULT_REQUEST_TIMEOUT_MS);
+    REQUIRE(started);
+    REQUIRE(client.last_send_method() == "printer.print.start");
+    CHECK(client.last_send_timeout_ms() == MoonrakerJobAPI::PRINT_START_TIMEOUT_MS);
+    CHECK(MoonrakerJobAPI::PRINT_START_TIMEOUT_MS == 600000u);
+    // The ceiling only helps while it clears the default — pin the relation too.
+    CHECK(MoonrakerJobAPI::PRINT_START_TIMEOUT_MS >
+          helix::MoonrakerRequestTracker::DEFAULT_REQUEST_TIMEOUT_MS);
+}
+
+TEST_CASE_METHOD(PreStartGateFixture,
+                 "A plugin start that times out while Stop waits is held, with no second start",
+                 "[print_preparation][remap][preparing_cancel][1451]") {
+    // The plugin starts the print before it answers print_modified, so a
+    // timeout there is a lost answer, not a refusal: no printer.print.start
+    // fallback goes out behind the running start sequence, and the job is held
+    // for the cancel Stop asked for.
+    jobs.real_modified_print = true;
+    MoonrakerClientMockTestAccess::set_method_handler(
+        mock_client, "server.helix.print_modified",
+        [](MoonrakerClientMock*, const nlohmann::json&, std::function<void(const nlohmann::json&)>,
+           std::function<void(const MoonrakerError&)> err) -> bool {
+            err(MoonrakerError::timeout("server.helix.print_modified",
+                                        MoonrakerJobAPI::PRINT_MODIFIED_TIMEOUT_MS));
+            return true;
+        });
+    state.print_state().begin_preparing(helix::PrintJobRef{kRemapFixture, "gcodes", ""});
+    state.print_state().note_preparing_cancel_requested();
+
+    manager.modify_and_print_with_remap(kRemapFixture, {{1, 2}}, nullptr);
+    for (int i = 0; i < 6; ++i) {
+        drain();
     }
+
+    REQUIRE(jobs.start_modified_print_calls == 1);
+    CHECK(jobs.start_print_calls == 0);
+    CHECK(state.print_state().has_preparing_job());
+    CHECK(state.print_state().preparing_start() == helix::PreparingStart::Unanswered);
+}
