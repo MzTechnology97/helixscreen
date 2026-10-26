@@ -13,6 +13,7 @@
 #include "config.h"
 #include "helix_version.h"
 #include "humidity_sensor_types.h"
+#include "hv/hssl.h"
 #include "hv/requests.h"
 #include "klipper_extruder_naming.h"
 #include "led/led_controller.h"
@@ -30,8 +31,13 @@
 #include "webcam_service_health.h"
 #include "z_offset_persistence.h"
 
+#ifdef __ANDROID__
+#include "system/http_android.h"
+#endif
+
 #include <algorithm>
 #include <cctype>
+#include <string_view>
 #include <thread>
 #include <unordered_set>
 #include <utility>
@@ -76,7 +82,32 @@ bool is_usable_snapshot_url(const std::string& snapshot_url) {
     return true;
 }
 
+bool snapshot_probe_needs_platform_tls(const std::string& url, bool http_client_has_tls) {
+    if (http_client_has_tls) {
+        return false;
+    }
+    constexpr std::string_view kHttps = "https://";
+    return url.size() >= kHttps.size() &&
+           std::equal(kHttps.begin(), kHttps.end(), url.begin(), [](char a, char b) {
+               return a == std::tolower(static_cast<unsigned char>(b));
+           });
+}
+
 bool probe_snapshot_reachable(const std::string& snapshot_url) {
+#ifdef __ANDROID__
+    if (snapshot_probe_needs_platform_tls(snapshot_url, HV_WITH_SSL)) {
+        // HttpURLConnection applies one budget to connect and to read, so the
+        // response budget covers both here.
+        const auto [status, detail] = android::https_get(snapshot_url, HELIX_USER_AGENT, "",
+                                                         SNAPSHOT_PROBE_TOTAL_TIMEOUT_SEC);
+        if (status == 200) {
+            return true;
+        }
+        spdlog::debug("[Discovery] Snapshot probe of {} via platform TLS: {}", snapshot_url,
+                      status != 0 ? std::to_string(status) : detail);
+        return false;
+    }
+#endif
     auto req = std::make_shared<HttpRequest>();
     req->method = HTTP_GET;
     req->url = snapshot_url;
