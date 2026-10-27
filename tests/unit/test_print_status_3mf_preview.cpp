@@ -16,6 +16,7 @@
 
 #include "../lvgl_ui_test_fixture.h"
 #include "../test_helpers/print_status_panel_test_access.h"
+#include "../test_helpers/printer_state_test_access.h"
 #include "../test_helpers/update_queue_test_access.h"
 #include "app_globals.h"
 #include "display_settings_manager.h"
@@ -113,6 +114,9 @@ class PrintStatus3mfFixture : public LVGLUITestFixture {
   public:
     PrintStatus3mfFixture()
         : client_(MoonrakerClientMock::PrinterType::VORON_24), api_(client_, state()) {
+        // The .temp reply is checked against the current print's name, which
+        // lives on the shared PrinterState; start from no print at all.
+        helix::PrinterStateTestAccess::clear_data(get_printer_state());
         animations_were_enabled_ = DisplaySettingsManager::instance().get_animations_enabled();
         DisplaySettingsManager::instance().set_animations_enabled(false);
         home_widget_ = lv_obj_create(test_screen());

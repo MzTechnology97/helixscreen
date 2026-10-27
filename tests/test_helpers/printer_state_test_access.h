@@ -49,6 +49,10 @@ class PrinterPrintStateTestAccess {
         // phase-update guard and the print_active safety reset.
         pps.preparing_job_ = {};
         pps.cancel_preparing_watchdog();
+        // The print's identity outlives subject teardown. Left set, a later
+        // test's reply for its own file reads as belonging to another print.
+        pps.print_identity_override_.clear();
+        pps.effective_print_filename_.clear();
     }
 
     /// Fire the preparing-job watchdog as if its timer had elapsed.
