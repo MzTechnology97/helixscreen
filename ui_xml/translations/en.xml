@@ -223,6 +223,7 @@
   <translation tag="Auto-probe or manually check screw heights" en="Auto-probe or manually check screw heights"/>
   <translation tag="Auto-refill is on but no two slots hold matching filament, so nothing will switch on runout" en="Auto-refill is on but no two slots hold matching filament, so nothing will switch on runout"/>
   <translation tag="Auto-render video" en="Auto-render video"/>
+  <translation tag="Auto-swap at spool end" en="Auto-swap at spool end"/>
   <translation tag="Auto-tuning Shapers..." en="Auto-tuning Shapers..."/>
   <translation tag="Auto-uninstall only works on local Moonraker" en="Auto-uninstall only works on local Moonraker"/>
   <translation tag="Automatic" en="Automatic"/>
@@ -333,6 +334,7 @@
   <translation tag="CALIBRATION" en="CALIBRATION"/>
   <translation tag="CAPABILITIES" en="CAPABILITIES"/>
   <translation tag="CARTOGRAPHER" en="CARTOGRAPHER"/>
+  <translation tag="CFS ready" en="CFS ready"/>
   <translation tag="CHANGED FROM LAST SESSION" en="CHANGED FROM LAST SESSION"/>
   <translation tag="COLOR SENSORS" en="COLOR SENSORS"/>
   <translation tag="CONFIGURATION" en="CONFIGURATION"/>
@@ -792,6 +794,7 @@
   <translation tag="Encoder" en="Encoder"/>
   <translation tag="Ended" en="Ended"/>
   <translation tag="Endless spool failover cleared for every slot" en="Endless spool failover cleared for every slot"/>
+  <translation tag="Ends" en="Ends"/>
   <translation tag="Enhanced {} operation in PRINT_START" en="Enhanced {} operation in PRINT_START"/>
   <translation tag="Enhanced {} operations in PRINT_START" en="Enhanced {} operations in PRINT_START"/>
   <translation tag="Enhancement Complete!" en="Enhancement Complete!"/>
@@ -1183,6 +1186,7 @@
   <translation tag="Hyperlapse captures frames at fixed time intervals. Good for very long prints." en="Hyperlapse captures frames at fixed time intervals. Good for very long prints."/>
   <translation tag="ID (optional)" en="ID (optional)"/>
   <translation tag="IMPORT FROM USB" en="IMPORT FROM USB"/>
+  <translation tag="IN USE" en="IN USE"/>
   <translation tag="IP Address / Hostname" en="IP Address / Hostname"/>
   <translation tag="IP:" en="IP:"/>
   <translation tag="IPP error: {}" en="IPP error: {}"/>
@@ -1313,6 +1317,7 @@
   <translation tag="Layout" en="Layout"/>
   <translation tag="Learn More" en="Learn More"/>
   <translation tag="LedSelect" en="LedSelect"/>
+  <translation tag="Left" en="Left"/>
   <translation tag="Length of filament to purge" en="Length of filament to purge"/>
   <translation tag="Length of the cooling tube section" en="Length of the cooling tube section"/>
   <translation tag="Length:" en="Length:"/>
@@ -1471,6 +1476,7 @@
   <translation tag="Moonraker restarted but Spoolman not connected. Check server." en="Moonraker restarted but Spoolman not connected. Check server."/>
   <translation tag="Moonraker restarting...&#10;Waiting for reconnection..." en="Moonraker restarting...&#10;Waiting for reconnection..."/>
   <translation tag="Moonraker: " en="Moonraker: "/>
+  <translation tag="More" en="More"/>
   <translation tag="More points = more accurate, but takes longer." en="More points = more accurate, but takes longer."/>
   <translation tag="Motion" en="Motion"/>
   <translation tag="Motion: XYZ" en="Motion: XYZ"/>
@@ -1621,6 +1627,7 @@
   <translation tag="Not found (use phone app)" en="Not found (use phone app)"/>
   <translation tag="Not in your spools? Set it up" en="Not in your spools? Set it up"/>
   <translation tag="Not now" en="Not now"/>
+  <translation tag="Not recognised" en="Not recognised"/>
   <translation tag="Not yet available on this display" en="Not yet available on this display"/>
   <translation tag="Not yet calibrated" en="Not yet calibrated"/>
   <translation tag="Notes" en="Notes"/>
@@ -1839,6 +1846,7 @@
   <translation tag="Print Time" en="Print Time"/>
   <translation tag="Print Tuning" en="Print Tuning"/>
   <translation tag="Print Was Terminated" en="Print Was Terminated"/>
+  <translation tag="Print a file" en="Print a file"/>
   <translation tag="Print cancelled" en="Print cancelled"/>
   <translation tag="Print complete" en="Print complete"/>
   <translation tag="Print did not start" en="Print did not start"/>
@@ -2045,6 +2053,7 @@
   <translation tag="Requires Multi-Filament System or MMU hardware" en="Requires Multi-Filament System or MMU hardware"/>
   <translation tag="Requires a filament system with bypass" en="Requires a filament system with bypass"/>
   <translation tag="Requires clog detection hardware" en="Requires clog detection hardware"/>
+  <translation tag="Reread RFID" en="Reread RFID"/>
   <translation tag="Resend write failed at chunk {}" en="Resend write failed at chunk {}"/>
   <translation tag="Reset" en="Reset"/>
   <translation tag="Reset Blade Counter" en="Reset Blade Counter"/>
@@ -2838,6 +2847,7 @@
   <translation tag="cores" en="cores"/>
   <translation tag="disable" en="disable"/>
   <translation tag="disabled" en="disabled"/>
+  <translation tag="dry" en="dry"/>
   <translation tag="e.g. Jet Black" en="e.g. Jet Black"/>
   <translation tag="e.g. NAME=my_var VALUE=123" en="e.g. NAME=my_var VALUE=123"/>
   <translation tag="e.g. Polymaker" en="e.g. Polymaker"/>
@@ -2847,12 +2857,15 @@
   <translation tag="enable" en="enable"/>
   <translation tag="enabled" en="enabled"/>
   <translation tag="error" en="error"/>
+  <translation tag="estimate" en="estimate"/>
   <translation tag="extruder" en="extruder"/>
   <translation tag="extruder(s)" en="extruder(s)"/>
   <translation tag="extruders" en="extruders"/>
   <translation tag="fans" en="fans"/>
   <translation tag="heated bed" en="heated bed"/>
+  <translation tag="humid" en="humid"/>
   <translation tag="idle" en="idle"/>
+  <translation tag="layer" en="layer"/>
   <translation tag="layers" en="layers"/>
   <translation tag="left" en="left"/>
   <translation tag="mm before clog" en="mm before clog"/>
@@ -2872,6 +2885,7 @@
   <translation tag="steppers" en="steppers"/>
   <translation tag="tall" en="tall"/>
   <translation tag="tool(s)" en="tool(s)"/>
+  <translation tag="unknown tag" en="unknown tag"/>
   <translation tag="used" en="used"/>
   <translation tag="v%s available" en="v%s available"/>
   <translation tag="v{} installed! Restarting..." en="v{} installed! Restarting..."/>
