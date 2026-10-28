@@ -1359,6 +1359,38 @@ AmsSystemInfo AmsBackendCfs::parse_flat_box_status(const nlohmann::json& box_jso
                 if (pct >= 0.0f) {
                     slot.remaining_fraction = std::min(pct, 100.0f) / 100.0f;
                 }
+                slot.remaining_estimated =
+                    flat_text_field(slot_json, "rfid_remaining_source") == "kalico";
+
+                // A tag Kalico could not identify keeps its own colour, and the
+                // slot says so instead of looking untagged.
+                const std::string unknown_code = flat_text_field(slot_json, "rfid_unknown_code");
+                if (!unknown_code.empty()) {
+                    if (slot.material.empty()) {
+                        if (auto c = read_flat_slot_color(
+                                flat_text_field(slot_json, "rfid_unknown_color"))) {
+                            slot.color_rgb = *c;
+                        }
+                    }
+                    SlotError unknown;
+                    unknown.message = "Unknown RFID tag " + unknown_code +
+                                      ": add it to the filament library";
+                    unknown.severity = SlotError::INFO;
+                    slot.error = unknown;
+                }
+
+                // Humidity above the limit of the slot's filament profile.
+                const float humidity = helix::json_util::safe_float(slot_json, "humidity_pct", -1.0f);
+                const float limit =
+                    helix::json_util::safe_float(slot_json, "humidity_limit_pct", -1.0f);
+                if (humidity >= 0.0f && limit > 0.0f && humidity > limit) {
+                    SlotError wet;
+                    wet.message = "Humidity " + std::to_string(std::lround(humidity)) +
+                                  "% above the " + std::to_string(std::lround(limit)) +
+                                  "% limit of this filament: dry it";
+                    wet.severity = SlotError::WARNING;
+                    slot.error = wet;
+                }
             }
 
             unit.slots.push_back(std::move(slot));
@@ -1418,6 +1450,39 @@ AmsSystemInfo AmsBackendCfs::parse_flat_box_status(const nlohmann::json& box_jso
         }
         box.slot_count = static_cast<int>(box.slots.size());
         info.units.push_back(std::move(box));
+    }
+
+    // K2-OpenHost (Kalico): boxes[] gives each box its own temperature and
+    // humidity, with the bays it holds; it replaces the single reading above.
+    if (auto boxes_it = box_json.find("boxes"); boxes_it != box_json.end() && boxes_it->is_array()) {
+        for (const auto& entry : *boxes_it) {
+            if (!entry.is_object()) {
+                continue;
+            }
+            auto bays_it = entry.find("slots");
+            if (bays_it == entry.end() || !bays_it->is_array() || bays_it->empty() ||
+                !(*bays_it)[0].is_number_integer()) {
+                continue;
+            }
+            const int first = (*bays_it)[0].get<int>() / 4 * 4;
+            for (auto& unit_info : info.units) {
+                if (unit_info.first_slot_global_index != first) {
+                    continue;
+                }
+                const float t = helix::json_util::safe_float(entry, "temp_c", -1.0f);
+                const float h = helix::json_util::safe_float(entry, "humidity_pct", -1.0f);
+                if (t < 0.0f && h < 0.0f) {
+                    unit_info.environment.reset();
+                } else {
+                    EnvironmentData env;
+                    env.temperature_c = t >= 0.0f ? t : 0.0f;
+                    env.humidity_pct = h >= 0.0f ? h : 0.0f;
+                    env.has_humidity = h >= 0.0f;
+                    unit_info.environment = env;
+                }
+                break;
+            }
+        }
     }
 
     // K2-OpenHost (Kalico): which lane each Tn takes. During a print Kalico
@@ -4161,6 +4226,26 @@ std::vector<helix::printer::DeviceAction> AmsBackendCfs::get_device_actions() co
            true,
            ""},
     };
+}
+
+bool AmsBackendCfs::supports_gate_check() const {
+    std::lock_guard<std::mutex> lock(mutex_);
+    return schema_ == CfsSchema::Flat && macro_variant_ == CfsMacroVariant::Fork;
+}
+
+AmsError AmsBackendCfs::check_gate(int slot_index) {
+    if (!supports_gate_check()) {
+        return AmsErrorHelper::not_supported("Slot check needs the K2-OpenHost box module");
+    }
+    // SLOT is Kalico's 0-based global bay, the index HelixScreen uses too.
+    return execute_gcode("_BOX_RFID_READ_SLOT SLOT=" + std::to_string(slot_index));
+}
+
+AmsError AmsBackendCfs::check_all_gates() {
+    if (!supports_gate_check()) {
+        return AmsErrorHelper::not_supported("Slot check needs the K2-OpenHost box module");
+    }
+    return execute_device_action("refresh_rfid");
 }
 
 AmsError AmsBackendCfs::execute_device_action(const std::string& action_id, const std::any& value) {
