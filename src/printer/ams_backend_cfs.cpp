@@ -1967,8 +1967,19 @@ void AmsBackendCfs::handle_status_update(const nlohmann::json& notification) {
                     // a DELETE landing second silently drops the record we just
                     // published. The next poll republishes from firmware truth
                     // with the delete already settled.
+                    //
+                    // Not on the Fork dialect: its box.py publishes lane_data
+                    // itself, from the slot data this frame carries, and user
+                    // edits reach it through _BOX_SLOT_SET. A mirror there would
+                    // replace that record — and while a just-inserted spool is
+                    // still unidentified (present, no color yet) FillUnsetOnly
+                    // would latch the default color for good.
+                    const bool box_owns_lane_data =
+                        schema_ == CfsSchema::Flat && macro_variant_ == CfsMacroVariant::Fork;
                     if (!cleared) {
                         strip_spoolman_link_on_runout_locked(slot, global_idx);
+                    }
+                    if (!cleared && !box_owns_lane_data) {
                         helix::ams::mirror_firmware_to_lane_data(
                             override_store_.get(), overrides_, global_idx, slot.color_rgb,
                             slot.material, slot.status == SlotStatus::AVAILABLE,
