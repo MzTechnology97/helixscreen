@@ -61,6 +61,9 @@ jobs:
       run: |
         ccache --set-config=max_size=2G
         ccache --set-config=compression=true
+        # The patches add libhv sources (dns_resolv.c) that `make test` lists
+        # before it applies them; build.yml gets them from its full `make` first.
+        make apply-patches
         make test -j$(nproc)
 
     - name: Save ccache
