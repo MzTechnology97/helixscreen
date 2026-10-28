@@ -1786,6 +1786,9 @@ void AmsBackendCfs::handle_status_update(const nlohmann::json& notification) {
                         fork_switches_[sw.field] = it->get<bool>();
                     }
                 }
+                if (auto it = box.find("load_path"); it != box.end() && it->is_object()) {
+                    load_path_ = *it;
+                }
             }
         } else {
             if (!flat_box_state_.empty()) {
@@ -4299,6 +4302,11 @@ std::vector<helix::printer::DeviceAction> AmsBackendCfs::get_device_actions() co
     };
     actions.insert(actions.end(), fork_switches.begin(), fork_switches.end());
     return actions;
+}
+
+nlohmann::json AmsBackendCfs::load_path() const {
+    std::lock_guard<std::mutex> lock(mutex_);
+    return load_path_;
 }
 
 bool AmsBackendCfs::supports_gate_check() const {

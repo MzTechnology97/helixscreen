@@ -55,6 +55,21 @@ K2ohPrintView::~K2ohPrintView() {
     if (timer_) {
         lv_timer_delete(timer_);
     }
+    if (root_) {
+        lv_obj_remove_event_cb_with_user_data(root_, on_root_deleted, this);
+    }
+}
+
+void K2ohPrintView::on_root_deleted(lv_event_t* e) {
+    auto* self = static_cast<K2ohPrintView*>(lv_event_get_user_data(e));
+    self->observers_.clear();
+    if (self->timer_) {
+        lv_timer_delete(self->timer_);
+        self->timer_ = nullptr;
+    }
+    self->root_ = nullptr;
+    self->arc_ = nullptr;
+    self->content_ = nullptr;
 }
 
 void K2ohPrintView::create(lv_obj_t* content) {
@@ -69,6 +84,7 @@ void K2ohPrintView::create(lv_obj_t* content) {
     }
     lv_obj_add_flag(root_, LV_OBJ_FLAG_FLOATING);
     lv_obj_add_flag(root_, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_add_event_cb(root_, on_root_deleted, LV_EVENT_DELETE, this);
 
     if (lv_obj_t* box = child(root_, "ring_box")) {
         arc_ = lv_arc_create(box);

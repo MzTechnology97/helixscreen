@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- K2-OpenHost Home widget: nozzle, bed and chamber, large and coloured by state. -->
+<component>
+  <view name="panel_widget_k2oh_temps"
+        extends="lv_obj" height="100%" flex_grow="1" style_bg_color="#card_bg" style_bg_opa="255" style_radius="#border_radius" style_border_width="0" style_pad_all="#space_sm" style_pad_gap="#space_xs"
+        flex_flow="column" scrollable="false" clickable="true">
+    <lv_obj name="nozzle_row" width="100%" flex_grow="1" style_radius="#border_radius_small"
+            style_bg_color="#elevated_bg" style_bg_opa="255" style_border_width="0" style_pad_left="#space_sm"
+            style_pad_right="#space_sm" style_pad_gap="#space_sm" flex_flow="row" style_flex_cross_place="center"
+            scrollable="false" clickable="false" event_bubble="true">
+      <icon src="thermometer" size="sm" variant="secondary" clickable="false" event_bubble="true"/>
+      <text_muted text="Nozzle" translation_tag="Nozzle" flex_grow="1" long_mode="clip" clickable="false"
+                  event_bubble="true"/>
+      <text_heading name="nozzle_value" text="" clickable="false" event_bubble="true"/>
+      <text_muted name="nozzle_target" text="" clickable="false" event_bubble="true"/>
+    </lv_obj>
+    <lv_obj name="bed_row" width="100%" flex_grow="1" style_radius="#border_radius_small"
+            style_bg_color="#elevated_bg" style_bg_opa="255" style_border_width="0" style_pad_left="#space_sm"
+            style_pad_right="#space_sm" style_pad_gap="#space_sm" flex_flow="row" style_flex_cross_place="center"
+            scrollable="false" clickable="false" event_bubble="true">
+      <icon src="radiator" size="sm" variant="secondary" clickable="false" event_bubble="true"/>
+      <text_muted text="Bed" translation_tag="Bed" flex_grow="1" long_mode="clip" clickable="false"
+                  event_bubble="true"/>
+      <text_heading name="bed_value" text="" clickable="false" event_bubble="true"/>
+      <text_muted name="bed_target" text="" clickable="false" event_bubble="true"/>
+    </lv_obj>
+    <lv_obj name="chamber_row" width="100%" flex_grow="1" style_radius="#border_radius_small"
+            style_bg_color="#elevated_bg" style_bg_opa="255" style_border_width="0" style_pad_left="#space_sm"
+            style_pad_right="#space_sm" style_pad_gap="#space_sm" flex_flow="row" style_flex_cross_place="center"
+            scrollable="false" clickable="false" event_bubble="true">
+      <icon src="home_thermometer" size="sm" variant="secondary" clickable="false" event_bubble="true"/>
+      <text_muted text="Chamber" translation_tag="Chamber" flex_grow="1" long_mode="clip" clickable="false"
+                  event_bubble="true"/>
+      <text_heading name="chamber_value" text="" clickable="false" event_bubble="true"/>
+    </lv_obj>
+  </view>
+</component>

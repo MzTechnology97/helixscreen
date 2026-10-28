@@ -472,7 +472,11 @@ void AmsPanel::setup(lv_obj_t* panel, lv_obj_t* parent_screen) {
                 lv_obj_get_coords(near, &area);
                 show_context_menu(slot, near, {(area.x1 + area.x2) / 2, area.y1});
             },
-            [this]() { show_edit_modal(-2); }});
+            [this](lv_obj_t* anchor) {
+                helix::ui::show_external_spool_menu(
+                    parent_screen_, anchor, context_menu_,
+                    [this](bool open_on_picker) { show_edit_modal(-2, open_on_picker); });
+            }});
     k2oh_cfs_->create(panel_);
 
     spdlog::debug("[{}] Setup complete!", get_name());

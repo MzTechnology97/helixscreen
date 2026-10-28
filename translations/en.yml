@@ -21,6 +21,7 @@ translations:
   '%zu plugins failed to load': '%zu plugins failed to load'
   Auto-swap at spool end: Auto-swap at spool end
   CFS ready: CFS ready
+  Clog guard: Clog guard
   Elapsed: Elapsed
   Ends: Ends
   IN USE: IN USE
@@ -28,11 +29,24 @@ translations:
   More: More
   Not recognised: Not recognised
   Print a file: Print a file
+  Printhead sensor: Printhead sensor
   Reread RFID: Reread RFID
+  active, no events: active, no events
+  active: active
+  at rest: at rest
+  clog detected: clog detected
   dry: dry
+  empty: empty
   estimate: estimate
+  events: events
+  feeding: feeding
+  filament present: filament present
   humid: humid
   layer: layer
+  moving: moving
+  no filament: no filament
+  sensor error: sensor error
+  still: still
   unknown tag: unknown tag
   "'{}' already exists. Replace the stored mesh?": "'{}' already exists. Replace the stored mesh?"
   "'{}' and '{}' already exist. Replace the stored meshes?": "'{}' and '{}' already exist. Replace the stored meshes?"
@@ -354,6 +368,8 @@ translations:
   Button taps and navigation sounds: Button taps and navigation sounds
   Buzz Servo: Buzz Servo
   Bypass: Bypass
+  External spool: External spool
+  not set: not set
   Bypass Is Active: Bypass Is Active
   Bypass Mode: Bypass Mode
   Bypass active — this print runs on the external spool.: Bypass active — this print runs on the external spool.
