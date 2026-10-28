@@ -5883,3 +5883,16 @@ TEST_CASE("CFS Fork: Kalico's box switches are device actions (K2-OpenHost)",
     CHECK(backend.captured[0] == "_BOX_SET_CLOG_DETECTION ENABLE=0");
     CHECK(backend.captured[1] == "_BOX_SET_UNLOAD_AFTER_PRINT ENABLE=1");
 }
+
+TEST_CASE("CFS flat: the spool percent comes from Kalico's rfid_percent (K2-OpenHost)",
+          "[ams][cfs][flat][k2oh]") {
+    json box = make_flat_fork_box();
+    box["slots"][1]["rfid_percent"] = 85.0;
+    box["slots"][2]["rfid_percent"] = 22.14;
+    box["slots"][3]["rfid_percent"] = nullptr;
+    const auto info = AmsBackendCfs::parse_box_status(box);
+    CHECK(info.get_slot_global(1)->get_remaining_percent() == Catch::Approx(85.0f));
+    CHECK(info.get_slot_global(2)->get_remaining_percent() == Catch::Approx(22.14f));
+    // No percent published: still unknown.
+    CHECK(info.get_slot_global(3)->get_remaining_percent() == Catch::Approx(-1.0f));
+}
