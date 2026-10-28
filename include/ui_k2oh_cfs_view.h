@@ -19,6 +19,13 @@ struct AmsSystemInfo;
 
 namespace helix::ui {
 
+/// Opens the multi-filament panel (the K2-OpenHost CFS page on Kalico's box).
+void k2oh_open_cfs_page();
+
+/// Registers the XML callbacks of the K2-OpenHost navigation entries
+/// (k2oh_nav_cfs_clicked). Call before navigation_bar.xml is parsed.
+void k2oh_register_nav_callbacks();
+
 /**
  * @brief K2-OpenHost CFS page: one card per spool, status chips, the runout
  * swap and the actions of the selected spool.

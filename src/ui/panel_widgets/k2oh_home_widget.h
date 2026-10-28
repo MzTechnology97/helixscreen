@@ -61,6 +61,9 @@ class K2ohHomeWidget : public PanelWidget {
 
     static void on_click(lv_event_t* e);
     static void on_timer(lv_timer_t* timer);
+    /// Light tile: a vertical drag sets the brightness (a tap still toggles).
+    static void on_light_drag(lv_event_t* e);
+    void show_brightness(int pct, bool on);
 
     PrinterState& printer_state_;
     Kind kind_;
@@ -69,6 +72,12 @@ class K2ohHomeWidget : public PanelWidget {
     lv_obj_t* parent_screen_ = nullptr;
     lv_timer_t* timer_ = nullptr;
     std::vector<Spool> spools_;
+    // Light drag state.
+    int32_t drag_start_y_ = 0;
+    int drag_start_pct_ = 0;
+    int drag_pct_ = 0;
+    bool dragging_ = false;
+    bool dragged_ = false;
     std::vector<ObserverGuard> observers_;
 };
 

@@ -31,6 +31,7 @@
 #include "ui_split_button.h"
 #include "ui_spool_canvas.h"
 #include "ui_switch.h"
+#include "ui_k2oh_cfs_view.h"
 #include "ui_text.h"
 #include "ui_text_input.h"
 #include "ui_z_offset_indicator.h"
@@ -580,6 +581,7 @@ void register_xml_components() {
     register_xml("macro_param_modal.xml");
 
     // Main navigation and panels
+    helix::ui::k2oh_register_nav_callbacks(); // K2-OpenHost CFS entry
     register_xml("navigation_bar.xml");
     register_xml("home_panel.xml");
     register_xml("controls_panel.xml");
