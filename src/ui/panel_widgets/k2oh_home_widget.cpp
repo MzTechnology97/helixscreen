@@ -24,6 +24,7 @@
 #include "panel_widget_registry.h"
 #include "preset_materials.h"
 #include "printer_state.h"
+#include "system_settings_manager.h"
 #include "temperature_controller.h"
 #include "theme_manager.h"
 
@@ -200,6 +201,8 @@ void K2ohHomeWidget::attach(lv_obj_t* widget_obj, lv_obj_t* parent_screen) {
         subjects = {ps.get_fan_speed_subject(), ps.get_fans_version_subject()};
         break;
     }
+    // C++-set labels are re-translated when the language changes.
+    subjects.push_back(SystemSettingsManager::instance().subject_language());
     for (lv_subject_t* s : subjects) {
         observers_.push_back(ui::observe_int_sync<K2ohHomeWidget>(s, this, update));
     }
