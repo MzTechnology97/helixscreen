@@ -2708,7 +2708,7 @@ k2-test: k2-docker deploy-k2-fg
 # Includes: binaries, ui_xml, config, assets (fonts/images only, no test files)
 
 RELEASE_DIR := releases
-VERSION := $(shell cat VERSION.txt 2>/dev/null || echo "dev")
+VERSION := $(shell cat VERSION.txt 2>/dev/null || echo "dev")$(K2OH_SUFFIX)
 # Release filenames include 'v' prefix to match git tag convention (v0.9.3)
 RELEASE_VERSION := v$(VERSION)
 
@@ -2818,7 +2818,7 @@ endef
 #              snapmaker-u1, x86)
 define write-release-info
 	@asset=$$(. scripts/lib/installer/platform.sh >/dev/null 2>&1 && helix_self_update_asset $(1)); \
-	echo "{\"project_name\":\"helixscreen\",\"project_owner\":\"prestonbrown\",\"version\":\"$(RELEASE_VERSION)\",\"asset_name\":\"$$asset\"}" > $(RELEASE_DIR)/helixscreen/release_info.json
+	echo "{\"project_name\":\"helixscreen\",\"project_owner\":\"MzTechnology97\",\"version\":\"$(RELEASE_VERSION)\",\"asset_name\":\"$$asset\"}" > $(RELEASE_DIR)/helixscreen/release_info.json
 endef
 
 # Refuse to package a binary that carries the helixctl server.

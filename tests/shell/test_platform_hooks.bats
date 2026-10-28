@@ -215,6 +215,34 @@ http.server.HTTPServer(('127.0.0.1', $port), H).serve_forever()
     rm -rf "$tmp"
 }
 
+@test "k2 gate polls the Moonraker host of settings.json (K2-OpenHost)" {
+    command -v python3 >/dev/null 2>&1 || skip "python3 not available"
+
+    local tmp port status_file
+    tmp="$(mktemp -d)"
+    status_file="$tmp/splash-status"
+    port=7192
+    printf '{"active_printer_id": "default", "printers": {"default": {"moonraker_host": "127.0.0.1", "moonraker_port": %s}}}' "$port" > "$tmp/settings.json"
+
+    python3 -c "
+import http.server
+class H(http.server.BaseHTTPRequestHandler):
+    def do_GET(self): self.send_response(200); self.end_headers(); self.wfile.write(b'{}')
+    def log_message(self, *a): pass
+http.server.HTTPServer(('127.0.0.1', $port), H).serve_forever()
+" &
+    local server_pid=$!
+    sleep 1
+
+    env -u HELIX_MOONRAKER_READY_URL         HELIX_SETTINGS_FILE="$tmp/settings.json"         HELIX_MOONRAKER_WAIT_TIMEOUT=10         HELIX_SPLASH_STATUS_FILE="$status_file"         bash -c ". '$HOOKS_DIR/hooks-k2.sh'; platform_wait_for_services"
+    local rc=$?
+
+    kill "$server_pid" 2>/dev/null || true
+    [ "$rc" -eq 0 ]
+    grep -q "HelixScreen" "$status_file"
+    rm -rf "$tmp"
+}
+
 @test "k2 gate times out cleanly and marks splash 'no printer'" {
     command -v python3 >/dev/null 2>&1 || skip "python3 not available"
 

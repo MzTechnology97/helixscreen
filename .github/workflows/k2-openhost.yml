@@ -1,5 +1,7 @@
 # K2-OpenHost: build only the Creality K2 package of this fork.
-# Same steps as the K2 leg of release.yml, without the release publishing.
+# Same steps as the K2 leg of release.yml. A push to k2-openhost with a new
+# fork version (VERSION.txt + VERSION-k2oh.txt, e.g. v1.0.6-k2oh.2) publishes
+# it as a GitHub release, which HelixScreen's in-app update installs.
 name: K2-OpenHost build
 
 on:
@@ -73,8 +75,8 @@ jobs:
         path: ~/.cache/ccache
         key: ccache-k2openhost-tests-${{ github.sha }}
 
-    - name: Run CFS tests
-      run: ./build/bin/helix-tests "[cfs]"
+    - name: Run CFS and K2-OpenHost tests
+      run: ./build/bin/helix-tests "[cfs],[k2oh]"
 
   build-k2:
     name: Build (Creality K2)
@@ -142,3 +144,31 @@ jobs:
           releases/helixscreen-k2-*.tar.gz
           releases/helixscreen-k2.zip
         retention-days: 30
+
+  release:
+    name: Publish the fork release
+    if: github.event_name == 'push' && github.ref == 'refs/heads/k2-openhost'
+    needs: [test-cfs, build-k2]
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v6
+
+    - name: Download K2 package
+      uses: actions/download-artifact@v5
+      with:
+        name: helixscreen-k2-openhost
+        path: releases
+
+    - name: Create the release if this version is new
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        tag="v$(cat VERSION.txt)-$(cat VERSION-k2oh.txt)"
+        if gh release view "$tag" >/dev/null 2>&1; then
+          echo "$tag already released; bump VERSION-k2oh.txt to publish a new build"
+          exit 0
+        fi
+        gh release create "$tag" --target "$GITHUB_SHA" --title "HelixScreen $tag (K2-OpenHost)"           --notes "K2-OpenHost build of HelixScreen $(cat VERSION.txt). Changes: the commits since the previous release."           releases/helixscreen-k2-*.tar.gz releases/helixscreen-k2.zip

@@ -79,7 +79,9 @@ ChannelVersionRelation compare_channel_version(const std::string& installed,
  */
 class UpdateChecker {
   public:
-    static constexpr const char* DEFAULT_R2_BASE_URL = "https://releases.helixscreen.org";
+    // K2-OpenHost fork: no CDN; updates come from the fork's GitHub releases.
+    // An empty base makes fetch_r2_manifest() fail at once and fall back to GitHub.
+    static constexpr const char* DEFAULT_R2_BASE_URL = "";
 
     /**
      * @brief Release information from GitHub
