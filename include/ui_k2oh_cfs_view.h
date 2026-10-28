@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include "ui_k2oh_cfs_settings.h"
 #include "ui_k2oh_runout_view.h"
 #include "ui_observer_guard.h"
 
@@ -93,6 +94,8 @@ class K2ohCfsView {
     std::vector<PathRow> path_rows_;
     /// The runout swap page, opened from the runout row.
     std::unique_ptr<K2ohRunoutView> runout_;
+    /// The CFS settings page, opened from the gear button.
+    std::unique_ptr<K2ohCfsSettingsView> settings_;
     std::vector<Card> cards_;
     int selected_ = -1;
     int loaded_slot_ = -1;

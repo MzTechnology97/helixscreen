@@ -336,6 +336,7 @@
   <translation tag="CAPABILITIES" en="CAPABILITIES"/>
   <translation tag="CARTOGRAPHER" en="CARTOGRAPHER"/>
   <translation tag="CFS ready" en="CFS ready"/>
+  <translation tag="CFS settings" en="CFS settings"/>
   <translation tag="CHANGED FROM LAST SESSION" en="CHANGED FROM LAST SESSION"/>
   <translation tag="COLOR SENSORS" en="COLOR SENSORS"/>
   <translation tag="CONFIGURATION" en="CONFIGURATION"/>
@@ -695,6 +696,7 @@
   <translation tag="Device connected" en="Device connected"/>
   <translation tag="Device name" en="Device name"/>
   <translation tag="Device name is required" en="Device name is required"/>
+  <translation tag="Device operations" en="Device operations"/>
   <translation tag="Device: " en="Device: "/>
   <translation tag="Different filament?" en="Different filament?"/>
   <translation tag="Digital Clock" en="Digital Clock"/>
@@ -1156,6 +1158,7 @@
   <translation tag="Home failed" en="Home failed"/>
   <translation tag="Home printer first?" en="Home printer first?"/>
   <translation tag="Home selector" en="Home selector"/>
+  <translation tag="Home, recover, abort, bypass mode" en="Home, recover, abort, bypass mode"/>
   <translation tag="Homing AFC system..." en="Homing AFC system..."/>
   <translation tag="Homing X..." en="Homing X..."/>
   <translation tag="Homing XY..." en="Homing XY..."/>
@@ -1750,6 +1753,7 @@
   <translation tag="Pause" en="Pause"/>
   <translation tag="Pause macro not configured" en="Pause macro not configured"/>
   <translation tag="Pause the print first, then load, unload, or change filament" en="Pause the print first, then load, unload, or change filament"/>
+  <translation tag="Pause when the CFS stops feeding" en="Pause when the CFS stops feeding"/>
   <translation tag="Pause/resume and stop the active print" en="Pause/resume and stop the active print"/>
   <translation tag="Paused" en="Paused"/>
   <translation tag="Paused (attention needed)" en="Paused (attention needed)"/>
@@ -1987,6 +1991,10 @@
   <translation tag="Re-probe" en="Re-probe"/>
   <translation tag="Re-read spool RFID tags and remaining length" en="Re-read spool RFID tags and remaining length"/>
   <translation tag="Re-syncs Happy Hare&apos;s tracked state with the hardware." en="Re-syncs Happy Hare&apos;s tracked state with the hardware."/>
+  <translation tag="Read RFID At Startup" en="Read RFID At Startup"/>
+  <translation tag="Read RFID On Insert" en="Read RFID On Insert"/>
+  <translation tag="Read a spool&apos;s tag when it is inserted" en="Read a spool&apos;s tag when it is inserted"/>
+  <translation tag="Read every spool&apos;s tag when Klipper starts" en="Read every spool&apos;s tag when Klipper starts"/>
   <translation tag="Ready" en="Ready"/>
   <translation tag="Ready for filament operations" en="Ready for filament operations"/>
   <translation tag="Ready to Apply" en="Ready to Apply"/>
@@ -2261,6 +2269,7 @@
   <translation tag="Sensor Temperature" en="Sensor Temperature"/>
   <translation tag="Sensor to Nozzle" en="Sensor to Nozzle"/>
   <translation tag="Sensors" en="Sensors"/>
+  <translation tag="Sent" en="Sent"/>
   <translation tag="Separate on/off macros. HelixScreen tracks the state." en="Separate on/off macros. HelixScreen tracks the state."/>
   <translation tag="Server Setup" en="Server Setup"/>
   <translation tag="Servo" en="Servo"/>
@@ -2436,6 +2445,7 @@
   <translation tag="Switch between light and dark themes" en="Switch between light and dark themes"/>
   <translation tag="Switch to v%s" en="Switch to v%s"/>
   <translation tag="Switch to {}?" en="Switch to {}?"/>
+  <translation tag="Switch, automatic or manual sequence" en="Switch, automatic or manual sequence"/>
   <translation tag="Switched to T{}" en="Switched to T{}"/>
   <translation tag="Switches to a backup spool on runout" en="Switches to a backup spool on runout"/>
   <translation tag="Switching heater control to MPC. Klipper will restart." en="Switching heater control to MPC. Klipper will restart."/>
@@ -2673,11 +2683,13 @@
   <translation tag="Unknown Step" en="Unknown Step"/>
   <translation tag="Unknown error" en="Unknown error"/>
   <translation tag="Unload" en="Unload"/>
+  <translation tag="Unload After Print" en="Unload After Print"/>
   <translation tag="Unload Distance" en="Unload Distance"/>
   <translation tag="Unload Filament" en="Unload Filament"/>
   <translation tag="Unload filament" en="Unload filament"/>
   <translation tag="Unload macro not configured" en="Unload macro not configured"/>
   <translation tag="Unload may still be running — response timed out" en="Unload may still be running — response timed out"/>
+  <translation tag="Unload the filament into the CFS when a print ends" en="Unload the filament into the CFS when a print ends"/>
   <translation tag="Unloaded" en="Unloaded"/>
   <translation tag="Unloading" en="Unloading"/>
   <translation tag="Unloading Start Speed" en="Unloading Start Speed"/>

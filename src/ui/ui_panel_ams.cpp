@@ -143,6 +143,8 @@ void ensure_ams_widgets_registered() {
     lv_xml_register_component_from_file(
         helix::asset_component_uri("ui_xml/k2oh_runout_view.xml").c_str());
     lv_xml_register_component_from_file(
+        helix::asset_component_uri("ui_xml/k2oh_cfs_settings.xml").c_str());
+    lv_xml_register_component_from_file(
         helix::asset_component_uri("ui_xml/ams_context_menu.xml").c_str());
     lv_xml_register_component_from_file(
         helix::asset_component_uri("ui_xml/ams_selector_menu.xml").c_str());

@@ -186,6 +186,17 @@ void K2ohCfsView::create(lv_obj_t* panel) {
         set_visible(true);
     });
     runout_->create(panel);
+    settings_ = std::make_unique<K2ohCfsSettingsView>(K2ohCfsSettingsView::Actions{
+        [this]() {
+            settings_->hide();
+            set_visible(true);
+        },
+        [this]() {
+            settings_->hide();
+            runout_->show();
+        },
+        [this]() { click_sidebar("btn_settings"); }});
+    settings_->create(panel);
     if (lv_obj_t* row = child(root_, "runout_row")) {
         lv_obj_add_flag(row, LV_OBJ_FLAG_CLICKABLE);
         lv_obj_add_event_cb(row, on_button_clicked, LV_EVENT_CLICKED, this);
@@ -225,8 +236,12 @@ void K2ohCfsView::create(lv_obj_t* panel) {
 
 void K2ohCfsView::set_visible(bool visible) {
     set_hidden(root_, !visible);
+    // The page always opens on the CFS view.
     if (runout_) {
-        runout_->hide(); // the page always opens on the CFS view
+        runout_->hide();
+    }
+    if (settings_) {
+        settings_->hide();
     }
     if (visible) {
         refresh();
@@ -708,7 +723,10 @@ void K2ohCfsView::on_button_clicked(lv_event_t* e) {
         return;
     }
     if (std::strcmp(name, "btn_cfs_settings") == 0) {
-        self->click_sidebar("btn_settings");
+        if (self->settings_) {
+            set_hidden(self->root_, true);
+            self->settings_->show();
+        }
         return;
     }
     const int slot = self->selected_;

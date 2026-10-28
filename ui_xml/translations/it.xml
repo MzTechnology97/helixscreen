@@ -336,6 +336,7 @@
   <translation tag="CAPABILITIES" it="FUNZIONALITÀ"/>
   <translation tag="CARTOGRAPHER" it="CARTOGRAPHER"/>
   <translation tag="CFS ready" it="CFS pronta"/>
+  <translation tag="CFS settings" it="Impostazioni CFS"/>
   <translation tag="CHANGED FROM LAST SESSION" it="MODIFICATO DALLA SESSIONE PRECEDENTE"/>
   <translation tag="COLOR SENSORS" it="SENSORI DI COLORE"/>
   <translation tag="CONFIGURATION" it="CONFIGURAZIONE"/>
@@ -695,6 +696,7 @@
   <translation tag="Device connected" it="Dispositivo connesso"/>
   <translation tag="Device name" it="Nome dispositivo"/>
   <translation tag="Device name is required" it="Il nome dispositivo è obbligatorio"/>
+  <translation tag="Device operations" it="Operazioni dispositivo"/>
   <translation tag="Device: " it="Dispositivo: "/>
   <translation tag="Different filament?" it="Filamento diverso?"/>
   <translation tag="Digital Clock" it="Orologio digitale"/>
@@ -1156,6 +1158,7 @@
   <translation tag="Home failed" it="Homing fallito"/>
   <translation tag="Home printer first?" it="Eseguire prima l&apos;homing della stampante?"/>
   <translation tag="Home selector" it="Homing selettore"/>
+  <translation tag="Home, recover, abort, bypass mode" it="Home, recupera, interrompi, modalità bypass"/>
   <translation tag="Homing AFC system..." it="Homing sistema AFC..."/>
   <translation tag="Homing X..." it="Homing X..."/>
   <translation tag="Homing XY..." it="Homing XY..."/>
@@ -1750,6 +1753,7 @@
   <translation tag="Pause" it="Pausa"/>
   <translation tag="Pause macro not configured" it="Macro pausa non configurata"/>
   <translation tag="Pause the print first, then load, unload, or change filament" it="Metti prima in pausa la stampa, poi carica, scarica o cambia il filamento"/>
+  <translation tag="Pause when the CFS stops feeding" it="Pausa quando la CFS smette di alimentare"/>
   <translation tag="Pause/resume and stop the active print" it="Metti in pausa/riprendi e arresta la stampa attiva"/>
   <translation tag="Paused" it="In pausa"/>
   <translation tag="Paused (attention needed)" it="In pausa (attenzione richiesta)"/>
@@ -1987,6 +1991,10 @@
   <translation tag="Re-probe" it="Risonda"/>
   <translation tag="Re-read spool RFID tags and remaining length" it="Rileggi i tag RFID delle bobine e la lunghezza rimanente"/>
   <translation tag="Re-syncs Happy Hare&apos;s tracked state with the hardware." it="Risincronizza lo stato tracciato di Happy Hare con l&apos;hardware."/>
+  <translation tag="Read RFID At Startup" it="Leggi RFID all&apos;avvio"/>
+  <translation tag="Read RFID On Insert" it="Leggi RFID all&apos;inserimento"/>
+  <translation tag="Read a spool&apos;s tag when it is inserted" it="Legge il tag di una bobina quando viene inserita"/>
+  <translation tag="Read every spool&apos;s tag when Klipper starts" it="Legge il tag di ogni bobina all&apos;avvio di Klipper"/>
   <translation tag="Ready" it="Pronto"/>
   <translation tag="Ready for filament operations" it="Pronto per le operazioni filamento"/>
   <translation tag="Ready to Apply" it="Pronto per applicare"/>
@@ -2261,6 +2269,7 @@
   <translation tag="Sensor Temperature" it="Temperatura sensore"/>
   <translation tag="Sensor to Nozzle" it="Sensore all&apos;ugello"/>
   <translation tag="Sensors" it="Sensori"/>
+  <translation tag="Sent" it="Inviato"/>
   <translation tag="Separate on/off macros. HelixScreen tracks the state." it="Macro on/off separate. HelixScreen traccia lo stato."/>
   <translation tag="Server Setup" it="Configurazione server"/>
   <translation tag="Servo" it="Servo"/>
@@ -2436,6 +2445,7 @@
   <translation tag="Switch between light and dark themes" it="Passa tra tema chiaro e scuro"/>
   <translation tag="Switch to v%s" it="Passa alla v%s"/>
   <translation tag="Switch to {}?" it="Passare a {}?"/>
+  <translation tag="Switch, automatic or manual sequence" it="Interruttore, sequenza automatica o manuale"/>
   <translation tag="Switched to T{}" it="Passato a T{}"/>
   <translation tag="Switches to a backup spool on runout" it="Passa a una bobina di riserva a filamento esaurito"/>
   <translation tag="Switching heater control to MPC. Klipper will restart." it="Passaggio controllo riscaldatore a MPC. Klipper si riavvierà."/>
@@ -2673,11 +2683,13 @@
   <translation tag="Unknown Step" it="Passaggio sconosciuto"/>
   <translation tag="Unknown error" it="Errore sconosciuto"/>
   <translation tag="Unload" it="Scarica"/>
+  <translation tag="Unload After Print" it="Scarica a fine stampa"/>
   <translation tag="Unload Distance" it="Distanza di scarico"/>
   <translation tag="Unload Filament" it="Scarica filamento"/>
   <translation tag="Unload filament" it="Scarica il filamento"/>
   <translation tag="Unload macro not configured" it="Macro scaricamento non configurata"/>
   <translation tag="Unload may still be running — response timed out" it="Lo scaricamento potrebbe essere ancora in corso — tempo scaduto"/>
+  <translation tag="Unload the filament into the CFS when a print ends" it="Riporta il filamento nella CFS a fine stampa"/>
   <translation tag="Unloaded" it="Scaricato"/>
   <translation tag="Unloading" it="Scaricamento"/>
   <translation tag="Unloading Start Speed" it="Velocità iniziale di scarico"/>
