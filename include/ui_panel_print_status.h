@@ -6,6 +6,7 @@
 #include "ui_exclude_object_map_view.h"
 #include "ui_exclude_object_side_list.h"
 #include "ui_filament_runout_handler.h"
+#include "ui_k2oh_print_view.h"
 #include "ui_heater_icon_binder.h"
 #include "ui_modal.h"
 #include "ui_observer_guard.h"
@@ -805,6 +806,9 @@ class PrintStatusPanel : public OverlayBase {
 
     /// Manages filament runout guidance (extracted from PrintStatusPanel)
     std::unique_ptr<helix::ui::FilamentRunoutHandler> runout_handler_;
+
+    /// K2-OpenHost print status, shown over the stock content on Kalico's CFS.
+    std::unique_ptr<helix::ui::K2ohPrintView> k2oh_print_;
 
     //
     // === Portrait Temperature Mini-Graph ===

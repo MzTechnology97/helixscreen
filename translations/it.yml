@@ -21,6 +21,7 @@ translations:
   '%zu plugins failed to load': Caricamento di %zu plugin non riuscito
   Auto-swap at spool end: Cambio automatico a fine bobina
   CFS ready: CFS pronta
+  Elapsed: Trascorso
   Ends: Fine
   IN USE: IN USO
   Left: Restano
