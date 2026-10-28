@@ -448,14 +448,25 @@ void K2ohHomeView::refresh_light_and_fans() {
                            {"fan_hotend", &primary.hotend, "Hotend"},
                            {"fan_aux", &primary.aux, "Aux"}};
     for (const FanRow& row : rows) {
-        std::string text;
+        const std::string base = row.label;
+        const FanInfo* found = nullptr;
         for (const auto& fan : printer_state_.get_fans()) {
             if (!row.object->empty() && fan.object_name == *row.object) {
-                text = std::string(lv_tr(row.name)) + "  " + std::to_string(fan.speed_percent) + "%";
+                found = &fan;
                 break;
             }
         }
-        set_text(root_, row.label, text);
+        set_hidden(child(root_, (base + "_row").c_str()), !found);
+        if (!found) {
+            continue;
+        }
+        set_text(root_, (base + "_name").c_str(), lv_tr(row.name));
+        set_text(root_, (base + "_value").c_str(), std::to_string(found->speed_percent) + "%");
+        if (lv_obj_t* icon = child(root_, (base + "_icon").c_str())) {
+            const bool spinning = found->speed_percent > 0;
+            ui_icon_set_source(icon, spinning ? "fan" : "fan_off");
+            ui_icon_set_variant(icon, spinning ? "primary" : "secondary");
+        }
     }
 }
 
