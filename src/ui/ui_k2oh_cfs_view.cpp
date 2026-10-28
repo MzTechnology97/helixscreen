@@ -181,6 +181,15 @@ void K2ohCfsView::create(lv_obj_t* panel) {
         lv_obj_add_event_cb(back, on_back_clicked, LV_EVENT_CLICKED, this);
     }
     build_path();
+    runout_ = std::make_unique<K2ohRunoutView>([this]() {
+        runout_->hide();
+        set_visible(true);
+    });
+    runout_->create(panel);
+    if (lv_obj_t* row = child(root_, "runout_row")) {
+        lv_obj_add_flag(row, LV_OBJ_FLAG_CLICKABLE);
+        lv_obj_add_event_cb(row, on_button_clicked, LV_EVENT_CLICKED, this);
+    }
     for (const char* name : {"ext_chip", "bypass_row", "env_chip", "btn_cfs_check_all",
                              "btn_cfs_settings", "btn_load_unload", "btn_rfid", "btn_edit",
                              "btn_more"}) {
@@ -200,6 +209,9 @@ void K2ohCfsView::create(lv_obj_t* panel) {
         if (self->visible()) {
             self->refresh();
         }
+        if (self->runout_) {
+            self->runout_->refresh(); // no-op while hidden
+        }
     };
     slots_observer_ = observe_int_sync<K2ohCfsView>(ams.get_slots_version_subject(), this, on_change,
                                                     ams.get_subjects_lifetime());
@@ -213,6 +225,9 @@ void K2ohCfsView::create(lv_obj_t* panel) {
 
 void K2ohCfsView::set_visible(bool visible) {
     set_hidden(root_, !visible);
+    if (runout_) {
+        runout_->hide(); // the page always opens on the CFS view
+    }
     if (visible) {
         refresh();
     }
@@ -521,9 +536,12 @@ void K2ohCfsView::refresh_path(const AmsSystemInfo& info) {
     nlohmann::json lp = nlohmann::json::object();
 #if HELIX_HAS_CFS
     if (auto* cfs = dynamic_cast<printer::AmsBackendCfs*>(AmsState::instance().get_backend())) {
-        lp = cfs->load_path();
+        lp = cfs->box_field("load_path");
     }
 #endif
+    if (!lp.is_object()) {
+        lp = nlohmann::json::object();
+    }
     auto obj = [&lp](const char* key) {
         auto it = lp.find(key);
         return it != lp.end() && it->is_object() ? *it : nlohmann::json::object();
@@ -671,6 +689,13 @@ void K2ohCfsView::on_button_clicked(lv_event_t* e) {
     if (std::strcmp(name, "ext_chip") == 0 || std::strcmp(name, "bypass_row") == 0) {
         if (self->actions_.external_menu) {
             self->actions_.external_menu(target);
+        }
+        return;
+    }
+    if (std::strcmp(name, "runout_row") == 0) {
+        if (self->runout_) {
+            set_hidden(self->root_, true);
+            self->runout_->show();
         }
         return;
     }

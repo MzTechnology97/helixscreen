@@ -19,6 +19,7 @@ translations:
   '%zu changes': '%zu changes'
   '%zu events queued': '%zu events queued'
   '%zu plugins failed to load': '%zu plugins failed to load'
+  'Arrange each group with the arrows, then save.': 'Arrange each group with the arrows, then save.'
   Auto-swap at spool end: Auto-swap at spool end
   CFS ready: CFS ready
   Clog guard: Clog guard
@@ -27,10 +28,17 @@ translations:
   IN USE: IN USE
   Left: Left
   More: More
+  'No spool to swap to: it takes two identical spools (same material and colour).': 'No spool to swap to: it takes two identical spools (same material and colour).'
+  'No spool to swap to: it takes two identical spools (same material and colour).': 'No spool to swap to: it takes two identical spools (same material and colour).'
   Not recognised: Not recognised
   Print a file: Print a file
   Printhead sensor: Printhead sensor
   Reread RFID: Reread RFID
+  'Runout order not saved: {}': 'Runout order not saved: {}'
+  'Runout order not saved: {}': 'Runout order not saved: {}'
+  Save order: Save order
+  'The spool with the least left (RFID) goes first, then slot order.': 'The spool with the least left (RFID) goes first, then slot order.'
+  'When a spool runs out, the print goes on with an identical one (same material and colour).': 'When a spool runs out, the print goes on with an identical one (same material and colour).'
   active, no events: active, no events
   active: active
   at rest: at rest
@@ -42,11 +50,16 @@ translations:
   feeding: feeding
   filament present: filament present
   humid: humid
+  in use: in use
   layer: layer
+  lowest remaining first: lowest remaining first
+  manual order: manual order
   moving: moving
   no filament: no filament
   sensor error: sensor error
+  slot order: slot order
   still: still
+  th_ordinal: "."
   unknown tag: unknown tag
   "'{}' already exists. Replace the stored mesh?": "'{}' already exists. Replace the stored mesh?"
   "'{}' and '{}' already exist. Replace the stored meshes?": "'{}' and '{}' already exist. Replace the stored meshes?"

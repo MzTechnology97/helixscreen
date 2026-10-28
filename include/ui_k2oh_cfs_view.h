@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include "ui_k2oh_runout_view.h"
 #include "ui_observer_guard.h"
 
 #include <functional>
+#include <memory>
 #include <lvgl.h>
 #include <string>
 #include <vector>
@@ -89,6 +91,8 @@ class K2ohCfsView {
     lv_obj_t* root_ = nullptr;
     lv_obj_t* cards_row_ = nullptr;
     std::vector<PathRow> path_rows_;
+    /// The runout swap page, opened from the runout row.
+    std::unique_ptr<K2ohRunoutView> runout_;
     std::vector<Card> cards_;
     int selected_ = -1;
     int loaded_slot_ = -1;
