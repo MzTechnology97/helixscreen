@@ -2282,6 +2282,19 @@ TEST_CASE("compare_channel_version: prerelease suffixes are still discarded",
     CHECK(compare_channel_version("1.0.0-beta", "1.0.0") == ChannelVersionRelation::Same);
 }
 
+TEST_CASE("compare_channel_version: K2-OpenHost fork builds are ordered by their k2oh number",
+          "[update_checker][version][channel][k2oh]") {
+    CHECK(compare_channel_version("1.0.6-k2oh.1", "1.0.6-k2oh.2") == ChannelVersionRelation::Newer);
+    CHECK(compare_channel_version("1.0.6-k2oh.2", "1.0.6-k2oh.10") == ChannelVersionRelation::Newer);
+    CHECK(compare_channel_version("1.0.6-k2oh.2", "1.0.6-k2oh.1") == ChannelVersionRelation::Older);
+    CHECK(compare_channel_version("1.0.6-k2oh.1", "1.0.6-k2oh.1") == ChannelVersionRelation::Same);
+    // The upstream build the fork was installed over is replaced by the first fork build.
+    CHECK(compare_channel_version("1.0.6", "1.0.6-k2oh.1") == ChannelVersionRelation::Newer);
+    // A new upstream base outranks any build number of the old one.
+    CHECK(compare_channel_version("1.0.6-k2oh.9", "1.0.7-k2oh.1") == ChannelVersionRelation::Newer);
+    CHECK(compare_channel_version("1.0.7-k2oh.1", "1.0.6-k2oh.9") == ChannelVersionRelation::Older);
+}
+
 TEST_CASE("ReleaseInfo::is_downgrade defaults to false", "[update_checker][channel]") {
     // Every construction site that does not explicitly mark a downgrade must
     // produce a normal update, or the install path starts asking for

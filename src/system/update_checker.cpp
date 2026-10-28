@@ -73,13 +73,13 @@ using json = nlohmann::json;
 
 namespace {
 
-/// GitHub API URL for latest release
+/// GitHub API URL for latest release (K2-OpenHost fork releases, not upstream)
 constexpr const char* GITHUB_API_URL =
-    "https://api.github.com/repos/prestonbrown/helixscreen/releases/latest";
+    "https://api.github.com/repos/MzTechnology97/helixscreen/releases/latest";
 
 /// GitHub API URL for all releases (beta channel uses this)
 constexpr const char* GITHUB_RELEASES_URL =
-    "https://api.github.com/repos/prestonbrown/helixscreen/releases";
+    "https://api.github.com/repos/MzTechnology97/helixscreen/releases";
 
 /// HTTP request timeout in seconds
 constexpr int HTTP_TIMEOUT_SECONDS = 30;
@@ -725,7 +725,19 @@ ChannelVersionRelation compare_channel_version(const std::string& installed,
         return ChannelVersionRelation::Unknown;
     }
     if (*served == *current) {
-        return ChannelVersionRelation::Same;
+        // K2-OpenHost fork builds share upstream's base version: 1.0.6-k2oh.2
+        // follows 1.0.6-k2oh.1. parse_version() drops the suffix, so compare it here.
+        auto k2oh_build = [](const std::string& v) {
+            auto pos = v.find("-k2oh.");
+            return pos == std::string::npos ? 0 : std::atoi(v.c_str() + pos + 6);
+        };
+        int installed_build = k2oh_build(installed);
+        int served_build = k2oh_build(channel_version);
+        if (served_build == installed_build) {
+            return ChannelVersionRelation::Same;
+        }
+        return served_build > installed_build ? ChannelVersionRelation::Newer
+                                              : ChannelVersionRelation::Older;
     }
     return *served > *current ? ChannelVersionRelation::Newer : ChannelVersionRelation::Older;
 }

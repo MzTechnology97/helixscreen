@@ -41,6 +41,10 @@ setup() {
     # Skip the multi-second ustreamer listen wait (no real daemon in tests).
     export HELIX_USTREAMER_PROBE_TRIES=1
 
+    # A camera is present unless a test removes it (CI runners have no /dev/video0).
+    export HELIX_K2_VIDEO_DEVICE="$BATS_TEST_TMPDIR/video0"
+    : > "$HELIX_K2_VIDEO_DEVICE"
+
     # Ship the real procd init source into INSTALL_DIR/config so the install
     # path exercises the actual cp (as it would on-device from the bundle).
     cp "$WORKTREE_ROOT/config/helixscreen-ustreamer-k2.sh" \
@@ -139,6 +143,18 @@ teardown() {
     [ "$status" -eq 0 ]
     [ ! -f "$DISABLED_SERVICES_FILE" ]
     [ ! -f "$WEBCAM_BACKUP" ]
+}
+
+@test "install_camera_k2: no camera device (K2-OpenHost) leaves everything alone" {
+    rm -f "$HELIX_K2_VIDEO_DEVICE"
+    printf '#!/bin/sh
+' > "$INSTALL_DIR/bin/ustreamer"; chmod +x "$INSTALL_DIR/bin/ustreamer"
+    : > "$HELIX_INITD_DIR/webrtc"
+    run install_camera_k2 "k2"
+    [ "$status" -eq 0 ]
+    [ ! -f "$DISABLED_SERVICES_FILE" ]
+    [ ! -f "$WEBCAM_BACKUP" ]
+    [ ! -f "$CAMERA_MARKER" ]
 }
 
 @test "uninstall_camera_k2: no-op on non-k2 platform" {
