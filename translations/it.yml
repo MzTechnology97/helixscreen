@@ -22,22 +22,36 @@ translations:
   'Arrange each group with the arrows, then save.': 'Ordina ogni gruppo con le frecce, poi salva.'
   Auto-swap at spool end: Cambio automatico
   CFS ready: CFS pronta
+  CFS settings: Impostazioni CFS
   Clog guard: Anti-intasamento
+  Device operations: Operazioni dispositivo
   Elapsed: Trascorso
   Ends: Fine
+  'Home, recover, abort, bypass mode': 'Home, recupera, interrompi, modalità bypass'
   IN USE: IN USO
   Left: Restano
   More: Altro
   'No spool to swap to: it takes two identical spools (same material and colour).': 'Nessuna bobina di riserva: servono due bobine identiche (stesso materiale e colore).'
   'No spool to swap to: it takes two identical spools (same material and colour).': 'Nessuna bobina di riserva: servono due bobine identiche (stesso materiale e colore).'
+  'No spool to swap to: it takes two identical spools (same material and colour).': 'Nessuna bobina di riserva: servono due bobine identiche (stesso materiale e colore).'
   Not recognised: Non riconosciuta
+  Pause when the CFS stops feeding: Pausa quando la CFS smette di alimentare
   Print a file: Stampa un file
   Printhead sensor: Sensore testa
+  Read RFID At Startup: Leggi RFID all'avvio
+  Read RFID On Insert: Leggi RFID all'inserimento
+  Read a spool's tag when it is inserted: Legge il tag di una bobina quando viene inserita
+  Read every spool's tag when Klipper starts: Legge il tag di ogni bobina all'avvio di Klipper
   Reread RFID: Rileggi RFID
   'Runout order not saved: {}': 'Ordine del cambio non salvato: {}'
   'Runout order not saved: {}': 'Ordine del cambio non salvato: {}'
+  'Runout order not saved: {}': 'Ordine del cambio non salvato: {}'
   Save order: Salva ordine
+  Sent: Inviato
+  'Switch, automatic or manual sequence': 'Interruttore, sequenza automatica o manuale'
   'The spool with the least left (RFID) goes first, then slot order.': 'Prima la bobina con meno filamento (RFID), poi in ordine di slot.'
+  Unload After Print: Scarica a fine stampa
+  Unload the filament into the CFS when a print ends: Riporta il filamento nella CFS a fine stampa
   'When a spool runs out, the print goes on with an identical one (same material and colour).': 'Quando una bobina finisce, la stampa continua con una identica (stesso materiale e colore).'
   active, no events: attivo, nessun evento
   active: attivo

@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- K2-OpenHost: CFS settings, opened from the CFS page. K2ohCfsSettingsView
+     lists every device action the CFS backend declares (switches and
+     commands), plus links to the runout swap and the device operations. -->
+<component>
+  <view extends="lv_obj"
+        width="100%" height="100%" style_pad_all="#space_sm" style_pad_gap="#space_sm" style_bg_color="#screen_bg"
+        style_bg_opa="255" style_border_width="0" style_radius="0" flex_flow="column" scrollable="false">
+    <lv_obj name="settings_back"
+            width="content" height="#button_height_sm" style_pad_all="0" style_pad_right="#space_sm"
+            style_pad_gap="#space_xs" style_bg_opa="0" style_border_width="0" flex_flow="row"
+            style_flex_cross_place="center" scrollable="false" clickable="true">
+      <icon src="back" size="lg" variant="text" clickable="false" event_bubble="true"/>
+      <text_heading text="CFS settings" translation_tag="CFS settings" clickable="false" event_bubble="true"/>
+    </lv_obj>
+    <lv_obj name="settings_list"
+            width="100%" flex_grow="1" style_pad_all="0" style_pad_gap="#space_xs" style_bg_opa="0"
+            style_border_width="0" flex_flow="column" scrollable="true" scroll_dir="ver"/>
+  </view>
+</component>

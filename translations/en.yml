@@ -22,22 +22,36 @@ translations:
   'Arrange each group with the arrows, then save.': 'Arrange each group with the arrows, then save.'
   Auto-swap at spool end: Auto-swap at spool end
   CFS ready: CFS ready
+  CFS settings: CFS settings
   Clog guard: Clog guard
+  Device operations: Device operations
   Elapsed: Elapsed
   Ends: Ends
+  'Home, recover, abort, bypass mode': 'Home, recover, abort, bypass mode'
   IN USE: IN USE
   Left: Left
   More: More
   'No spool to swap to: it takes two identical spools (same material and colour).': 'No spool to swap to: it takes two identical spools (same material and colour).'
   'No spool to swap to: it takes two identical spools (same material and colour).': 'No spool to swap to: it takes two identical spools (same material and colour).'
+  'No spool to swap to: it takes two identical spools (same material and colour).': 'No spool to swap to: it takes two identical spools (same material and colour).'
   Not recognised: Not recognised
+  Pause when the CFS stops feeding: Pause when the CFS stops feeding
   Print a file: Print a file
   Printhead sensor: Printhead sensor
+  Read RFID At Startup: Read RFID At Startup
+  Read RFID On Insert: Read RFID On Insert
+  Read a spool's tag when it is inserted: Read a spool's tag when it is inserted
+  Read every spool's tag when Klipper starts: Read every spool's tag when Klipper starts
   Reread RFID: Reread RFID
   'Runout order not saved: {}': 'Runout order not saved: {}'
   'Runout order not saved: {}': 'Runout order not saved: {}'
+  'Runout order not saved: {}': 'Runout order not saved: {}'
   Save order: Save order
+  Sent: Sent
+  'Switch, automatic or manual sequence': 'Switch, automatic or manual sequence'
   'The spool with the least left (RFID) goes first, then slot order.': 'The spool with the least left (RFID) goes first, then slot order.'
+  Unload After Print: Unload After Print
+  Unload the filament into the CFS when a print ends: Unload the filament into the CFS when a print ends
   'When a spool runs out, the print goes on with an identical one (same material and colour).': 'When a spool runs out, the print goes on with an identical one (same material and colour).'
   active, no events: active, no events
   active: active
