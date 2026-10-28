@@ -299,6 +299,12 @@ class AmsBackendCfs : public AmsSubscriptionBackend {
     AmsError execute_device_action(const std::string& action_id,
                                    const std::any& value = {}) override;
 
+    // K2-OpenHost (Kalico, Fork dialect): "Check slot" rereads the slot's RFID
+    // tag with _BOX_RFID_READ_SLOT, third-party decoders (Bambu, QIDI) included.
+    [[nodiscard]] bool supports_gate_check() const override;
+    AmsError check_gate(int slot_index) override;
+    AmsError check_all_gates() override;
+
     // Static parsers (public for testing)
 
     /// Decide which `box` shape this payload is. Stock is the default for

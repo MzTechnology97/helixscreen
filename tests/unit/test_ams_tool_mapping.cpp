@@ -14,6 +14,7 @@
 
 #include "ams_backend_mock.h"
 #include "ams_remap.h"
+#include "ams_tool_map_sync.h"
 #include "ams_types.h"
 
 #include "../catch_amalgamated.hpp"
@@ -261,4 +262,17 @@ TEST_CASE("Tool mapping capabilities vary by backend mode", "[ams][tool_mapping]
 
         mock.stop();
     }
+}
+
+TEST_CASE("slot_tools_label names every tool routed through a lane (K2-OpenHost)",
+          "[ams][tool_mapping][k2oh]") {
+    using helix::printer::slot_tools_label;
+    // CFS box.map T1A -> T1D next to T1D -> T1D: T0 and T3 both load lane 3.
+    const std::vector<int> map{3, 1, 2, 3};
+    CHECK(slot_tools_label(map, 3, 3) == "T0/T3");
+    CHECK(slot_tools_label(map, 1, 1) == "T1");
+    // Lane 0 has no tool.
+    CHECK(slot_tools_label(map, 0, -1).empty());
+    // No forward map (backends that state slot-first): the registry's tool.
+    CHECK(slot_tools_label({}, 2, 2) == "T2");
 }

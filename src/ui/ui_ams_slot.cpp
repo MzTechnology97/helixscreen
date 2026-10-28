@@ -10,6 +10,7 @@
 #include "ui_update_queue.h"
 
 #include "ams_state.h"
+#include "ams_tool_map_sync.h"
 #include "ams_types.h"
 #include "data_root_resolver.h"
 #include "display_settings_manager.h"
@@ -589,11 +590,13 @@ static void apply_tool_badge(AmsSlotData* data, int mapped_tool, bool is_overrid
         return;
     }
 
-    if (mapped_tool >= 0) {
-        // Tool is mapped - show badge with tool number
-        char tool_text[8];
-        snprintf(tool_text, sizeof(tool_text), "T%d", mapped_tool);
-        lv_label_set_text(data->tool_badge, tool_text);
+    // Every tool the map routes through this lane ("T0/T3"), not only the one
+    // the registry kept.
+    const std::string tool_text = helix::printer::slot_tools_label(
+        backend ? backend->get_tool_mapping() : std::vector<int>{}, data->slot_index,
+        mapped_tool);
+    if (!tool_text.empty()) {
+        lv_label_set_text(data->tool_badge, tool_text.c_str());
         lv_obj_remove_flag(data->tool_badge_bg, LV_OBJ_FLAG_HIDDEN);
 
         // Use warning color for user overrides, muted for firmware defaults

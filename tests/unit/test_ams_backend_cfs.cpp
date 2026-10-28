@@ -5785,3 +5785,70 @@ TEST_CASE("CFS flat: remaining filament from Kalico (K2-OpenHost)", "[ams][cfs][
     CHECK(empty.get_slot_global(2)->remaining_display().empty());
     CHECK(empty.get_slot_global(2)->display_fill_pct() == 0);
 }
+
+TEST_CASE("CFS flat: per-box environment from boxes[] (K2-OpenHost)", "[ams][cfs][flat][k2oh]") {
+    json box = make_flat_fork_box();
+    box["boxes"] = json::parse(R"([{"address": 1, "online": true, "temp_c": 32,
+                                    "humidity_pct": 27, "slots": [0, 1, 2, 3]}])");
+    const auto info = AmsBackendCfs::parse_box_status(box);
+    REQUIRE(info.units[0].environment.has_value());
+    CHECK(info.units[0].environment->temperature_c == 32.0f);
+    CHECK(info.units[0].environment->humidity_pct == 27.0f);
+}
+
+TEST_CASE("CFS flat: humidity above the filament limit warns (K2-OpenHost)",
+          "[ams][cfs][flat][k2oh]") {
+    json box = make_flat_fork_box();
+    box["slots"][1]["humidity_pct"] = 27;
+    box["slots"][1]["humidity_limit_pct"] = 50;
+    box["slots"][2]["humidity_pct"] = 62;
+    box["slots"][2]["humidity_limit_pct"] = 55;
+    const auto info = AmsBackendCfs::parse_box_status(box);
+    CHECK_FALSE(info.get_slot_global(1)->error.has_value());
+    REQUIRE(info.get_slot_global(2)->error.has_value());
+    CHECK(info.get_slot_global(2)->error->severity == SlotError::WARNING);
+    CHECK(info.get_slot_global(2)->error->message.find("62%") != std::string::npos);
+}
+
+TEST_CASE("CFS flat: an unknown tag shows its colour and a note (K2-OpenHost)",
+          "[ams][cfs][flat][k2oh]") {
+    json box = make_flat_fork_box();
+    box["slots"][1]["material"] = "";
+    box["slots"][1]["color"] = "";
+    box["slots"][1]["rfid_unknown_code"] = "A1B2C3";
+    box["slots"][1]["rfid_unknown_color"] = "#123456";
+    const auto info = AmsBackendCfs::parse_box_status(box);
+    const auto* slot = info.get_slot_global(1);
+    CHECK(slot->color_rgb == 0x123456);
+    REQUIRE(slot->error.has_value());
+    CHECK(slot->error->severity == SlotError::INFO);
+    CHECK(slot->error->message.find("A1B2C3") != std::string::npos);
+}
+
+TEST_CASE("CFS flat: Kalico's remaining estimate reads as approximate (K2-OpenHost)",
+          "[ams][cfs][flat][k2oh]") {
+    json box = make_flat_fork_box();
+    box["slots"][1]["rfid_remaining_m"] = 161.7;
+    box["slots"][1]["rfid_remaining_source"] = "kalico";
+    box["slots"][2]["rfid_remaining_m"] = 80.0;
+    box["slots"][2]["rfid_remaining_source"] = "cfs";
+    const auto info = AmsBackendCfs::parse_box_status(box);
+    CHECK(info.get_slot_global(1)->remaining_display() == "~161m");
+    CHECK(info.get_slot_global(2)->remaining_display() == "80m");
+}
+
+TEST_CASE("CFS Fork: Check slot rereads the slot's RFID tag (K2-OpenHost)",
+          "[ams][cfs][flat][k2oh]") {
+    // Stock CFS firmware has no per-slot reread: the button stays hidden.
+    CfsRemapHelper stock;
+    CHECK_FALSE(stock.supports_gate_check());
+    CHECK_FALSE(stock.check_gate(1).success());
+    CHECK(stock.captured.empty());
+
+    CfsRemapHelper fork;
+    CfsTestAccess::set_flat_fork(fork, 4);
+    CHECK(fork.supports_gate_check());
+    CHECK(fork.check_gate(2).success());
+    REQUIRE(fork.captured.size() == 1);
+    CHECK(fork.captured[0] == "_BOX_RFID_READ_SLOT SLOT=2");
+}
