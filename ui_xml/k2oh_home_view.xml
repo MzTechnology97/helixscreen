@@ -1,0 +1,165 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- K2-OpenHost Home: status line, the job (or what to do when idle), the
+     temperatures, the CFS and the light and fans. K2ohHomeView fills it. -->
+<component>
+  <view extends="lv_obj"
+        width="100%" height="100%" style_pad_all="#space_sm" style_pad_gap="#space_sm" style_bg_color="#screen_bg"
+        style_bg_opa="255" style_border_width="0" style_radius="0" flex_flow="column" scrollable="false">
+    <!-- Status line; the right end leaves room for the floating e-stop. -->
+    <lv_obj name="status_row"
+            width="100%" height="#button_height_sm" style_pad_all="0" style_pad_right="52" style_pad_gap="#space_sm"
+            style_bg_opa="0" style_border_width="0" flex_flow="row" style_flex_cross_place="center"
+            scrollable="false">
+      <lv_obj name="state_chip"
+              width="content" height="content" style_radius="14" style_bg_color="#elevated_bg" style_bg_opa="255"
+              style_border_width="0" style_pad_left="#space_sm" style_pad_right="#space_sm" style_pad_top="#space_xxs"
+              style_pad_bottom="#space_xxs" style_pad_gap="#space_xs" flex_flow="row" style_flex_cross_place="center"
+              scrollable="false" clickable="false">
+        <icon name="state_icon" src="check_circle" size="xs" variant="success" clickable="false"/>
+        <text_small name="state_label" text="" clickable="false"/>
+      </lv_obj>
+      <text_muted name="printer_label" text="K2-OpenHost" clickable="false"/>
+      <lv_obj width="1" height="1" flex_grow="1" style_bg_opa="0" style_border_width="0" scrollable="false"
+              clickable="false"/>
+      <text_body name="clock_label" text="" clickable="false"/>
+    </lv_obj>
+
+    <lv_obj width="100%" flex_grow="1" style_pad_all="0" style_pad_gap="#space_sm" style_bg_opa="0"
+            style_border_width="0" flex_flow="row" scrollable="false">
+      <!-- Job card: printing view and idle view, one shown at a time. -->
+      <lv_obj name="job_card"
+              height="100%" flex_grow="8" style_radius="#border_radius" style_bg_color="#card_bg" style_bg_opa="255"
+              style_border_width="0" style_pad_all="#space_sm" scrollable="false">
+        <lv_obj name="job_active"
+                width="100%" height="100%" style_pad_all="0" style_pad_gap="#space_md" style_bg_opa="0"
+                style_border_width="0" flex_flow="row" scrollable="false">
+          <lv_obj name="thumb_box"
+                  width="132" height="132" style_radius="#border_radius" style_bg_color="#elevated_bg"
+                  style_bg_opa="255" style_border_width="0" style_pad_all="0" scrollable="false" clickable="true">
+            <lv_image name="thumb" width="100%" height="100%" inner_align="contain" clickable="false"
+                      event_bubble="true"/>
+          </lv_obj>
+          <lv_obj height="100%" flex_grow="1" style_pad_all="0" style_pad_gap="#space_xxs" style_bg_opa="0"
+                  style_border_width="0" flex_flow="column" scrollable="false">
+            <text_body name="job_name" text="" long_mode="dots" width="100%"/>
+            <lv_obj width="100%" height="content" style_pad_all="0" style_pad_gap="#space_sm" style_bg_opa="0"
+                    style_border_width="0" flex_flow="row" style_flex_cross_place="end" scrollable="false">
+              <text_heading name="job_percent" text="" style_text_font="#font_xl"/>
+              <text_muted name="job_layer" text=""/>
+            </lv_obj>
+            <lv_bar name="job_bar" width="100%" height="8" min_value="0" max_value="100" style_radius="4"
+                    style_bg_color="#elevated_bg" style_bg_opa="255"/>
+            <text_small name="job_times" text="" long_mode="dots" width="100%"/>
+            <lv_obj width="100%" flex_grow="1" style_pad_all="0" style_pad_gap="#space_sm" style_bg_opa="0"
+                    style_border_width="0" flex_flow="row" style_flex_cross_place="end" scrollable="false">
+              <ui_button name="btn_pause" flex_grow="1" height="#button_height" variant="secondary"
+                         bind_icon="print_control_primary_icon" text="Pause" translation_tag="Pause">
+                <event_cb trigger="clicked" callback="on_print_control_primary"/>
+                <bind_state_if_eq subject="print_control_primary_enabled" state="disabled" ref_value="0"/>
+              </ui_button>
+              <ui_button name="btn_tune" flex_grow="1" height="#button_height" variant="secondary" icon="tune"
+                         text="Tune" translation_tag="Tune"/>
+              <ui_button name="btn_stop" width="#button_height" height="#button_height" variant="danger"
+                         icon="stop">
+                <event_cb trigger="clicked" callback="on_print_control_stop"/>
+                <bind_state_if_eq subject="print_control_stop_enabled" state="disabled" ref_value="0"/>
+              </ui_button>
+            </lv_obj>
+          </lv_obj>
+        </lv_obj>
+        <lv_obj name="job_idle"
+                width="100%" height="100%" style_pad_all="0" style_pad_gap="#space_sm" style_bg_opa="0"
+                style_border_width="0" flex_flow="column" scrollable="false" hidden="true">
+          <ui_button name="btn_print_file" width="100%" height="#button_height_lg" variant="primary" icon="folder"
+                     text="Print a file" translation_tag="Print a file"/>
+          <text_muted text="Preheat" translation_tag="Preheat"/>
+          <lv_obj name="preheat_row"
+                  width="100%" height="content" style_pad_all="0" style_pad_gap="#space_xs" style_bg_opa="0"
+                  style_border_width="0" flex_flow="row" scrollable="false">
+            <ui_button name="preheat_0" flex_grow="1" height="#button_height" variant="secondary" text=""/>
+            <ui_button name="preheat_1" flex_grow="1" height="#button_height" variant="secondary" text=""/>
+            <ui_button name="preheat_2" flex_grow="1" height="#button_height" variant="secondary" text=""/>
+            <ui_button name="btn_cooldown" width="#button_height" height="#button_height" variant="secondary"
+                       icon="power"/>
+          </lv_obj>
+        </lv_obj>
+      </lv_obj>
+
+      <lv_obj name="temps_card"
+              height="100%" flex_grow="5" style_radius="#border_radius" style_bg_color="#card_bg" style_bg_opa="255"
+              style_border_width="0" style_pad_all="#space_sm" style_pad_gap="#space_xs" flex_flow="column"
+              scrollable="false" clickable="true">
+        <lv_obj name="nozzle_row" width="100%" flex_grow="1" style_radius="#border_radius_small"
+                style_bg_color="#elevated_bg" style_bg_opa="255" style_border_width="0" style_pad_left="#space_sm"
+                style_pad_right="#space_sm" style_pad_gap="#space_sm" flex_flow="row" style_flex_cross_place="center"
+                scrollable="false" clickable="false" event_bubble="true">
+          <icon name="nozzle_icon" src="thermometer" size="sm" variant="secondary" clickable="false"
+                event_bubble="true"/>
+          <text_muted text="Nozzle" translation_tag="Nozzle" flex_grow="1" clickable="false" event_bubble="true"/>
+          <text_heading name="nozzle_value" text="" clickable="false" event_bubble="true"/>
+          <text_muted name="nozzle_target" text="" clickable="false" event_bubble="true"/>
+        </lv_obj>
+        <lv_obj name="bed_row" width="100%" flex_grow="1" style_radius="#border_radius_small"
+                style_bg_color="#elevated_bg" style_bg_opa="255" style_border_width="0" style_pad_left="#space_sm"
+                style_pad_right="#space_sm" style_pad_gap="#space_sm" flex_flow="row" style_flex_cross_place="center"
+                scrollable="false" clickable="false" event_bubble="true">
+          <icon name="bed_icon" src="radiator" size="sm" variant="secondary" clickable="false" event_bubble="true"/>
+          <text_muted text="Bed" translation_tag="Bed" flex_grow="1" clickable="false" event_bubble="true"/>
+          <text_heading name="bed_value" text="" clickable="false" event_bubble="true"/>
+          <text_muted name="bed_target" text="" clickable="false" event_bubble="true"/>
+        </lv_obj>
+        <lv_obj name="chamber_row" width="100%" flex_grow="1" style_radius="#border_radius_small"
+                style_bg_color="#elevated_bg" style_bg_opa="255" style_border_width="0" style_pad_left="#space_sm"
+                style_pad_right="#space_sm" style_pad_gap="#space_sm" flex_flow="row" style_flex_cross_place="center"
+                scrollable="false" clickable="false" event_bubble="true">
+          <icon src="home_thermometer" size="sm" variant="secondary" clickable="false" event_bubble="true"/>
+          <text_muted text="Chamber" translation_tag="Chamber" flex_grow="1" clickable="false" event_bubble="true"/>
+          <text_heading name="chamber_value" text="" clickable="false" event_bubble="true"/>
+        </lv_obj>
+      </lv_obj>
+    </lv_obj>
+
+    <lv_obj width="100%" flex_grow="1" style_pad_all="0" style_pad_gap="#space_sm" style_bg_opa="0"
+            style_border_width="0" flex_flow="row" scrollable="false">
+      <lv_obj name="cfs_card"
+              height="100%" flex_grow="8" style_radius="#border_radius" style_bg_color="#card_bg" style_bg_opa="255"
+              style_border_width="0" style_pad_all="#space_sm" style_pad_gap="#space_xs" flex_flow="column"
+              scrollable="false" clickable="true">
+        <lv_obj width="100%" height="content" style_pad_all="0" style_pad_gap="#space_xs" style_bg_opa="0"
+                style_border_width="0" flex_flow="row" style_flex_cross_place="center" scrollable="false"
+                clickable="false" event_bubble="true">
+          <icon src="filament" size="xs" variant="secondary" clickable="false" event_bubble="true"/>
+          <text_muted text="CFS" flex_grow="1" clickable="false" event_bubble="true"/>
+          <text_small name="cfs_env" text="" clickable="false" event_bubble="true"/>
+        </lv_obj>
+        <lv_obj name="spools_row" width="100%" flex_grow="1" style_pad_all="0" style_pad_gap="#space_xs"
+                style_bg_opa="0" style_border_width="0" flex_flow="row" scrollable="false" clickable="false"
+                event_bubble="true"/>
+      </lv_obj>
+
+      <lv_obj height="100%" flex_grow="5" style_pad_all="0" style_pad_gap="#space_sm" style_bg_opa="0"
+              style_border_width="0" flex_flow="row" scrollable="false">
+        <lv_obj name="light_tile"
+                height="100%" flex_grow="1" style_radius="#border_radius" style_bg_color="#card_bg"
+                style_bg_opa="255" style_border_width="0" style_pad_all="#space_sm" style_pad_gap="#space_xxs"
+                flex_flow="column" style_flex_main_place="center" style_flex_cross_place="center" scrollable="false"
+                clickable="true">
+          <icon name="light_icon" src="lightbulb_outline" size="lg" variant="secondary" clickable="false"
+                event_bubble="true"/>
+          <text_body text="Light" translation_tag="Light" clickable="false" event_bubble="true"/>
+          <text_muted name="light_state" text="" clickable="false" event_bubble="true"/>
+        </lv_obj>
+        <lv_obj name="fans_card"
+                height="100%" flex_grow="1" style_radius="#border_radius" style_bg_color="#card_bg"
+                style_bg_opa="255" style_border_width="0" style_pad_all="#space_sm" style_pad_gap="#space_xxs"
+                flex_flow="column" style_flex_main_place="center" scrollable="false" clickable="true">
+          <text_muted text="Fans" translation_tag="Fans" clickable="false" event_bubble="true"/>
+          <text_small name="fan_part" text="" width="100%" clickable="false" event_bubble="true"/>
+          <text_small name="fan_hotend" text="" width="100%" clickable="false" event_bubble="true"/>
+          <text_small name="fan_aux" text="" width="100%" clickable="false" event_bubble="true"/>
+        </lv_obj>
+      </lv_obj>
+    </lv_obj>
+  </view>
+</component>

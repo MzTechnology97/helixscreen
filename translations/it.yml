@@ -21,13 +21,17 @@ translations:
   '%zu plugins failed to load': Caricamento di %zu plugin non riuscito
   Auto-swap at spool end: Cambio automatico a fine bobina
   CFS ready: CFS pronta
+  Ends: Fine
   IN USE: IN USO
+  Left: Restano
   More: Altro
   Not recognised: Non riconosciuta
+  Print a file: Stampa un file
   Reread RFID: Rileggi RFID
   dry: asciutta
   estimate: stima
   humid: umida
+  layer: strato
   unknown tag: tag sconosciuto
   "'{}' already exists. Replace the stored mesh?": "'{}' esiste già. Sostituire la mesh salvata?"
   "'{}' and '{}' already exist. Replace the stored meshes?": "'{}' e '{}' esistono già. Sostituire le mesh salvate?"
@@ -1493,7 +1497,7 @@ translations:
   Leveling Gantry...: Livellamento gantry...
   Library: Libreria
   Lifetime Print Stats: Statistiche stampe totali
-  Light: Chiaro
+  Light: Luce
   Light will switch when the current operation finishes: La luce si attiverà al termine
     dell'operazione in corso
   Line {} calls {}, which this printer treats as an emergency stop. Re-slice the file with a profile made for this printer.: 'La riga {} chiama {}, che questa stampante tratta come un arresto di emergenza. Sezionare di nuovo il file con un profilo creato per questa stampante.'

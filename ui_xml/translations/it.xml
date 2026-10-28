@@ -223,6 +223,7 @@
   <translation tag="Auto-probe or manually check screw heights" it="Sondaggio automatico o controllo manuale dell&apos;altezza delle viti"/>
   <translation tag="Auto-refill is on but no two slots hold matching filament, so nothing will switch on runout" it="Il rifornimento automatico è attivo, ma nessuna coppia di slot ha filamento compatibile, quindi nulla cambierà all&apos;esaurimento"/>
   <translation tag="Auto-render video" it="Rendering video automatico"/>
+  <translation tag="Auto-swap at spool end" it="Cambio automatico a fine bobina"/>
   <translation tag="Auto-tuning Shapers..." it="Regolazione automatica degli shaper in corso..."/>
   <translation tag="Auto-uninstall only works on local Moonraker" it="La disinstallazione automatica funziona solo su Moonraker locale"/>
   <translation tag="Automatic" it="Automatico"/>
@@ -333,6 +334,7 @@
   <translation tag="CALIBRATION" it="CALIBRAZIONE"/>
   <translation tag="CAPABILITIES" it="FUNZIONALITÀ"/>
   <translation tag="CARTOGRAPHER" it="CARTOGRAPHER"/>
+  <translation tag="CFS ready" it="CFS pronta"/>
   <translation tag="CHANGED FROM LAST SESSION" it="MODIFICATO DALLA SESSIONE PRECEDENTE"/>
   <translation tag="COLOR SENSORS" it="SENSORI DI COLORE"/>
   <translation tag="CONFIGURATION" it="CONFIGURAZIONE"/>
@@ -792,6 +794,7 @@
   <translation tag="Encoder" it="Encoder"/>
   <translation tag="Ended" it="Terminato"/>
   <translation tag="Endless spool failover cleared for every slot" it="Bobina di riserva cancellata per tutti gli slot"/>
+  <translation tag="Ends" it="Fine"/>
   <translation tag="Enhanced {} operation in PRINT_START" it="Migliorata {} operazione in PRINT_START"/>
   <translation tag="Enhanced {} operations in PRINT_START" it="Migliorate {} operazioni in PRINT_START"/>
   <translation tag="Enhancement Complete!" it="Miglioramento completato!"/>
@@ -1183,6 +1186,7 @@
   <translation tag="Hyperlapse captures frames at fixed time intervals. Good for very long prints." it="Hyperlapse cattura i fotogrammi a intervalli di tempo fissi. Ideale per stampe molto lunghe."/>
   <translation tag="ID (optional)" it="ID (opzionale)"/>
   <translation tag="IMPORT FROM USB" it="IMPORTA DA USB"/>
+  <translation tag="IN USE" it="IN USO"/>
   <translation tag="IP Address / Hostname" it="Indirizzo IP / Hostname"/>
   <translation tag="IP:" it="IP:"/>
   <translation tag="IPP error: {}" it="Errore IPP: {}"/>
@@ -1313,6 +1317,7 @@
   <translation tag="Layout" it="Layout"/>
   <translation tag="Learn More" it="Scopri di più"/>
   <translation tag="LedSelect" it="Seleziona LED"/>
+  <translation tag="Left" it="Restano"/>
   <translation tag="Length of filament to purge" it="Lunghezza di filamento da spurgare"/>
   <translation tag="Length of the cooling tube section" it="Lunghezza della sezione del tubo di raffreddamento"/>
   <translation tag="Length:" it="Lunghezza:"/>
@@ -1320,7 +1325,7 @@
   <translation tag="Leveling Gantry..." it="Livellamento gantry..."/>
   <translation tag="Library" it="Libreria"/>
   <translation tag="Lifetime Print Stats" it="Statistiche stampe totali"/>
-  <translation tag="Light" it="Chiaro"/>
+  <translation tag="Light" it="Luce"/>
   <translation tag="Light will switch when the current operation finishes" it="La luce si attiverà al termine dell&apos;operazione in corso"/>
   <translation tag="Line {} calls {}, which this printer treats as an emergency stop. Re-slice the file with a profile made for this printer." it="La riga {} chiama {}, che questa stampante tratta come un arresto di emergenza. Sezionare di nuovo il file con un profilo creato per questa stampante."/>
   <translation tag="Listen to all theme sounds" it="Ascolta tutti i suoni del tema"/>
@@ -1471,6 +1476,7 @@
   <translation tag="Moonraker restarted but Spoolman not connected. Check server." it="Moonraker riavviato ma Spoolman non connesso. Controllare il server."/>
   <translation tag="Moonraker restarting...&#10;Waiting for reconnection..." it="Moonraker in riavvio...&#10;In attesa di riconnessione..."/>
   <translation tag="Moonraker: " it="Moonraker: "/>
+  <translation tag="More" it="Altro"/>
   <translation tag="More points = more accurate, but takes longer." it="Più punti = più preciso, ma richiede più tempo."/>
   <translation tag="Motion" it="Movimento"/>
   <translation tag="Motion: XYZ" it="Movimento: XYZ"/>
@@ -1621,6 +1627,7 @@
   <translation tag="Not found (use phone app)" it="Non trovato (usa l’app del telefono)"/>
   <translation tag="Not in your spools? Set it up" it="Non è tra le tue bobine? Configuralo"/>
   <translation tag="Not now" it="Non ora"/>
+  <translation tag="Not recognised" it="Non riconosciuta"/>
   <translation tag="Not yet available on this display" it="Non ancora disponibile su questo display"/>
   <translation tag="Not yet calibrated" it="Non ancora calibrato"/>
   <translation tag="Notes" it="Note"/>
@@ -1839,6 +1846,7 @@
   <translation tag="Print Time" it="Tempo stampa"/>
   <translation tag="Print Tuning" it="Regolazione stampa"/>
   <translation tag="Print Was Terminated" it="Stampa interrotta"/>
+  <translation tag="Print a file" it="Stampa un file"/>
   <translation tag="Print cancelled" it="Stampa annullata"/>
   <translation tag="Print complete" it="Stampa completata"/>
   <translation tag="Print did not start" it="La stampa non è iniziata"/>
@@ -2045,6 +2053,7 @@
   <translation tag="Requires Multi-Filament System or MMU hardware" it="Richiede un sistema multi-filamento o hardware MMU"/>
   <translation tag="Requires a filament system with bypass" it="Richiede un sistema filamento con bypass"/>
   <translation tag="Requires clog detection hardware" it="Richiede hardware per il rilevamento intasamenti"/>
+  <translation tag="Reread RFID" it="Rileggi RFID"/>
   <translation tag="Resend write failed at chunk {}" it="Reinvio scrittura fallito al chunk {}"/>
   <translation tag="Reset" it="Ripristina"/>
   <translation tag="Reset Blade Counter" it="Ripristina il contatore della lama"/>
@@ -2838,6 +2847,7 @@
   <translation tag="cores" it="core"/>
   <translation tag="disable" it="disabilita"/>
   <translation tag="disabled" it="disabilitato"/>
+  <translation tag="dry" it="asciutta"/>
   <translation tag="e.g. Jet Black" it="es. Nero intenso"/>
   <translation tag="e.g. NAME=my_var VALUE=123" it="es. NAME=mia_var VALUE=123"/>
   <translation tag="e.g. Polymaker" it="es. Polymaker"/>
@@ -2847,12 +2857,15 @@
   <translation tag="enable" it="abilita"/>
   <translation tag="enabled" it="abilitato"/>
   <translation tag="error" it="errore"/>
+  <translation tag="estimate" it="stima"/>
   <translation tag="extruder" it="estrusore"/>
   <translation tag="extruder(s)" it="estrusore/i"/>
   <translation tag="extruders" it="estrusori"/>
   <translation tag="fans" it="ventole"/>
   <translation tag="heated bed" it="piano riscaldato"/>
+  <translation tag="humid" it="umida"/>
   <translation tag="idle" it="inattivo"/>
+  <translation tag="layer" it="strato"/>
   <translation tag="layers" it="layer"/>
   <translation tag="left" it="rimanente"/>
   <translation tag="mm before clog" it="mm prima dell&apos;intasamento"/>
@@ -2872,6 +2885,7 @@
   <translation tag="steppers" it="motori passo-passo"/>
   <translation tag="tall" it="di altezza"/>
   <translation tag="tool(s)" it="utensile/i"/>
+  <translation tag="unknown tag" it="tag sconosciuto"/>
   <translation tag="used" it="usato"/>
   <translation tag="v%s available" it="v%s disponibile"/>
   <translation tag="v{} installed! Restarting..." it="v{} installata! Riavvio in corso..."/>
