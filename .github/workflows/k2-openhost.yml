@@ -1,0 +1,82 @@
+# K2-OpenHost: build only the Creality K2 package of this fork.
+# Same steps as the K2 leg of release.yml, without the release publishing.
+name: K2-OpenHost build
+
+on:
+  push:
+    branches: [k2-openhost]
+  pull_request:
+    branches: [k2-openhost]
+  workflow_dispatch:
+
+concurrency:
+  group: k2-openhost-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-k2:
+    name: Build (Creality K2)
+    runs-on: ubuntu-22.04
+    timeout-minutes: 120
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v6
+      with:
+        submodules: false
+
+    - name: Initialize submodules
+      uses: ./.github/actions/init-submodules
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v4
+
+    - name: Restore ccache
+      uses: actions/cache@v5
+      with:
+        path: /tmp/.ccache-k2
+        key: ccache-k2openhost-${{ github.sha }}
+        restore-keys: |
+          ccache-k2openhost-
+
+    - name: Configure ccache
+      run: |
+        mkdir -p /tmp/.ccache-k2
+        printf 'max_size = 2G\ncompression = true\n' > /tmp/.ccache-k2/ccache.conf
+
+    - name: Build k2 toolchain image
+      run: |
+        docker buildx build \
+          --cache-from type=gha,scope=toolchain-k2 \
+          --cache-to type=gha,mode=max,scope=toolchain-k2 \
+          --load \
+          -t helixscreen/toolchain-k2 \
+          -f docker/Dockerfile.k2 \
+          docker/
+
+    - name: Cross-compile for the K2
+      run: |
+        docker run --rm \
+          -v "${{ github.workspace }}":/src \
+          -v /tmp/.ccache-k2:/root/.cache/ccache \
+          -e CCACHE_DIR=/root/.cache/ccache \
+          -w /src \
+          helixscreen/toolchain-k2 \
+          make PLATFORM_TARGET=k2 HELIX_PACKAGING=1 SKIP_OPTIONAL_DEPS=1 -j$(nproc)
+
+    - name: Fix build directory ownership
+      run: sudo chown -R $(id -u):$(id -g) build/
+
+    - name: Generate pre-rendered images
+      run: make venv-setup && make gen-all-images
+
+    - name: Package K2 release
+      run: make release-k2
+
+    - name: Upload K2 package
+      uses: actions/upload-artifact@v7
+      with:
+        name: helixscreen-k2-openhost
+        path: |
+          releases/helixscreen-k2-*.tar.gz
+          releases/helixscreen-k2.zip
+        retention-days: 30
