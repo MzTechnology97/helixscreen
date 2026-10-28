@@ -2898,7 +2898,7 @@ TEST_CASE("CFS flat-schema material change on the box reaches the slot",
           "[ams][cfs][flat][filament_slot_override]") {
     CfsOverrideRig rig("cfs_flat_material_follows");
 
-    // First frame: the auto-mirror fills the empty override from firmware.
+    // First frame: the slot shows what the box reports.
     rig.poll(make_flat_box("PLA", "Sunlu", "PLA Basic", "#FF5500"));
     REQUIRE(rig.backend->get_slot_info(0).material == "PLA");
 
@@ -2907,12 +2907,11 @@ TEST_CASE("CFS flat-schema material change on the box reaches the slot",
     rig.poll(make_flat_box("PETG", "Sunlu", "PLA Basic", "#FF5500"));
     CHECK(rig.backend->get_slot_info(0).material == "PETG");
 
-    // The next frame republishes the new firmware truth for OrcaSlicer.
+    // The flat schema is the Fork dialect: the box publishes lane_data for
+    // OrcaSlicer itself, so HelixScreen leaves it alone.
     rig.poll(make_flat_box("PETG", "Sunlu", "PLA Basic", "#FF5500"));
     CHECK(rig.backend->get_slot_info(0).material == "PETG");
-    auto stored = rig.api->mock_get_db_value("lane_data", "lane1");
-    REQUIRE(!stored.is_null());
-    CHECK(stored["material"] == "PETG");
+    CHECK(rig.api->mock_get_db_value("lane_data", "lane1").is_null());
 }
 
 TEST_CASE("CFS stock material change on the box reaches the slot",
