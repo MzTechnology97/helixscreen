@@ -2899,6 +2899,8 @@
   <translation tag="layer" en="layer"/>
   <translation tag="layers" en="layers"/>
   <translation tag="left" en="left"/>
+  <translation tag="light_lit" en="on"/>
+  <translation tag="light_unlit" en="off"/>
   <translation tag="lowest remaining first" en="lowest remaining first"/>
   <translation tag="manual order" en="manual order"/>
   <translation tag="mm before clog" en="mm before clog"/>

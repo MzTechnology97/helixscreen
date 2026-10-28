@@ -3293,3 +3293,5 @@ translations:
   ? '{} will switch to a slot whose filament type AND colour both match the active spool and whose own port sensor reads filament present.'
   : '{} will switch to a slot whose filament type AND colour both match the active spool and whose own port sensor reads filament present.'
   '{} — response timed out': '{} — response timed out'
+  light_lit: "on"
+  light_unlit: "off"

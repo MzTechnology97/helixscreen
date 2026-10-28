@@ -141,6 +141,11 @@ void K2ohHomeWidget::attach(lv_obj_t* widget_obj, lv_obj_t* parent_screen) {
         return;
     }
     install_delete_hook(root_);
+    if (kind_ == Kind::Light) {
+        // Icon and labels centred in the tile (the XML flex placement is not applied here).
+        lv_obj_set_flex_align(root_, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER,
+                              LV_FLEX_ALIGN_CENTER);
+    }
 
     for (const char* name : {"thumb_box", "btn_tune", "btn_print_file", "btn_cooldown", "preheat_0",
                              "preheat_1", "preheat_2"}) {
@@ -456,7 +461,7 @@ void K2ohHomeWidget::refresh_light() {
     const bool reported = !led.status_tracked_strip().empty();
     const bool on = reported ? lv_subject_get_int(printer_state_.get_led_state_subject()) != 0
                              : led.light_is_on();
-    set_text(root_, "light_state", lv_tr(on ? "On" : "Off"));
+    set_text(root_, "light_state", lv_tr(on ? "light_lit" : "light_unlit"));
     if (lv_obj_t* icon = child(root_, "light_icon")) {
         ui_icon_set_source(icon, on ? "lightbulb_on" : "lightbulb_outline");
         ui_icon_set_variant(icon, on ? "warning" : "secondary");

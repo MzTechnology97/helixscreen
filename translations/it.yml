@@ -3369,3 +3369,5 @@ translations:
   ? '{} will switch to a slot whose filament type AND colour both match the active spool and whose own port sensor reads filament present.'
   : '{} passerà a uno slot il cui tipo di filamento E colore corrispondono entrambi alla bobina attiva e il cui sensore di porta rileva filamento presente.'
   '{} — response timed out': '{} — tempo scaduto'
+  light_lit: Accesa
+  light_unlit: Spenta

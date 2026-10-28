@@ -49,6 +49,7 @@
       <icon name="nav_icon_home_inactive" src="home" size="#icon_size" variant="secondary">
         <bind_flag_if_eq subject="active_panel" flag="hidden" ref_value="0"/>
       </icon>
+      <text_tiny text="Home" translation_tag="Home" style_text_color="#text_muted" style_text_align="center" clickable="false" event_bubble="true"/>
     </ui_button>
     <!-- Controls Button (Panel 2) - CONNECTION + KLIPPY READY REQUIRED -->
     <!-- Uses combined nav_buttons_enabled subject (1=enabled when connected AND klippy ready) -->
@@ -75,6 +76,7 @@
       <icon name="nav_icon_controls_disabled" src="fine_tune" size="#icon_size" variant="disabled">
         <bind_flag_if_eq subject="nav_buttons_enabled" flag="hidden" ref_value="1"/>
       </icon>
+      <text_tiny text="Controls" translation_tag="Controls" style_text_color="#text_muted" style_text_align="center" clickable="false" event_bubble="true"/>
     </ui_button>
     <!-- Filament Button (Panel 3) - CONNECTION + KLIPPY READY REQUIRED -->
     <!-- Uses combined nav_buttons_enabled subject (1=enabled when connected AND klippy ready) -->
@@ -101,6 +103,7 @@
       <icon name="nav_icon_filament_disabled" src="filament" size="#icon_size" variant="disabled">
         <bind_flag_if_eq subject="nav_buttons_enabled" flag="hidden" ref_value="1"/>
       </icon>
+      <text_tiny text="Filament" translation_tag="Filament" style_text_color="#text_muted" style_text_align="center" clickable="false" event_bubble="true"/>
     </ui_button>
     <!-- Settings Button (Panel 4) -->
     <ui_button name="nav_btn_settings"
@@ -114,6 +117,7 @@
       <icon name="nav_icon_settings_inactive" src="settings" size="#icon_size" variant="secondary">
         <bind_flag_if_eq subject="active_panel" flag="hidden" ref_value="4"/>
       </icon>
+      <text_tiny text="Settings" translation_tag="Settings" style_text_color="#text_muted" style_text_align="center" clickable="false" event_bubble="true"/>
     </ui_button>
     <!-- Advanced Button (Panel 5) -->
     <ui_button name="nav_btn_advanced"
@@ -127,6 +131,7 @@
       <icon name="nav_icon_advanced_inactive" src="dots_vertical" size="#icon_size" variant="secondary">
         <bind_flag_if_eq subject="active_panel" flag="hidden" ref_value="5"/>
       </icon>
+      <text_tiny text="Advanced" translation_tag="Advanced" style_text_color="#text_muted" style_text_align="center" clickable="false" event_bubble="true"/>
     </ui_button>
     <!-- Printer switcher button — visible only when setting enabled -->
     <ui_button name="nav_printer_badge"
