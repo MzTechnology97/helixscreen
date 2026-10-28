@@ -705,15 +705,11 @@ void HomePanel::finalize_setup() {
     // Build carousel with pages from config
     build_carousel();
 
-    // K2-OpenHost Home: covers the grid while the printer is a K2 on Kalico's CFS.
+    // K2-OpenHost Home: a status line above the grid and, once, the K2-OpenHost
+    // widget layout; the grid itself stays customisable.
     lv_xml_register_component_from_file(
         helix::asset_component_uri("ui_xml/k2oh_home_view.xml").c_str());
-    k2oh_home_ = std::make_unique<helix::ui::K2ohHomeView>(
-        printer_state_,
-        helix::ui::K2ohHomeView::Actions{
-            [this]() { handle_ams_clicked(); },
-            [this]() { PrintStatusPanel::push_overlay(parent_screen_); },
-            [this]() { get_print_tune_overlay().show(parent_screen_, api_, printer_state_); }});
+    k2oh_home_ = std::make_unique<helix::ui::K2ohHomeView>(printer_state_);
     k2oh_home_->create(panel_);
 
     // Observe hardware gate subjects so widgets appear/disappear when

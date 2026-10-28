@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- K2-OpenHost Home widget: the CFS spools with their share, the loaded one
+     outlined, and the box temperature and humidity. Tapping opens the CFS page. -->
+<component>
+  <view name="panel_widget_k2oh_cfs"
+        extends="lv_obj" height="100%" flex_grow="1" style_bg_color="#card_bg" style_bg_opa="255" style_radius="#border_radius" style_border_width="0" style_pad_all="#space_sm" style_pad_gap="#space_xs"
+        flex_flow="column" scrollable="false" clickable="true">
+    <lv_obj width="100%" height="content" style_pad_all="0" style_pad_gap="#space_xs" style_bg_opa="0"
+            style_border_width="0" flex_flow="row" style_flex_cross_place="center" scrollable="false"
+            clickable="false" event_bubble="true">
+      <icon src="filament" size="xs" variant="secondary" clickable="false" event_bubble="true"/>
+      <text_muted text="CFS" flex_grow="1" clickable="false" event_bubble="true"/>
+      <text_small name="cfs_env" text="" clickable="false" event_bubble="true"/>
+    </lv_obj>
+    <lv_obj name="spools_row" width="100%" flex_grow="1" style_pad_all="0" style_pad_gap="#space_xs"
+            style_bg_opa="0" style_border_width="0" flex_flow="row" scrollable="false" clickable="false"
+            event_bubble="true"/>
+  </view>
+</component>

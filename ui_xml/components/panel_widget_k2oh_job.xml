@@ -1,0 +1,60 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- K2-OpenHost Home widget: the job (thumbnail, progress, layer, time left
+     and end, pause/tune/stop) or, when idle, print a file and preheat. -->
+<component>
+  <view name="panel_widget_k2oh_job"
+        extends="lv_obj" height="100%" flex_grow="1" style_bg_color="#card_bg" style_bg_opa="255" style_radius="#border_radius" style_border_width="0" style_pad_all="#space_sm" scrollable="false">
+    <lv_obj name="job_active"
+            width="100%" height="100%" style_pad_all="0" style_pad_gap="#space_md" style_bg_opa="0"
+            style_border_width="0" flex_flow="row" scrollable="false">
+      <lv_obj name="thumb_box"
+              width="132" height="132" style_radius="#border_radius" style_bg_color="#elevated_bg" style_bg_opa="255"
+              style_border_width="0" style_pad_all="0" scrollable="false" clickable="true">
+        <lv_image name="thumb" width="100%" height="100%" inner_align="contain" clickable="false"
+                  event_bubble="true"/>
+      </lv_obj>
+      <lv_obj height="100%" flex_grow="1" style_pad_all="0" style_pad_gap="#space_xxs" style_bg_opa="0"
+              style_border_width="0" flex_flow="column" scrollable="false">
+        <text_body name="job_name" text="" long_mode="dots" width="100%"/>
+        <lv_obj width="100%" height="content" style_pad_all="0" style_pad_gap="#space_sm" style_bg_opa="0"
+                style_border_width="0" flex_flow="row" style_flex_cross_place="end" scrollable="false">
+          <text_heading name="job_percent" text="" style_text_font="#font_xl"/>
+          <text_muted name="job_layer" text=""/>
+        </lv_obj>
+        <lv_bar name="job_bar" width="100%" height="8" min_value="0" max_value="100" style_radius="4"
+                style_bg_color="#elevated_bg" style_bg_opa="255"/>
+        <text_small name="job_times" text="" long_mode="dots" width="100%"/>
+        <lv_obj width="100%" flex_grow="1" style_pad_all="0" style_pad_gap="#space_sm" style_bg_opa="0"
+                style_border_width="0" flex_flow="row" style_flex_cross_place="end" scrollable="false">
+          <ui_button name="btn_pause" flex_grow="1" height="#button_height" variant="secondary"
+                     bind_icon="print_control_primary_icon" text="Pause" translation_tag="Pause">
+            <event_cb trigger="clicked" callback="on_print_control_primary"/>
+            <bind_state_if_eq subject="print_control_primary_enabled" state="disabled" ref_value="0"/>
+          </ui_button>
+          <ui_button name="btn_tune" flex_grow="1" height="#button_height" variant="secondary" icon="tune"
+                     text="Tune" translation_tag="Tune"/>
+          <ui_button name="btn_stop" width="#button_height" height="#button_height" variant="danger" icon="stop">
+            <event_cb trigger="clicked" callback="on_print_control_stop"/>
+            <bind_state_if_eq subject="print_control_stop_enabled" state="disabled" ref_value="0"/>
+          </ui_button>
+        </lv_obj>
+      </lv_obj>
+    </lv_obj>
+    <lv_obj name="job_idle"
+            width="100%" height="100%" style_pad_all="0" style_pad_gap="#space_sm" style_bg_opa="0"
+            style_border_width="0" flex_flow="column" scrollable="false" hidden="true">
+      <ui_button name="btn_print_file" width="100%" height="#button_height_lg" variant="primary" icon="folder"
+                 text="Print a file" translation_tag="Print a file"/>
+      <text_muted text="Preheat" translation_tag="Preheat"/>
+      <lv_obj width="100%" height="content" style_pad_all="0" style_pad_gap="#space_xs" style_bg_opa="0"
+              style_border_width="0" flex_flow="row" scrollable="false">
+        <ui_button name="preheat_0" flex_grow="1" height="#button_height" variant="secondary" text="-"/>
+        <ui_button name="preheat_1" flex_grow="1" height="#button_height" variant="secondary" text="-"/>
+        <ui_button name="preheat_2" flex_grow="1" height="#button_height" variant="secondary" text="-"/>
+        <ui_button name="btn_cooldown" width="#button_height" height="#button_height" variant="secondary"
+                   icon="power"/>
+      </lv_obj>
+    </lv_obj>
+  </view>
+</component>

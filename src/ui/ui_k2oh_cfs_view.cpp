@@ -3,12 +3,16 @@
 
 #include "ui_k2oh_cfs_view.h"
 
+#include "ui_ams_environment_overlay.h"
 #include "ui_button.h"
 #include "ui_icon.h"
 #include "ui_nav_manager.h"
 #include "ui_utils.h"
 
 #include "ams_backend.h"
+#if HELIX_HAS_CFS
+#include "ams_backend_cfs.h"
+#endif
 #include "ams_state.h"
 #include "ams_types.h"
 #include "lvgl/src/others/translation/lv_translation.h"
@@ -30,7 +34,7 @@ namespace helix::ui {
 
 namespace {
 
-constexpr int kRingSize = 84;
+constexpr int kRingSize = 70;
 constexpr int kRingWidth = 7;
 // A spool at or under this share is shown in the warning colour.
 constexpr int kLowPercent = 15;
@@ -130,10 +134,27 @@ bool print_running(PrinterState& printer_state) {
 K2ohCfsView::K2ohCfsView(PrinterState& printer_state, Actions actions)
     : printer_state_(printer_state), actions_(std::move(actions)) {}
 
-K2ohCfsView::~K2ohCfsView() = default;
+K2ohCfsView::~K2ohCfsView() {
+    if (root_) {
+        lv_obj_remove_event_cb_with_user_data(root_, on_root_deleted, this);
+    }
+}
 
 std::string K2ohCfsView::runout_summary(const AmsSystemInfo& info, int loaded_slot) {
     return runout_text(info, loaded_slot);
+}
+
+void K2ohCfsView::on_root_deleted(lv_event_t* e) {
+    auto* self = static_cast<K2ohCfsView*>(lv_event_get_user_data(e));
+    self->slots_observer_.reset();
+    self->action_observer_.reset();
+    self->current_slot_observer_.reset();
+    self->print_state_observer_.reset();
+    self->root_ = nullptr;
+    self->panel_ = nullptr;
+    self->cards_row_ = nullptr;
+    self->cards_.clear();
+    self->path_rows_.clear();
 }
 
 bool K2ohCfsView::applies() {
@@ -146,24 +167,32 @@ void K2ohCfsView::create(lv_obj_t* panel) {
     if (root_ || !panel) {
         return;
     }
+    panel_ = panel;
     root_ = static_cast<lv_obj_t*>(lv_xml_create(panel, "k2oh_cfs_view", nullptr));
     if (!root_) {
         spdlog::error("[K2oh CFS] k2oh_cfs_view.xml did not build");
         return;
     }
     lv_obj_add_flag(root_, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_add_event_cb(root_, on_root_deleted, LV_EVENT_DELETE, this);
     cards_row_ = child(root_, "cards_row");
 
     if (lv_obj_t* back = child(root_, "cfs_back")) {
         lv_obj_add_event_cb(back, on_back_clicked, LV_EVENT_CLICKED, this);
     }
-    for (const char* name : {"ext_chip", "btn_load_unload", "btn_rfid", "btn_edit", "btn_more"}) {
+    build_path();
+    for (const char* name : {"ext_chip", "bypass_row", "env_chip", "btn_cfs_check_all",
+                             "btn_cfs_settings", "btn_load_unload", "btn_rfid", "btn_edit",
+                             "btn_more"}) {
         if (lv_obj_t* obj = child(root_, name)) {
             lv_obj_add_event_cb(obj, on_button_clicked, LV_EVENT_CLICKED, this);
         }
     }
     if (lv_obj_t* sw = child(root_, "runout_switch")) {
         lv_obj_add_event_cb(sw, on_runout_changed, LV_EVENT_VALUE_CHANGED, this);
+    }
+    if (lv_obj_t* sw = child(root_, "bypass_switch_k2oh")) {
+        lv_obj_add_event_cb(sw, on_bypass_changed, LV_EVENT_VALUE_CHANGED, this);
     }
 
     auto& ams = AmsState::instance();
@@ -207,6 +236,9 @@ void K2ohCfsView::build_cards(int count) {
             continue;
         }
         lv_obj_add_event_cb(card.root, on_card_clicked, LV_EVENT_CLICKED, this);
+        // Ring and text centred in the card (the XML flex placement is not applied here).
+        lv_obj_set_flex_align(card.root, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER,
+                              LV_FLEX_ALIGN_CENTER);
         if (lv_obj_t* box = child(card.root, "ring_box")) {
             card.ring = lv_arc_create(box);
             lv_obj_set_size(card.ring, kRingSize, kRingSize);
@@ -271,6 +303,7 @@ void K2ohCfsView::refresh() {
     }
 
     update_header(info);
+    refresh_path(info);
     update_actions();
 }
 
@@ -365,13 +398,16 @@ void K2ohCfsView::update_header(const AmsSystemInfo& info) {
         }
     }
 
+    // The external spool: its own chip when the box has no bypass row, else the
+    // bypass row says what it holds.
     const auto ext = AmsState::instance().get_external_spool_info();
-    set_hidden(child(root_, "ext_chip"), !ext);
-    if (ext) {
-        set_text(root_, "ext_label",
-                 std::string(lv_tr("External")) + ": " +
-                     (ext->material.empty() ? std::string("?") : ext->material));
-    }
+    const std::string ext_spool =
+        ext && !ext->material.empty()
+            ? ext->material + (ext->brand.empty() ? "" : " " + ext->brand)
+            : std::string(lv_tr("not set"));
+    set_hidden(child(root_, "ext_chip"), !ext || info.supports_bypass);
+    set_text(root_, "ext_label", std::string(lv_tr("External spool")) + ": " + ext_spool);
+    set_text(root_, "bypass_detail", ext_spool);
 
     set_text(root_, "runout_detail", runout_text(info, loaded_slot_));
 
@@ -408,6 +444,207 @@ void K2ohCfsView::update_actions() {
     set_enabled(child(root_, "btn_edit"), !empty);
 }
 
+void K2ohCfsView::click_sidebar(const char* name) {
+    lv_obj_t* sidebar = panel_ ? lv_obj_find_by_name(panel_, "ams_operation_sidebar") : nullptr;
+    if (lv_obj_t* btn = sidebar ? lv_obj_find_by_name(sidebar, name) : nullptr) {
+        lv_obj_send_event(btn, LV_EVENT_CLICKED, nullptr);
+    } else {
+        spdlog::warn("[K2oh CFS] sidebar control {} not found", name);
+    }
+}
+
+void K2ohCfsView::build_path() {
+    lv_obj_t* card = child(root_, "path_card");
+    if (!card) {
+        return;
+    }
+    static const char* const kTitles[] = {"Slot",       "Buffer",           "Encoder",
+                                          "Clog guard", "Printhead sensor", "Nozzle"};
+    const lv_font_t* title_font = theme_manager_get_font("font_small");
+    const lv_font_t* detail_font = theme_manager_get_font("font_xs");
+    static const char* const kIcons[] = {"filament", "arrow_up_down", "sync",
+                                         "gauge",    "check_circle",  "printer_3d"};
+    for (int i = 0; i < 6; ++i) {
+        PathRow r;
+        r.row = lv_obj_create(card);
+        lv_obj_remove_style_all(r.row);
+        lv_obj_set_size(r.row, LV_PCT(100), LV_SIZE_CONTENT);
+        lv_obj_set_flex_flow(r.row, LV_FLEX_FLOW_ROW);
+        lv_obj_set_flex_align(r.row, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER,
+                              LV_FLEX_ALIGN_CENTER);
+        lv_obj_set_style_pad_gap(r.row, 8, LV_PART_MAIN);
+        lv_obj_remove_flag(r.row, LV_OBJ_FLAG_CLICKABLE);
+
+        r.dot = lv_obj_create(r.row);
+        lv_obj_remove_style_all(r.dot);
+        lv_obj_set_size(r.dot, 30, 30);
+        lv_obj_set_style_radius(r.dot, i == 5 ? 8 : LV_RADIUS_CIRCLE, LV_PART_MAIN);
+        lv_obj_set_style_bg_opa(r.dot, LV_OPA_COVER, LV_PART_MAIN);
+        lv_obj_set_style_border_width(r.dot, 2, LV_PART_MAIN);
+        lv_obj_remove_flag(r.dot, LV_OBJ_FLAG_CLICKABLE);
+        r.icon = static_cast<lv_obj_t*>(lv_xml_create(r.dot, "icon", nullptr));
+        if (r.icon) {
+            ui_icon_set_source(r.icon, kIcons[i]);
+            ui_icon_set_size(r.icon, "xs");
+            lv_obj_center(r.icon);
+        }
+
+        lv_obj_t* text = lv_obj_create(r.row);
+        lv_obj_remove_style_all(text);
+        lv_obj_set_flex_grow(text, 1);
+        lv_obj_set_height(text, LV_SIZE_CONTENT);
+        lv_obj_set_flex_flow(text, LV_FLEX_FLOW_COLUMN);
+        lv_obj_remove_flag(text, LV_OBJ_FLAG_CLICKABLE);
+        r.title = lv_label_create(text);
+        lv_label_set_text(r.title, lv_tr(kTitles[i]));
+        lv_obj_set_style_text_color(r.title, theme_manager_get_color("text"), LV_PART_MAIN);
+        lv_label_set_long_mode(r.title, LV_LABEL_LONG_MODE_DOTS);
+        lv_obj_set_width(r.title, LV_PCT(100));
+        if (title_font) {
+            lv_obj_set_style_text_font(r.title, title_font, LV_PART_MAIN);
+        }
+        r.detail = lv_label_create(text);
+        lv_label_set_long_mode(r.detail, LV_LABEL_LONG_MODE_DOTS);
+        lv_obj_set_width(r.detail, LV_PCT(100));
+        lv_obj_set_style_text_color(r.detail, theme_manager_get_color("text_muted"), LV_PART_MAIN);
+        if (detail_font) {
+            lv_obj_set_style_text_font(r.detail, detail_font, LV_PART_MAIN);
+        }
+        path_rows_.push_back(r);
+    }
+}
+
+void K2ohCfsView::refresh_path(const AmsSystemInfo& info) {
+    if (path_rows_.size() != 6) {
+        return;
+    }
+    nlohmann::json lp = nlohmann::json::object();
+#if HELIX_HAS_CFS
+    if (auto* cfs = dynamic_cast<printer::AmsBackendCfs*>(AmsState::instance().get_backend())) {
+        lp = cfs->load_path();
+    }
+#endif
+    auto obj = [&lp](const char* key) {
+        auto it = lp.find(key);
+        return it != lp.end() && it->is_object() ? *it : nlohmann::json::object();
+    };
+    auto flag = [](const nlohmann::json& o, const char* key) {
+        auto it = o.find(key);
+        return it != o.end() && it->is_boolean() && it->get<bool>();
+    };
+    auto integer = [](const nlohmann::json& o, const char* key, int fallback) {
+        auto it = o.find(key);
+        return it != o.end() && it->is_number_integer() ? it->get<int>() : fallback;
+    };
+    const int source = integer(lp, "source_slot", -1);
+    const SlotInfo* spool = nullptr;
+    for (const auto& unit : info.units) {
+        for (const auto& slot : unit.slots) {
+            if (slot.global_index == source) {
+                spool = &slot;
+            }
+        }
+    }
+    // A source outside the CFS slots is the external spool (bypass).
+    const bool external = source >= 0 && !spool;
+    const std::optional<SlotInfo> ext_spool =
+        external ? AmsState::instance().get_external_spool_info() : std::nullopt;
+    if (ext_spool) {
+        spool = &*ext_spool;
+    }
+    const nlohmann::json buffer = obj("buffer");
+    const nlohmann::json encoder = obj("encoder");
+    const nlohmann::json sensor = obj("printhead_sensor");
+    const nlohmann::json clog = obj("clog_detection");
+    const bool fed = source >= 0;
+    const bool at_head = flag(sensor, "detected");
+    const bool sensor_error = sensor.contains("error") && !sensor["error"].is_null();
+    const bool clog_on = flag(clog, "enabled");
+    const bool clogged = flag(clog, "triggered");
+    const int clog_events = integer(clog, "event_count", 0);
+    const lv_color_t filament =
+        spool ? lv_color_hex(spool->color_rgb) : theme_manager_get_color("primary");
+
+    enum class Look { Idle, Filament, Ok, Bad };
+    auto paint = [&](PathRow& r, Look look, const std::string& detail) {
+        lv_color_t fg = theme_manager_get_color("text_muted");
+        lv_color_t border = theme_manager_get_color("elevated_bg");
+        if (look == Look::Filament) {
+            fg = border = filament;
+        } else if (look == Look::Ok) {
+            fg = border = theme_manager_get_color("success");
+        } else if (look == Look::Bad) {
+            fg = border = theme_manager_get_color("danger");
+        }
+        lv_obj_set_style_bg_color(r.dot, theme_manager_get_color("elevated_bg"), LV_PART_MAIN);
+        lv_obj_set_style_border_color(r.dot, border, LV_PART_MAIN);
+        if (r.icon) {
+            ui_icon_set_color(r.icon, fg, LV_OPA_COVER);
+        }
+        lv_label_set_text(r.detail, detail.c_str());
+    };
+
+    std::string slot_text = lv_tr("no filament");
+    if (external) {
+        slot_text = lv_tr("External spool");
+        if (spool && !spool->material.empty()) {
+            slot_text += " · " + spool->material;
+        }
+    } else if (fed) {
+        slot_text = std::string(lv_tr("Slot")) + " " + std::to_string(source + 1);
+        if (spool && !spool->material.empty()) {
+            slot_text += " · " + spool->material;
+        }
+    }
+    paint(path_rows_[0], fed ? Look::Filament : Look::Idle, slot_text);
+    paint(path_rows_[1], fed ? Look::Filament : Look::Idle,
+          lv_tr(flag(buffer, "active") ? "feeding" : "at rest"));
+    paint(path_rows_[2], flag(encoder, "active") ? Look::Ok : Look::Idle,
+          lv_tr(flag(encoder, "active") ? "moving" : "still"));
+    std::string clog_text = lv_tr("off");
+    if (clogged) {
+        clog_text = lv_tr("clog detected");
+    } else if (clog_on) {
+        clog_text = clog_events > 0 ? std::string(lv_tr("active")) + " · " +
+                                          std::to_string(clog_events) + " " + lv_tr("events")
+                                    : lv_tr("active, no events");
+    }
+    paint(path_rows_[3], clogged ? Look::Bad : clog_on ? Look::Ok : Look::Idle, clog_text);
+    paint(path_rows_[4], sensor_error ? Look::Bad : at_head ? Look::Ok : Look::Idle,
+          lv_tr(sensor_error ? "sensor error" : at_head ? "filament present" : "empty"));
+    if (path_rows_[4].icon) {
+        ui_icon_set_source(path_rows_[4].icon, sensor_error ? "alert_circle" : "check_circle");
+    }
+    const int nozzle = lv_subject_get_int(printer_state_.get_active_extruder_temp_subject());
+    paint(path_rows_[5], at_head ? Look::Filament : Look::Idle,
+          std::to_string(static_cast<int>(std::lround(nozzle / 10.0))) + "°C");
+
+    // The line behind the dots: filament colour from the slot down to the last
+    // point the filament has reached.
+    lv_obj_t* fill = child(root_, "path_fill");
+    lv_obj_t* line = child(root_, "path_line");
+    if (!fill || !line) {
+        return;
+    }
+    lv_obj_update_layout(root_);
+    auto centre = [this](int i) {
+        return lv_obj_get_y(path_rows_[static_cast<size_t>(i)].row) +
+               lv_obj_get_height(path_rows_[static_cast<size_t>(i)].row) / 2;
+    };
+    const int32_t top = centre(0);
+    lv_obj_set_pos(line, 0, top);
+    lv_obj_set_height(line, std::max<int32_t>(centre(5) - top, 0));
+    const int last = at_head ? 5 : fed ? 2 : -1;
+    if (last < 0) {
+        lv_obj_add_flag(fill, LV_OBJ_FLAG_HIDDEN);
+        return;
+    }
+    lv_obj_remove_flag(fill, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_set_pos(fill, 0, top);
+    lv_obj_set_height(fill, std::max<int32_t>(centre(last) - top, 0));
+    lv_obj_set_style_bg_color(fill, filament, LV_PART_MAIN);
+}
+
 void K2ohCfsView::select(int slot) {
     selected_ = slot;
     refresh();
@@ -431,10 +668,22 @@ void K2ohCfsView::on_button_clicked(lv_event_t* e) {
     if (!name) {
         return;
     }
-    if (std::strcmp(name, "ext_chip") == 0) {
-        if (self->actions_.edit_external) {
-            self->actions_.edit_external();
+    if (std::strcmp(name, "ext_chip") == 0 || std::strcmp(name, "bypass_row") == 0) {
+        if (self->actions_.external_menu) {
+            self->actions_.external_menu(target);
         }
+        return;
+    }
+    if (std::strcmp(name, "env_chip") == 0) {
+        get_ams_environment_overlay().show(lv_screen_active(), 0);
+        return;
+    }
+    if (std::strcmp(name, "btn_cfs_check_all") == 0) {
+        self->click_sidebar("btn_check_gates");
+        return;
+    }
+    if (std::strcmp(name, "btn_cfs_settings") == 0) {
+        self->click_sidebar("btn_settings");
         return;
     }
     const int slot = self->selected_;
@@ -478,6 +727,19 @@ void K2ohCfsView::on_runout_changed(lv_event_t* e) {
             spdlog::warn("[K2oh CFS] runout swap {} refused: {}", enable ? "on" : "off",
                          err.technical_msg);
         }
+    }
+}
+
+void K2ohCfsView::on_bypass_changed(lv_event_t* e) {
+    auto* self = static_cast<K2ohCfsView*>(lv_event_get_user_data(e));
+    // The stock switch's handler toggles bypass with its guards (filament loaded,
+    // no external slot...) and resyncs ams_bypass_active, which both switches follow.
+    lv_obj_t* sidebar =
+        self->panel_ ? lv_obj_find_by_name(self->panel_, "ams_operation_sidebar") : nullptr;
+    if (lv_obj_t* sw = sidebar ? lv_obj_find_by_name(sidebar, "bypass_switch") : nullptr) {
+        lv_obj_send_event(sw, LV_EVENT_VALUE_CHANGED, nullptr);
+    } else {
+        spdlog::warn("[K2oh CFS] stock bypass switch not found");
     }
 }
 

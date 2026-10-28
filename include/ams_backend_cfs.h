@@ -302,6 +302,10 @@ class AmsBackendCfs : public AmsSubscriptionBackend {
     // K2-OpenHost (Kalico, Fork dialect): "Check slot" rereads the slot's RFID
     // tag with _BOX_RFID_READ_SLOT, third-party decoders (Bambu, QIDI) included.
     [[nodiscard]] bool supports_gate_check() const override;
+
+    /// K2-OpenHost: Kalico's load_path (source slot, buffer, encoder, printhead
+    /// sensor, clog detection), a copy of the last one the box published.
+    [[nodiscard]] nlohmann::json load_path() const;
     AmsError check_gate(int slot_index) override;
     AmsError check_all_gates() override;
 
@@ -625,6 +629,8 @@ class AmsBackendCfs : public AmsSubscriptionBackend {
     /// K2-OpenHost (Kalico): box switches by field name (clog_detection_enabled,
     /// ...), as last published; a switch is offered once its field arrived.
     std::unordered_map<std::string, bool> fork_switches_;
+    /// Kalico's load_path, guarded by mutex_ (read by the UI thread).
+    nlohmann::json load_path_ = nlohmann::json::object();
 
     /// Records a toggle_auto_refill send Klipper completed as the current state
     /// and announces it. Takes mutex_ itself; main thread.

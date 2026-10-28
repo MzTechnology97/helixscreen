@@ -479,6 +479,7 @@
   <translation tag="Clipboard unavailable - use SSH" en="Clipboard unavailable - use SSH"/>
   <translation tag="Clog Detection" en="Clog Detection"/>
   <translation tag="Clog detection" en="Clog detection"/>
+  <translation tag="Clog guard" en="Clog guard"/>
   <translation tag="Close" en="Close"/>
   <translation tag="Close feeder" en="Close feeder"/>
   <translation tag="Close feeder macro" en="Close feeder macro"/>
@@ -855,6 +856,7 @@
   <translation tag="External" en="External"/>
   <translation tag="External Filament" en="External Filament"/>
   <translation tag="External Spool" en="External Spool"/>
+  <translation tag="External spool" en="External spool"/>
   <translation tag="External spool cleared" en="External spool cleared"/>
   <translation tag="External spool updated" en="External spool updated"/>
   <translation tag="Extra distance to move once sensors clear" en="Extra distance to move once sensors clear"/>
@@ -1905,6 +1907,7 @@
   <translation tag="PrinterIdentify" en="PrinterIdentify"/>
   <translation tag="Printers" en="Printers"/>
   <translation tag="Printers, Multi-Filament System, fans, sensors, and LEDs" en="Printers, Multi-Filament System, fans, sensors, and LEDs"/>
+  <translation tag="Printhead sensor" en="Printhead sensor"/>
   <translation tag="Printing" en="Printing"/>
   <translation tag="Printing label..." en="Printing label..."/>
   <translation tag="Printing test label..." en="Printing test label..."/>
@@ -2841,9 +2844,13 @@
   <translation tag="Z-offset saved - Klipper restarting..." en="Z-offset saved - Klipper restarting..."/>
   <translation tag="Z:" en="Z:"/>
   <translation tag="Z: 0.000" en="Z: 0.000"/>
+  <translation tag="active" en="active"/>
+  <translation tag="active, no events" en="active, no events"/>
+  <translation tag="at rest" en="at rest"/>
   <translation tag="bed" en="bed"/>
   <translation tag="by Preston Brown" en="by Preston Brown"/>
   <translation tag="chamber heater" en="chamber heater"/>
+  <translation tag="clog detected" en="clog detected"/>
   <translation tag="complete" en="complete"/>
   <translation tag="cores" en="cores"/>
   <translation tag="disable" en="disable"/>
@@ -2855,14 +2862,18 @@
   <translation tag="eSpooler Mode" en="eSpooler Mode"/>
   <translation tag="eSpooler, clog detection, and sensor settings" en="eSpooler, clog detection, and sensor settings"/>
   <translation tag="elapsed" en="elapsed"/>
+  <translation tag="empty" en="empty"/>
   <translation tag="enable" en="enable"/>
   <translation tag="enabled" en="enabled"/>
   <translation tag="error" en="error"/>
   <translation tag="estimate" en="estimate"/>
+  <translation tag="events" en="events"/>
   <translation tag="extruder" en="extruder"/>
   <translation tag="extruder(s)" en="extruder(s)"/>
   <translation tag="extruders" en="extruders"/>
   <translation tag="fans" en="fans"/>
+  <translation tag="feeding" en="feeding"/>
+  <translation tag="filament present" en="filament present"/>
   <translation tag="heated bed" en="heated bed"/>
   <translation tag="humid" en="humid"/>
   <translation tag="idle" en="idle"/>
@@ -2870,8 +2881,11 @@
   <translation tag="layers" en="layers"/>
   <translation tag="left" en="left"/>
   <translation tag="mm before clog" en="mm before clog"/>
+  <translation tag="moving" en="moving"/>
   <translation tag="needs" en="needs"/>
+  <translation tag="no filament" en="no filament"/>
   <translation tag="not detected" en="not detected"/>
+  <translation tag="not set" en="not set"/>
   <translation tag="nozzle" en="nozzle"/>
   <translation tag="of" en="of"/>
   <translation tag="off" en="off"/>
@@ -2881,9 +2895,11 @@
   <translation tag="remaining" en="remaining"/>
   <translation tag="remaining before clog detection triggers" en="remaining before clog detection triggers"/>
   <translation tag="rendering" en="rendering"/>
+  <translation tag="sensor error" en="sensor error"/>
   <translation tag="slots)" en="slots)"/>
   <translation tag="started" en="started"/>
   <translation tag="steppers" en="steppers"/>
+  <translation tag="still" en="still"/>
   <translation tag="tall" en="tall"/>
   <translation tag="tool(s)" en="tool(s)"/>
   <translation tag="unknown tag" en="unknown tag"/>

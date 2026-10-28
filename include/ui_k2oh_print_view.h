@@ -40,6 +40,8 @@ class K2ohPrintView {
     void refresh();
     static void on_click(lv_event_t* e);
     static void on_timer(lv_timer_t* timer);
+    /// The panel deleted the tree: stop the timer and observers that would reach it.
+    static void on_root_deleted(lv_event_t* e);
 
     PrinterState& printer_state_;
     Actions actions_;

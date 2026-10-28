@@ -19,8 +19,9 @@ translations:
   '%zu changes': '%zu modifiche'
   '%zu events queued': '%zu eventi in coda'
   '%zu plugins failed to load': Caricamento di %zu plugin non riuscito
-  Auto-swap at spool end: Cambio automatico a fine bobina
+  Auto-swap at spool end: Cambio automatico
   CFS ready: CFS pronta
+  Clog guard: Anti-intasamento
   Elapsed: Trascorso
   Ends: Fine
   IN USE: IN USO
@@ -28,11 +29,24 @@ translations:
   More: Altro
   Not recognised: Non riconosciuta
   Print a file: Stampa un file
+  Printhead sensor: Sensore testa
   Reread RFID: Rileggi RFID
+  active, no events: attivo, nessun evento
+  active: attivo
+  at rest: a riposo
+  clog detected: intasamento!
   dry: asciutta
+  empty: vuoto
   estimate: stima
+  events: eventi
+  feeding: in spinta
+  filament present: filamento presente
   humid: umida
   layer: strato
+  moving: in movimento
+  no filament: nessun filamento
+  sensor error: errore sensore
+  still: fermo
   unknown tag: tag sconosciuto
   "'{}' already exists. Replace the stored mesh?": "'{}' esiste già. Sostituire la mesh salvata?"
   "'{}' and '{}' already exist. Replace the stored meshes?": "'{}' e '{}' esistono già. Sostituire le mesh salvate?"
@@ -367,6 +381,8 @@ translations:
   Button taps and navigation sounds: Suoni pulsanti e navigazione
   Buzz Servo: 'Fai vibrare il servo'
   Bypass: Bypass
+  External spool: Bobina esterna
+  not set: non impostata
   Bypass Is Active: Bypass attivo
   Bypass Mode: Modalità bypass
   Bypass active — this print runs on the external spool.: Bypass attivo — questa stampa usa la bobina esterna.

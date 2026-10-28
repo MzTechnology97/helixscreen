@@ -31,7 +31,8 @@ class K2ohCfsView {
         std::function<void(int)> unload;
         std::function<void(int)> edit;
         std::function<void(int, lv_obj_t*)> more;
-        std::function<void()> edit_external;
+        /// The stock external spool (bypass) menu, anchored near @p anchor.
+        std::function<void(lv_obj_t*)> external_menu;
     };
 
     K2ohCfsView(PrinterState& printer_state, Actions actions);
@@ -56,8 +57,19 @@ class K2ohCfsView {
         lv_obj_t* ring = nullptr;
         int slot = -1;
     };
+    struct PathRow {
+        lv_obj_t* row = nullptr;
+        lv_obj_t* dot = nullptr;
+        lv_obj_t* icon = nullptr;
+        lv_obj_t* title = nullptr;
+        lv_obj_t* detail = nullptr;
+    };
 
     void build_cards(int count);
+    void build_path();
+    void refresh_path(const AmsSystemInfo& info);
+    /// Sends a click to the hidden stock sidebar button @p name (it keeps its guards).
+    void click_sidebar(const char* name);
     void update_card(Card& card, const SlotInfo& slot, bool loaded, bool printing);
     void update_header(const AmsSystemInfo& info);
     void update_actions();
@@ -66,12 +78,17 @@ class K2ohCfsView {
     static void on_card_clicked(lv_event_t* e);
     static void on_button_clicked(lv_event_t* e);
     static void on_runout_changed(lv_event_t* e);
+    static void on_bypass_changed(lv_event_t* e);
     static void on_back_clicked(lv_event_t* e);
+    /// The panel deleted the tree: stop the observers that would reach it.
+    static void on_root_deleted(lv_event_t* e);
 
     PrinterState& printer_state_;
     Actions actions_;
+    lv_obj_t* panel_ = nullptr;
     lv_obj_t* root_ = nullptr;
     lv_obj_t* cards_row_ = nullptr;
+    std::vector<PathRow> path_rows_;
     std::vector<Card> cards_;
     int selected_ = -1;
     int loaded_slot_ = -1;

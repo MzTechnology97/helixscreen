@@ -3,7 +3,6 @@
 
 #include "ui_observer_guard.h"
 
-#include <functional>
 #include <lvgl.h>
 #include <vector>
 
@@ -14,55 +13,35 @@ class PrinterState;
 namespace helix::ui {
 
 /**
- * @brief K2-OpenHost Home: status line, the job card (progress and controls
- * while printing, print and preheat when idle), temperatures, the CFS spools,
- * the light and the fans.
+ * @brief K2-OpenHost Home: a status line fixed above the widget grid (state,
+ * name, clock), and the K2-OpenHost layout put on the grid once.
  *
- * Lives inside the Home panel and covers its widget grid while the printer is
- * a K2 on Kalico's CFS (K2ohCfsView::applies()).
+ * The grid stays the stock one, so the Home remains customisable; the layout
+ * only seeds it with the K2-OpenHost widgets (k2oh_job, k2oh_temps, k2oh_cfs,
+ * k2oh_light, k2oh_fans) the first time the printer shows up as a K2 on
+ * Kalico's CFS (K2ohCfsView::applies()).
  */
 class K2ohHomeView {
   public:
-    struct Actions {
-        std::function<void()> open_cfs;
-        std::function<void()> open_print_status;
-        std::function<void()> open_tune;
-    };
-
-    K2ohHomeView(PrinterState& printer_state, Actions actions);
+    explicit K2ohHomeView(PrinterState& printer_state);
     ~K2ohHomeView();
 
-    /// Builds the view inside the Home panel (once) and starts following state.
+    /// Builds the status line inside the Home panel (once) and starts following state.
     void create(lv_obj_t* panel);
 
   private:
-    struct Spool {
-        lv_obj_t* root = nullptr;
-        lv_obj_t* ring = nullptr;
-        lv_obj_t* core = nullptr;
-        lv_obj_t* hole = nullptr;
-        lv_obj_t* material = nullptr;
-        lv_obj_t* percent = nullptr;
-    };
-
     void update_visibility();
-    void refresh_job();
-    void refresh_temps();
-    void refresh_cfs();
-    void refresh_light_and_fans();
+    void seed_layout_once();
+    void refresh_state();
     void refresh_clock();
-    void build_spools(int count);
 
-    static void on_click(lv_event_t* e);
     static void on_timer(lv_timer_t* timer);
+    static void on_root_deleted(lv_event_t* e);
 
     PrinterState& printer_state_;
-    Actions actions_;
     lv_obj_t* panel_ = nullptr;
     lv_obj_t* root_ = nullptr;
-    std::vector<Spool> spools_;
     lv_timer_t* timer_ = nullptr;
-
     std::vector<ObserverGuard> observers_;
 };
 
