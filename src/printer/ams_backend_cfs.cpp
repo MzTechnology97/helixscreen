@@ -1178,6 +1178,27 @@ static std::optional<bool> flat_gate_filament_present(const nlohmann::json& box_
     return it->get<bool>();
 }
 
+// K2-OpenHost (Kalico) box switches: the published field, the device-action
+// label, and the setter Kalico registers (ENABLE=0/1).
+namespace {
+struct ForkSwitch {
+    const char* field;
+    const char* label;
+    const char* description;
+    const char* setter;
+};
+constexpr ForkSwitch kForkSwitches[] = {
+    {"clog_detection_enabled", "Clog Detection", "Pause when the CFS stops feeding",
+     "_BOX_SET_CLOG_DETECTION"},
+    {"unload_after_print_enabled", "Unload After Print",
+     "Unload the filament into the CFS when a print ends", "_BOX_SET_UNLOAD_AFTER_PRINT"},
+    {"rfid_insert_reading_enabled", "Read RFID On Insert", "Read a spool's tag when it is inserted",
+     "_BOX_SET_RFID_INSERT_READING"},
+    {"rfid_startup_reading_enabled", "Read RFID At Startup",
+     "Read every spool's tag when Klipper starts", "_BOX_SET_RFID_STARTUP_READING"},
+};
+} // namespace
+
 AmsSystemInfo AmsBackendCfs::parse_flat_box_status(const nlohmann::json& box_json) {
     AmsSystemInfo info;
     info.type = AmsType::CFS;
@@ -1735,6 +1756,14 @@ void AmsBackendCfs::handle_status_update(const nlohmann::json& notification) {
             }
             for (const auto& [key, value] : box.items()) {
                 flat_box_state_[key] = value;
+            }
+            {
+                std::lock_guard<std::mutex> lock(mutex_);
+                for (const auto& sw : kForkSwitches) {
+                    if (auto it = box.find(sw.field); it != box.end() && it->is_boolean()) {
+                        fork_switches_[sw.field] = it->get<bool>();
+                    }
+                }
             }
         } else {
             if (!flat_box_state_.empty()) {
@@ -4162,13 +4191,23 @@ std::vector<helix::printer::DeviceAction> AmsBackendCfs::get_device_actions() co
     // No value until a frame has reported the bit: an unchecked switch would
     // claim off.
     std::any auto_refill;
+    std::vector<DA> fork_switches;
     {
         std::lock_guard<std::mutex> lock(mutex_);
         if (endless_spool_enable_reported_) {
             auto_refill = system_info_.endless_spool_enabled;
         }
+        if (schema_ == CfsSchema::Flat && macro_variant_ == CfsMacroVariant::Fork) {
+            for (const auto& sw : kForkSwitches) {
+                if (auto it = fork_switches_.find(sw.field); it != fork_switches_.end()) {
+                    fork_switches.push_back(DA{sw.field, sw.label, "", "", sw.description,
+                                               AT::TOGGLE, std::any(it->second), {}, 0, 100, "",
+                                               -1, true, ""});
+                }
+            }
+        }
     }
-    return {
+    std::vector<DA> actions{
         DA{"refresh_rfid",
            "Refresh RFID",
            "",
@@ -4226,6 +4265,8 @@ std::vector<helix::printer::DeviceAction> AmsBackendCfs::get_device_actions() co
            true,
            ""},
     };
+    actions.insert(actions.end(), fork_switches.begin(), fork_switches.end());
+    return actions;
 }
 
 bool AmsBackendCfs::supports_gate_check() const {
@@ -4306,6 +4347,23 @@ AmsError AmsBackendCfs::execute_device_action(const std::string& action_id, cons
             token.defer("AmsBackendCfs::auto_refill_sent",
                         [this, enable]() { record_auto_refill_sent(enable); });
         });
+    }
+
+    for (const auto& sw : kForkSwitches) {
+        if (action_id != sw.field) {
+            continue;
+        }
+        // Setter, like auto-refill: the switch's value, or the inverse of the
+        // last published state. Kalico republishes the field once it is set.
+        bool enable;
+        if (const bool* requested = std::any_cast<bool>(&value)) {
+            enable = *requested;
+        } else {
+            std::lock_guard<std::mutex> lock(mutex_);
+            auto it = fork_switches_.find(sw.field);
+            enable = it == fork_switches_.end() || !it->second;
+        }
+        return execute_gcode(std::string(sw.setter) + " ENABLE=" + (enable ? "1" : "0"));
     }
 
     if (action_id == "nozzle_clean") {
@@ -4756,3 +4814,4 @@ void AmsBackendCfs::publish_external_spool_lane(const SlotInfo* spool) {
 } // namespace helix::printer
 
 #endif // HELIX_HAS_CFS
+
