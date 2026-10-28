@@ -58,6 +58,15 @@ ChannelVersionRelation compare_channel_version(const std::string& installed,
                                                const std::string& channel_version);
 
 /**
+ * @brief The hex SHA-256 of a GitHub release asset's "digest" ("sha256:<hex>").
+ *
+ * GitHub states it for every uploaded asset; with it a download from the
+ * GitHub releases (the K2-OpenHost fork's only source) is verified like an R2
+ * one. "" when the digest is absent or not a SHA-256.
+ */
+std::string sha256_from_github_digest(const std::string& digest);
+
+/**
  * @brief Async update checker for HelixScreen
  *
  * Checks the R2 CDN manifest (GitHub releases API as fallback) to determine if
