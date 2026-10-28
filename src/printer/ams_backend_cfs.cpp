@@ -1197,6 +1197,39 @@ constexpr ForkSwitch kForkSwitches[] = {
     {"rfid_startup_reading_enabled", "Read RFID At Startup",
      "Read every spool's tag when Klipper starts", "_BOX_SET_RFID_STARTUP_READING"},
 };
+// Box fields nothing in HelixScreen reads: a flat frame carrying only these
+// (and an unchanged load_path view) changes nothing on screen.
+constexpr const char* kFlatNoiseFields[] = {
+    "orca_presets", "orca_presets_source", "filament_library", "filament_inventory_version",
+    "filament_check", "environment_raw", "environment_source", "environment_error",
+    "runout_groups", "runout_order", "mapping_warnings", "print_info", "tracking_active",
+    "fluidd_widget_version", "cfs_versions", "spool_length_defaults", "print_mapping_enabled",
+    "print_mapping_version", "state_code", "status_code", "recovery", "auto_mapping",
+    "data_ready", "slot_filament_mask", "loaded_mask", "filament_sensor_error",
+    "helix_compat_version",
+};
+
+// What the flat parse takes from load_path: which parts exist, the buffer
+// switch and the feeding box. The encoder position and the clog counters move
+// all print long and are not shown.
+std::string flat_load_path_view(const nlohmann::json& box) {
+    auto it = box.find("load_path");
+    if (it == box.end() || !it->is_object()) {
+        return "-";
+    }
+    auto is_obj = [&](const char* key) {
+        auto f = it->find(key);
+        return f != it->end() && f->is_object();
+    };
+    std::string view = is_obj("encoder") ? "e" : "-";
+    view += is_obj("printhead_sensor") ? "p" : "-";
+    if (auto b = it->find("buffer"); b != it->end() && b->is_object()) {
+        view += helix::json_util::safe_bool(*b, "active", false) ? "B" : "b";
+    } else {
+        view += "-";
+    }
+    return view + std::to_string(helix::json_util::safe_int(*it, "box_addr", 0));
+}
 } // namespace
 
 AmsSystemInfo AmsBackendCfs::parse_flat_box_status(const nlohmann::json& box_json) {
@@ -1795,6 +1828,27 @@ void AmsBackendCfs::handle_status_update(const nlohmann::json& notification) {
                 spdlog::warn("[AMS CFS] Flat box schema without a supported API version — "
                              "slot display active, control paths disabled (no verified "
                              "command dialect)");
+            }
+        }
+
+        // K2-OpenHost (Kalico): during a print most flat frames only move what
+        // the parse never reads (encoder position and clog counters in
+        // load_path, filament checks, Orca presets...). Each was a full parse
+        // and a UI refresh; now they only update the merged state above.
+        if (is_flat && is_full_update) {
+            const std::string view = flat_load_path_view(state);
+            bool noise = true;
+            for (const auto& [key, value] : box.items()) {
+                if (key == "load_path") {
+                    noise = noise && view == flat_load_path_view_;
+                } else if (std::none_of(std::begin(kFlatNoiseFields), std::end(kFlatNoiseFields),
+                                        [&key](const char* f) { return key == f; })) {
+                    noise = false;
+                }
+            }
+            flat_load_path_view_ = view;
+            if (noise) {
+                is_full_update = false;
             }
         }
 
