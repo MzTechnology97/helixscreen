@@ -132,6 +132,10 @@ K2ohCfsView::K2ohCfsView(PrinterState& printer_state, Actions actions)
 
 K2ohCfsView::~K2ohCfsView() = default;
 
+std::string K2ohCfsView::runout_summary(const AmsSystemInfo& info, int loaded_slot) {
+    return runout_text(info, loaded_slot);
+}
+
 bool K2ohCfsView::applies() {
     AmsBackend* backend = AmsState::instance().get_backend();
     // supports_gate_check() is the Fork dialect (Kalico's box module) on a CFS.

@@ -5,6 +5,7 @@
 
 #include <functional>
 #include <lvgl.h>
+#include <string>
 #include <vector>
 
 namespace helix {
@@ -38,6 +39,10 @@ class K2ohCfsView {
 
     /// True when the active backend is Kalico's CFS, the box this view knows.
     static bool applies();
+
+    /// "PETG: 4 (6%) » 2 (85%)": the spools that back each other up, the loaded
+    /// one first; the generic endless-spool sentence when there are no groups.
+    static std::string runout_summary(const AmsSystemInfo& info, int loaded_slot);
 
     /// Builds the view inside @p panel (once), hidden.
     void create(lv_obj_t* panel);
