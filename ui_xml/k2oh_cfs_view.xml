@@ -1,0 +1,80 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- K2-OpenHost: the CFS page that replaces the generic multi-filament view
+     when the box is Kalico's (Fork dialect). Status chips on top, one card per
+     spool, the runout swap, and the actions of the selected spool. -->
+<component>
+  <view extends="lv_obj"
+        width="100%" height="100%" style_pad_all="#space_sm" style_pad_gap="#space_sm" style_bg_color="#screen_bg"
+        style_bg_opa="255" style_border_width="0" style_radius="0" flex_flow="column" scrollable="false">
+    <lv_obj name="cfs_header"
+            width="100%" height="content" style_pad_all="0" style_pad_gap="#space_sm" style_bg_opa="0"
+            style_border_width="0" flex_flow="row" style_flex_cross_place="center" scrollable="false">
+      <lv_obj name="cfs_back"
+              width="content" height="#button_height_sm" style_pad_all="0" style_pad_right="#space_sm"
+              style_pad_gap="#space_xs" style_bg_opa="0" style_border_width="0" flex_flow="row"
+              style_flex_cross_place="center" scrollable="false" clickable="true">
+        <icon src="back" size="lg" variant="text" clickable="false" event_bubble="true"/>
+        <text_heading text="CFS" clickable="false" event_bubble="true"/>
+      </lv_obj>
+      <lv_obj name="state_chip"
+              width="content" height="content" style_radius="14" style_bg_color="#elevated_bg" style_bg_opa="255"
+              style_border_width="0" style_pad_left="#space_sm" style_pad_right="#space_sm" style_pad_top="#space_xxs"
+              style_pad_bottom="#space_xxs" style_pad_gap="#space_xs" flex_flow="row" style_flex_cross_place="center"
+              scrollable="false" clickable="false">
+        <icon name="state_icon" src="check_circle" size="xs" variant="success" clickable="false"/>
+        <text_small name="state_label" text="" clickable="false"/>
+      </lv_obj>
+      <lv_obj name="env_chip"
+              width="content" height="content" style_radius="14" style_bg_color="#elevated_bg" style_bg_opa="255"
+              style_border_width="0" style_pad_left="#space_sm" style_pad_right="#space_sm" style_pad_top="#space_xxs"
+              style_pad_bottom="#space_xxs" style_pad_gap="#space_xs" flex_flow="row" style_flex_cross_place="center"
+              scrollable="false" clickable="false" hidden="true">
+        <icon src="thermometer" size="xs" variant="secondary" clickable="false"/>
+        <text_small name="temp_label" text="" clickable="false"/>
+        <icon name="humidity_icon" src="water" size="xs" variant="success" clickable="false"/>
+        <text_small name="humidity_label" text="" clickable="false"/>
+      </lv_obj>
+      <lv_obj width="1" height="1" flex_grow="1" style_bg_opa="0" style_border_width="0" scrollable="false"
+              clickable="false"/>
+      <lv_obj name="ext_chip"
+              width="content" height="content" style_radius="14" style_bg_color="#elevated_bg" style_bg_opa="255"
+              style_border_width="0" style_pad_left="#space_sm" style_pad_right="#space_sm" style_pad_top="#space_xxs"
+              style_pad_bottom="#space_xxs" style_pad_gap="#space_xs" flex_flow="row" style_flex_cross_place="center"
+              scrollable="false" clickable="true" hidden="true">
+        <icon src="filament" size="xs" variant="secondary" clickable="false" event_bubble="true"/>
+        <text_small name="ext_label" text="" clickable="false" event_bubble="true"/>
+      </lv_obj>
+    </lv_obj>
+
+    <lv_obj name="cards_row"
+            width="100%" flex_grow="1" style_pad_all="0" style_pad_gap="#space_sm" style_bg_opa="0"
+            style_border_width="0" flex_flow="row" scrollable="true" scroll_dir="hor"/>
+
+    <lv_obj name="runout_row"
+            width="100%" height="content" style_radius="#border_radius" style_bg_color="#card_bg" style_bg_opa="255"
+            style_border_width="0" style_pad_all="#space_sm" style_pad_gap="#space_sm" flex_flow="row"
+            style_flex_cross_place="center" scrollable="false">
+      <icon src="swap_vertical" size="md" variant="primary" clickable="false"/>
+      <lv_obj height="content" flex_grow="1" style_pad_all="0" style_pad_gap="0" style_bg_opa="0"
+              style_border_width="0" flex_flow="column" scrollable="false" clickable="false">
+        <text_body text="Auto-swap at spool end" translation_tag="Auto-swap at spool end" clickable="false"/>
+        <text_muted name="runout_detail" text="" long_mode="dots" width="100%" clickable="false"/>
+      </lv_obj>
+      <ui_switch name="runout_switch" size="small"/>
+    </lv_obj>
+
+    <lv_obj name="action_row"
+            width="100%" height="content" style_pad_all="0" style_pad_gap="#space_sm" style_bg_opa="0"
+            style_border_width="0" flex_flow="row" scrollable="false">
+      <ui_button name="btn_load_unload" flex_grow="1" height="#button_height" variant="secondary"
+                 icon="tray_arrow_up" text="Unload" translation_tag="Unload"/>
+      <ui_button name="btn_rfid" flex_grow="1" height="#button_height" variant="secondary" icon="sync"
+                 text="Reread RFID" translation_tag="Reread RFID"/>
+      <ui_button name="btn_edit" flex_grow="1" height="#button_height" variant="secondary" icon="pencil"
+                 text="Edit" translation_tag="Edit"/>
+      <ui_button name="btn_more" flex_grow="1" height="#button_height" variant="secondary" icon="dots_vertical"
+                 text="More" translation_tag="More"/>
+    </lv_obj>
+  </view>
+</component>

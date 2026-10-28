@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- K2-OpenHost: one CFS spool. K2ohCfsView fills it: the ring (an lv_arc it
+     adds to ring_box) is the share left, the core is the filament colour. -->
+<component>
+  <view extends="lv_obj"
+        flex_grow="1" height="100%" style_min_width="150" style_radius="#border_radius" style_bg_color="#card_bg"
+        style_bg_opa="255" style_border_width="2" style_border_color="#card_bg" style_pad_all="#space_sm"
+        style_pad_top="#space_md" style_pad_gap="#space_xxs" flex_flow="column" style_flex_main_place="start"
+        style_flex_cross_place="center" scrollable="false" clickable="true">
+    <lv_obj name="in_use_tag"
+            width="content" height="content" align="top_right" floating="true" style_bg_color="#primary"
+            style_bg_opa="255" style_radius="8" style_pad_left="#space_xs" style_pad_right="#space_xs" style_pad_top="1"
+            style_pad_bottom="1" style_border_width="0" scrollable="false" clickable="false" event_bubble="true"
+            hidden="true">
+      <text_xs name="in_use_label" text="IN USE" style_text_color="#text" clickable="false" event_bubble="true"/>
+    </lv_obj>
+    <lv_obj name="ring_box"
+            width="84" height="84" style_pad_all="0" style_bg_opa="0" style_border_width="0" scrollable="false"
+            clickable="false" event_bubble="true">
+      <lv_obj name="core"
+              width="66" height="66" align="center" style_radius="33" style_bg_opa="255" style_border_width="3"
+              style_border_color="#card_bg" style_pad_all="0" scrollable="false" clickable="false" event_bubble="true">
+        <lv_obj name="hole"
+                width="18" height="18" align="center" style_radius="9" style_bg_color="#card_bg" style_bg_opa="255"
+                style_border_width="0" scrollable="false" clickable="false" event_bubble="true"/>
+        <icon name="unknown_icon" src="help" size="md" variant="secondary" align="center" hidden="true"
+              clickable="false" event_bubble="true"/>
+      </lv_obj>
+      <lv_obj name="num_badge"
+              width="24" height="24" align="top_left" style_radius="12" style_bg_color="#elevated_bg" style_bg_opa="255"
+              style_border_width="0" style_pad_all="0" scrollable="false" clickable="false" event_bubble="true">
+        <text_small name="num_label" text="" align="center" style_text_color="#text" clickable="false"
+                    event_bubble="true"/>
+      </lv_obj>
+    </lv_obj>
+    <text_body name="material_label"
+               text="" long_mode="dots" width="100%" style_text_align="center"
+               clickable="false" event_bubble="true"/>
+    <text_muted name="brand_label"
+                text="" long_mode="dots" width="100%" style_text_align="center" clickable="false" event_bubble="true"/>
+    <text_small name="amount_label"
+                text="" long_mode="dots" width="100%" style_text_align="center" clickable="false" event_bubble="true"/>
+    <lv_obj name="source_chip"
+            width="content" height="content" style_bg_color="#elevated_bg" style_bg_opa="255" style_radius="8"
+            style_pad_left="#space_xs" style_pad_right="#space_xs" style_pad_top="1" style_pad_bottom="1"
+            style_border_width="0" scrollable="false" clickable="false" event_bubble="true" hidden="true">
+      <text_xs name="source_label" text="" style_text_color="#text_muted" clickable="false" event_bubble="true"/>
+    </lv_obj>
+  </view>
+</component>

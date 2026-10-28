@@ -10,6 +10,7 @@
 #include "ui_ams_selector_menu.h"
 #include "ui_ams_sidebar.h"
 #include "ui_bypass_spool_widget.h"
+#include "ui_k2oh_cfs_view.h"
 #include "ui_observer_guard.h"
 #include "ui_panel_base.h"
 
@@ -153,6 +154,8 @@ class AmsPanel : public PanelBase {
     std::unique_ptr<helix::ui::AmsSelectorMenu> selector_menu_;    ///< Selector/hub context menu
     std::unique_ptr<helix::ui::AmsLoadingErrorModal> error_modal_; ///< Loading error modal
     std::unique_ptr<helix::ui::AmsOperationSidebar> sidebar_;      ///< Shared sidebar component
+    /// K2-OpenHost: the CFS page shown instead of the generic view on Kalico's box.
+    std::unique_ptr<helix::ui::K2ohCfsView> k2oh_cfs_;
 
     /// Cooldown after user dismissal to prevent immediate re-trigger from stale AFC state
     std::chrono::steady_clock::time_point error_modal_dismiss_time_{};

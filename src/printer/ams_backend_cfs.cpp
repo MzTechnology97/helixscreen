@@ -1222,6 +1222,28 @@ AmsSystemInfo AmsBackendCfs::parse_flat_box_status(const nlohmann::json& box_jso
     info.endless_spool_enabled =
         helix::json_util::safe_bool(box_json, "runout_swap_enabled", false);
 
+    // K2-OpenHost: runout_groups lists the spools that back each other up (same
+    // material and colour), as 0-based global slots: the endless-spool groups.
+    if (auto it = box_json.find("runout_groups"); it != box_json.end() && it->is_array()) {
+        info.endless_spool_groups_reported = true;
+        info.endless_spool_group_ids.assign(16, -1);
+        int ordinal = 0;
+        for (const auto& group : *it) {
+            if (!group.is_object()) {
+                continue;
+            }
+            if (auto slots = group.find("slots"); slots != group.end() && slots->is_array()) {
+                for (const auto& slot : *slots) {
+                    const int index = slot.is_number_integer() ? slot.get<int>() : -1;
+                    if (index >= 0 && index < static_cast<int>(info.endless_spool_group_ids.size())) {
+                        info.endless_spool_group_ids[static_cast<size_t>(index)] = ordinal;
+                    }
+                }
+            }
+            ++ordinal;
+        }
+    }
+
     // Runout is the box gate's own presence boolean, negated. No reading (key
     // absent, or null before the sensor's first read) is not a runout, and the
     // merge gate in handle_status_update tests the same optional so such a
@@ -1916,10 +1938,14 @@ void AmsBackendCfs::handle_status_update(const nlohmann::json& notification) {
                 // the one deliberate exception: it is a schema transition, not
                 // a delta omission, and the flat dialect never sends
                 // same_material - retaining stock-era grouping would answer
-                // from a dead schema forever, so it is cleared.
+                // from a dead schema forever, so it is replaced. The flat parse
+                // reads the merged box, so its groups (Kalico's runout_groups,
+                // K2-OpenHost) are the whole answer, empty when absent.
                 if (is_flat) {
-                    system_info_.endless_spool_group_ids.clear();
-                    system_info_.endless_spool_groups_reported = false;
+                    system_info_.endless_spool_group_ids =
+                        std::move(new_info.endless_spool_group_ids);
+                    system_info_.endless_spool_groups_reported =
+                        new_info.endless_spool_groups_reported;
                 } else if (new_info.endless_spool_groups_reported) {
                     system_info_.endless_spool_group_ids =
                         std::move(new_info.endless_spool_group_ids);
