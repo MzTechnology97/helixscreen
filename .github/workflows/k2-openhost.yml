@@ -14,6 +14,65 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # The CFS backend tests, with the dependencies of build.yml's compile job.
+  test-cfs:
+    name: Test (CFS backend)
+    runs-on: ubuntu-22.04
+    timeout-minutes: 200
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v6
+      with:
+        submodules: false
+
+    - name: Initialize submodules
+      uses: ./.github/actions/init-submodules
+
+    - name: Prepare apt
+      uses: ./.github/actions/apt-prepare
+
+    - name: Install dependencies
+      run: |
+        sudo rm -f /etc/apt/sources.list.d/google-chrome*.list
+        sudo apt-get update
+        sudo apt-get install -y libsdl2-dev clang make python3 python3-venv npm \
+          libssl-dev pkg-config libfmt-dev libcairo2-dev libpango1.0-dev libpng-dev \
+          libjpeg-dev libnl-3-dev libnl-genl-3-dev libxml2-utils libusb-1.0-0-dev \
+          libsystemd-dev libbluetooth-dev ccache
+
+    - name: Restore ccache
+      uses: actions/cache/restore@v5
+      with:
+        path: ~/.cache/ccache
+        key: ccache-k2openhost-tests-${{ github.sha }}
+        restore-keys: |
+          ccache-k2openhost-tests-
+
+    - name: Install Node.js dependencies
+      run: npm install
+
+    - name: Setup Python venv
+      run: make venv-setup
+
+    - name: Build tests
+      env:
+        CC: ccache clang
+        CXX: ccache clang++
+      run: |
+        ccache --set-config=max_size=2G
+        ccache --set-config=compression=true
+        make test -j$(nproc)
+
+    - name: Save ccache
+      if: always()
+      uses: actions/cache/save@v5
+      with:
+        path: ~/.cache/ccache
+        key: ccache-k2openhost-tests-${{ github.sha }}
+
+    - name: Run CFS tests
+      run: ./build/bin/helix-tests "[cfs]"
+
   build-k2:
     name: Build (Creality K2)
     runs-on: ubuntu-22.04
