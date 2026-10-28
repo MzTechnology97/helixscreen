@@ -5695,3 +5695,93 @@ TEST_CASE("CFS: a stock unit frame after flat ones returns to stock", "[ams][cfs
     CHECK(info.tool_to_slot_map[0] == 1);
     CHECK(info.tool_to_slot_map[1] == 0);
 }
+
+// --- K2-OpenHost (Kalico) flat payload: tool map and remaining filament -------
+
+TEST_CASE("CFS flat: box.map routes the tools (K2-OpenHost)", "[ams][cfs][flat][k2oh]") {
+    // T1A -> T1D: T0 is fed by lane 3, and lane 0 has no tool. Lane 3 is
+    // loaded, so the current tool is the one routed through it.
+    json box = make_flat_fork_box();
+    box["loaded_slot"] = 3;
+    box["slots"][0]["loaded"] = false;
+    box["slots"][3]["loaded"] = true;
+    box["map"] = {{"T1A", "T1D"}, {"T1B", "T1B"}, {"T1C", "T1C"}};
+    box["print_mapping"] = {{"filename", nullptr}, {"map", json::object()},
+                            {"active_tool", nullptr}, {"active_slot", nullptr}};
+
+    const auto info = AmsBackendCfs::parse_box_status(box);
+    REQUIRE(info.tool_to_slot_map.size() >= 3);
+    CHECK(info.tool_to_slot_map[0] == 3);
+    CHECK(info.get_slot_global(0)->mapped_tool == -1);
+    CHECK(info.get_slot_global(1)->mapped_tool == 1);
+    CHECK(info.get_slot_global(3)->mapped_tool == 0);
+    CHECK(info.current_slot == 3);
+    CHECK(info.current_tool == 0);
+}
+
+TEST_CASE("CFS flat: a print's mapping wins over box.map (K2-OpenHost)",
+          "[ams][cfs][flat][k2oh]") {
+    // Live shape from the reference printer: box.map sends T0 and T3 to lane 3,
+    // the print maps only T0 -> lane 3 and runs T0.
+    json box = make_flat_fork_box();
+    box["loaded_slot"] = 3;
+    box["slots"][0]["loaded"] = false;
+    box["slots"][3]["loaded"] = true;
+    box["map"] = {{"T1A", "T1D"}, {"T1B", "T1B"}, {"T1C", "T1C"}, {"T1D", "T1D"}};
+    box["print_mapping"] = {{"filename", "K2-Citroen AMI_PETG.gcode"},
+                            {"map", {{"0", 3}}},
+                            {"active_tool", 0},
+                            {"active_slot", 3}};
+
+    const auto info = AmsBackendCfs::parse_box_status(box);
+    CHECK(info.get_slot_global(3)->mapped_tool == 0);
+    // Tools the print does not use have no lane: Kalico pauses on them.
+    CHECK(info.get_slot_global(1)->mapped_tool == -1);
+    CHECK(info.current_tool == 0);
+
+    // Without the print map, the same box.map badges lane 3 with T3, yet the
+    // seated lane still names a tool that routes through it.
+    box["print_mapping"]["filename"] = nullptr;
+    box["print_mapping"]["map"] = json::object();
+    const auto idle = AmsBackendCfs::parse_box_status(box);
+    CHECK(idle.tool_to_slot_map[0] == 3);
+    CHECK(idle.get_slot_global(1)->mapped_tool == 1);
+    CHECK(idle.current_slot == 3);
+    CHECK(idle.current_tool >= 0);
+}
+
+TEST_CASE("CFS flat: no map keeps the 1:1 tools (K2-OpenHost)", "[ams][cfs][flat][k2oh]") {
+    const auto info = AmsBackendCfs::parse_box_status(make_flat_fork_box());
+    for (int i = 0; i < 4; ++i) {
+        CHECK(info.get_slot_global(i)->mapped_tool == i);
+    }
+    CHECK(info.current_tool == 0);
+}
+
+TEST_CASE("CFS flat: remaining filament from Kalico (K2-OpenHost)", "[ams][cfs][flat][k2oh]") {
+    json box = make_flat_fork_box();
+    box["slots"][2]["rfid_remaining_m"] = 161.7;
+    box["slots"][2]["rfid_total_m"] = 330.0;
+    box["slots"][2]["rfid_percent"] = 49.0;
+    box["slots"][2]["rfid_remaining_source"] = "cfs";
+    box["slots"][1]["rfid_remaining_m"] = nullptr;
+    box["slots"][1]["rfid_percent"] = nullptr;
+
+    const auto info = AmsBackendCfs::parse_box_status(box);
+    const auto* known = info.get_slot_global(2);
+    CHECK(known->remaining_display() == "161m");
+    CHECK(known->display_fill_pct() == 49);
+    // No weight is invented: it would be written to Spoolman.
+    CHECK(known->remaining_weight_g < 0.0f);
+
+    // Unknown remaining: the full bar every other UI shows for an unweighed spool.
+    const auto* unknown = info.get_slot_global(1);
+    CHECK(unknown->remaining_display().empty());
+    CHECK(unknown->display_fill_pct() == 100);
+
+    // A pulled spool keeps no remaining reading.
+    box["slots"][2]["present"] = false;
+    const auto empty = AmsBackendCfs::parse_box_status(box);
+    CHECK(empty.get_slot_global(2)->remaining_display().empty());
+    CHECK(empty.get_slot_global(2)->display_fill_pct() == 0);
+}
