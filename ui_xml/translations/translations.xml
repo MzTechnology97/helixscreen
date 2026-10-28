@@ -2899,6 +2899,8 @@
   <translation tag="layer" en="layer" it="strato"/>
   <translation tag="layers" de="Schichten" en="layers" es="capas" fr="couches" it="layer" ja="レイヤー" pt="camadas" ru="слои" zh="层"/>
   <translation tag="left" de="übrig" en="left" es="restante" fr="restant" it="rimanente" ja="残り" pt="restante" ru="осталось" zh="剩余"/>
+  <translation tag="light_lit" en="on" it="Accesa"/>
+  <translation tag="light_unlit" en="off" it="Spenta"/>
   <translation tag="lowest remaining first" en="lowest remaining first" it="prima la più scarica"/>
   <translation tag="manual order" en="manual order" it="ordine manuale"/>
   <translation tag="mm before clog" de="mm vor Verstopfung" en="mm before clog" es="mm antes de obstrucción" fr="mm avant bouchon" it="mm prima dell&apos;intasamento" ja="詰まりまでの距離 (mm)" pt="mm antes da obstrução" ru="мм до засора" zh="毫米后堵料"/>

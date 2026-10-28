@@ -2899,6 +2899,8 @@
   <translation tag="layer" it="strato"/>
   <translation tag="layers" it="layer"/>
   <translation tag="left" it="rimanente"/>
+  <translation tag="light_lit" it="Accesa"/>
+  <translation tag="light_unlit" it="Spenta"/>
   <translation tag="lowest remaining first" it="prima la più scarica"/>
   <translation tag="manual order" it="ordine manuale"/>
   <translation tag="mm before clog" it="mm prima dell&apos;intasamento"/>
