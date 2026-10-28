@@ -2898,7 +2898,7 @@ TEST_CASE("CFS flat-schema material change on the box reaches the slot",
           "[ams][cfs][flat][filament_slot_override]") {
     CfsOverrideRig rig("cfs_flat_material_follows");
 
-    // First frame: the auto-mirror fills the empty override from firmware.
+    // First frame: the slot shows what the box reports.
     rig.poll(make_flat_box("PLA", "Sunlu", "PLA Basic", "#FF5500"));
     REQUIRE(rig.backend->get_slot_info(0).material == "PLA");
 
@@ -2907,12 +2907,11 @@ TEST_CASE("CFS flat-schema material change on the box reaches the slot",
     rig.poll(make_flat_box("PETG", "Sunlu", "PLA Basic", "#FF5500"));
     CHECK(rig.backend->get_slot_info(0).material == "PETG");
 
-    // The next frame republishes the new firmware truth for OrcaSlicer.
+    // The flat schema is the Fork dialect: the box publishes lane_data for
+    // OrcaSlicer itself, so HelixScreen leaves it alone.
     rig.poll(make_flat_box("PETG", "Sunlu", "PLA Basic", "#FF5500"));
     CHECK(rig.backend->get_slot_info(0).material == "PETG");
-    auto stored = rig.api->mock_get_db_value("lane_data", "lane1");
-    REQUIRE(!stored.is_null());
-    CHECK(stored["material"] == "PETG");
+    CHECK(rig.api->mock_get_db_value("lane_data", "lane1").is_null());
 }
 
 TEST_CASE("CFS stock material change on the box reaches the slot",
@@ -3358,6 +3357,37 @@ TEST_CASE("CFS clears the stale lane_data record when a tagged spool is removed"
     SECTION("neighbouring seated slots keep their records") {
         CHECK_FALSE(rig.api->mock_get_db_value("lane_data", "lane3").is_null());
     }
+}
+
+TEST_CASE("CFS Fork dialect leaves lane_data to the box and shows the RFID color",
+          "[ams][cfs][flat][fork][filament_slot_override]") {
+    // The fork's box.py publishes lane_data itself. Right after an insertion it
+    // reports the bay present with no color until the tag is read; a
+    // FillUnsetOnly mirror latched the default color there and then replaced
+    // the box's own record with it.
+    CfsOverrideRig rig("cfs_fork_no_mirror");
+
+    auto flat_box = [](const std::string& material, const std::string& color) {
+        json slots = json::array();
+        for (int i = 0; i < 4; ++i) {
+            const bool bay = i == 3;
+            slots.push_back({{"index", i},
+                             {"present", bay},
+                             {"material", bay ? material : ""},
+                             {"color", bay ? color : ""}});
+        }
+        return json{{"api_version", 1}, {"loaded_slot", -1}, {"slots", slots}};
+    };
+
+    rig.poll(flat_box("", ""));               // seated, tag not read yet
+    rig.poll(flat_box("PETG", "#F75403"));    // tag read
+
+    CHECK(rig.api->mock_get_db_value("lane_data", "lane4").is_null());
+    CHECK_FALSE(CfsTestAccess::get_override(*rig.backend, 3).has_value());
+    auto slot = rig.backend->get_slot_info(3);
+    CHECK(slot.status == SlotStatus::AVAILABLE);
+    CHECK(slot.material == "PETG");
+    CHECK(slot.color_rgb == 0xF75403u);
 }
 
 TEST_CASE("CFS removal keeps a user-locked assignment for an unloaded slot",
