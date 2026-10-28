@@ -5911,3 +5911,21 @@ TEST_CASE("CFS flat: api_version after a slots delta still enables Fork control 
     CHECK(CfsTestAccess::macro_variant(backend) == CfsMacroVariant::Fork);
     CHECK(backend.supports_gate_check());
 }
+
+TEST_CASE("CFS flat: runout_groups become the endless-spool groups (K2-OpenHost)",
+          "[ams][cfs][flat][k2oh]") {
+    json box = make_flat_fork_box();
+    box["runout_groups"] = json::parse(R"([
+        {"material": "PETG", "color": "#F75403", "slots": [3, 1], "strategy": "lowest_remaining_first"},
+        {"material": "PLA", "color": "#B1BEC6", "slots": [2]}])");
+    const auto info = AmsBackendCfs::parse_box_status(box);
+    REQUIRE(info.endless_spool_groups_reported);
+    REQUIRE(info.endless_spool_group_ids.size() == 16);
+    CHECK(info.endless_spool_group_ids[3] == 0);
+    CHECK(info.endless_spool_group_ids[1] == 0);
+    CHECK(info.endless_spool_group_ids[2] == 1);
+    CHECK(info.endless_spool_group_ids[0] == -1);
+
+    // No field: nothing reported, as before.
+    CHECK_FALSE(AmsBackendCfs::parse_box_status(make_flat_fork_box()).endless_spool_groups_reported);
+}

@@ -19,6 +19,16 @@ translations:
   '%zu changes': '%zu changes'
   '%zu events queued': '%zu events queued'
   '%zu plugins failed to load': '%zu plugins failed to load'
+  Auto-swap at spool end: Auto-swap at spool end
+  CFS ready: CFS ready
+  IN USE: IN USE
+  More: More
+  Not recognised: Not recognised
+  Reread RFID: Reread RFID
+  dry: dry
+  estimate: estimate
+  humid: humid
+  unknown tag: unknown tag
   "'{}' already exists. Replace the stored mesh?": "'{}' already exists. Replace the stored mesh?"
   "'{}' and '{}' already exist. Replace the stored meshes?": "'{}' and '{}' already exist. Replace the stored meshes?"
   (different grade): (different grade)
