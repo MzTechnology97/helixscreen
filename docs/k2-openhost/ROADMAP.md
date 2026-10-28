@@ -104,6 +104,7 @@ In ordine di utilità; ognuna usa dati che Kalico già pubblica.
 5. **Stato operazione e recupero:** cosa sta facendo la CFS e come riprendere dopo un errore (`operation`, `recovery`).
 6. **Interruttori:** scarico a fine stampa, rilevamento intasamenti, cambio automatico (`unload_after_print_enabled`, `clog_detection_enabled`, `runout_swap_enabled`).
 7. **Mappatura all'avvio della stampa dallo schermo** con le proposte di Kalico (`print_mapping`).
+8. **Widget CFS per la Home:** le bobine di ogni CFS con colore, materiale e percentuale residua, lo slot in uso con il suo utensile, temperatura e umidità della CFS; un tocco apre il pannello Multi-filamento. Si parte dal widget "Multi-filamento" che HelixScreen ha già (`panel_widget_ams`, `ams_mini_status`) e si usano i dati della CFS (`slots[]`, `rfid_percent`, `boxes[]`, `print_mapping`).
 
 ## Rischi
 
