@@ -7,6 +7,7 @@
 #include "ui_fan_control_overlay.h"
 #include "ui_format_utils.h"
 #include "ui_icon.h"
+#include "ui_k2oh_cfs_view.h"
 #include "ui_nav_manager.h"
 #include "ui_panel_ams.h"
 #include "ui_panel_print_status.h"
@@ -80,17 +81,6 @@ std::string job_title(const char* display) {
     return name;
 }
 
-void open_cfs_page() {
-    auto& ams_panel = get_global_ams_panel();
-    if (!ams_panel.are_subjects_initialized()) {
-        ams_panel.init_subjects();
-    }
-    if (lv_obj_t* panel_obj = ams_panel.get_panel()) {
-        NavigationManager::instance().register_overlay_instance(panel_obj, &ams_panel);
-        NavigationManager::instance().push_overlay(panel_obj);
-    }
-}
-
 void open_fan_control(lv_obj_t* parent_screen) {
     // One overlay for the process, as the fan stack widget caches its own.
     static lv_obj_t* panel = nullptr;
@@ -156,6 +146,14 @@ void K2ohHomeWidget::attach(lv_obj_t* widget_obj, lv_obj_t* parent_screen) {
     if (kind_ != Kind::Job) {
         lv_obj_add_event_cb(root_, on_click, LV_EVENT_CLICKED, this);
     }
+    if (kind_ == Kind::Light) {
+        for (lv_event_code_t code : {LV_EVENT_PRESSED, LV_EVENT_PRESSING, LV_EVENT_RELEASED}) {
+            lv_obj_add_event_cb(root_, on_light_drag, code, this);
+        }
+        // The vertical drag is the brightness, not a scroll or a page swipe.
+        lv_obj_remove_flag(root_, LV_OBJ_FLAG_SCROLL_CHAIN_VER);
+        lv_obj_remove_flag(root_, LV_OBJ_FLAG_GESTURE_BUBBLE);
+    }
 
     auto& ps = printer_state_;
     auto& ams = AmsState::instance();
@@ -196,7 +194,7 @@ void K2ohHomeWidget::attach(lv_obj_t* widget_obj, lv_obj_t* parent_screen) {
         }
         break;
     case Kind::Light:
-        subjects = {ps.get_led_state_subject()};
+        subjects = {ps.get_led_state_subject(), ps.get_led_brightness_subject()};
         break;
     case Kind::Fans:
         subjects = {ps.get_fan_speed_subject(), ps.get_fans_version_subject()};
@@ -461,10 +459,84 @@ void K2ohHomeWidget::refresh_light() {
     const bool reported = !led.status_tracked_strip().empty();
     const bool on = reported ? lv_subject_get_int(printer_state_.get_led_state_subject()) != 0
                              : led.light_is_on();
-    set_text(root_, "light_state", lv_tr(on ? "light_lit" : "light_unlit"));
+    if (dragging_) {
+        return; // the finger owns the tile until release
+    }
+    const int pct = std::clamp(lv_subject_get_int(printer_state_.get_led_brightness_subject()), 0, 100);
+    show_brightness(on ? pct : 0, on);
+}
+
+void K2ohHomeWidget::show_brightness(int pct, bool on) {
+    std::string state = lv_tr(on ? "light_lit" : "light_unlit");
+    if (on && pct > 0) {
+        state += " · " + std::to_string(pct) + "%";
+    }
+    set_text(root_, "light_state", state);
     if (lv_obj_t* icon = child(root_, "light_icon")) {
         ui_icon_set_source(icon, on ? "lightbulb_on" : "lightbulb_outline");
         ui_icon_set_variant(icon, on ? "warning" : "secondary");
+    }
+    // Home Assistant style: the tile fills with light from the bottom, edge to
+    // edge (the fill reaches past the tile's padding).
+    if (lv_obj_t* fill = child(root_, "light_fill")) {
+        const int32_t width = lv_obj_get_width(root_);
+        const int32_t height = lv_obj_get_height(root_);
+        const int32_t pad_bottom = lv_obj_get_style_pad_bottom(root_, LV_PART_MAIN);
+        lv_obj_set_size(fill, width, on ? height * pct / 100 : 0);
+        lv_obj_align(fill, LV_ALIGN_BOTTOM_MID, 0, pad_bottom);
+    }
+}
+
+void K2ohHomeWidget::on_light_drag(lv_event_t* e) {
+    auto* self = static_cast<K2ohHomeWidget*>(lv_event_get_user_data(e));
+    lv_indev_t* indev = lv_indev_active();
+    if (!self->root_ || !indev) {
+        return;
+    }
+    lv_point_t point;
+    lv_indev_get_point(indev, &point);
+    // A drag shorter than this is still a tap (toggle).
+    constexpr int32_t kDragThreshold = 12;
+    switch (lv_event_get_code(e)) {
+    case LV_EVENT_PRESSED: {
+        auto& led = led::LedController::instance();
+        const bool reported = !led.status_tracked_strip().empty();
+        const bool on = reported ? lv_subject_get_int(self->printer_state_.get_led_state_subject()) != 0
+                                 : led.light_is_on();
+        self->drag_start_y_ = point.y;
+        self->drag_start_pct_ =
+            on ? std::clamp(lv_subject_get_int(self->printer_state_.get_led_brightness_subject()), 0,
+                            100)
+               : 0;
+        self->drag_pct_ = self->drag_start_pct_;
+        self->dragging_ = false;
+        self->dragged_ = false;
+        break;
+    }
+    case LV_EVENT_PRESSING: {
+        const int32_t dy = self->drag_start_y_ - point.y; // up = brighter
+        if (!self->dragging_ && std::abs(dy) < kDragThreshold) {
+            return;
+        }
+        self->dragging_ = true;
+        // The tile's height is the whole 0-100 % range.
+        const int32_t height = std::max<int32_t>(lv_obj_get_height(self->root_), 1);
+        self->drag_pct_ = std::clamp(self->drag_start_pct_ + static_cast<int>(dy * 100 / height), 0, 100);
+        self->show_brightness(self->drag_pct_, self->drag_pct_ > 0);
+        break;
+    }
+    case LV_EVENT_RELEASED:
+        if (self->dragging_) {
+            self->dragging_ = false;
+            self->dragged_ = true; // the click that follows is not a toggle
+            auto& led = led::LedController::instance();
+            if (!led.selected_strips().empty() && !led.light_command_in_flight()) {
+                led.set_brightness_all(self->drag_pct_);
+            }
+        }
+        break;
+    default:
+        break;
     }
 }
 
@@ -518,12 +590,16 @@ void K2ohHomeWidget::on_click(lv_event_t* e) {
             NavigationManager::instance().set_active(PanelId::Controls);
             return;
         case Kind::Cfs:
-            open_cfs_page();
+            ui::k2oh_open_cfs_page();
             return;
         case Kind::Fans:
             open_fan_control(self->parent_screen_);
             return;
         case Kind::Light: {
+            if (self->dragged_) {
+                self->dragged_ = false; // that was a brightness drag, not a tap
+                return;
+            }
             auto& led = led::LedController::instance();
             if (led.selected_strips().empty() || led.light_command_in_flight()) {
                 return;

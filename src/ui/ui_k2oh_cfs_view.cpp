@@ -7,6 +7,7 @@
 #include "ui_button.h"
 #include "ui_icon.h"
 #include "ui_nav_manager.h"
+#include "ui_panel_ams.h"
 #include "ui_utils.h"
 
 #include "ams_backend.h"
@@ -138,6 +139,22 @@ K2ohCfsView::~K2ohCfsView() {
     if (root_) {
         lv_obj_remove_event_cb_with_user_data(root_, on_root_deleted, this);
     }
+}
+
+void k2oh_open_cfs_page() {
+    auto& ams_panel = get_global_ams_panel();
+    if (!ams_panel.are_subjects_initialized()) {
+        ams_panel.init_subjects();
+    }
+    if (lv_obj_t* panel_obj = ams_panel.get_panel()) {
+        NavigationManager::instance().register_overlay_instance(panel_obj, &ams_panel);
+        NavigationManager::instance().push_overlay(panel_obj);
+    }
+}
+
+void k2oh_register_nav_callbacks() {
+    lv_xml_register_event_cb(nullptr, "k2oh_nav_cfs_clicked",
+                             [](lv_event_t* /*e*/) { k2oh_open_cfs_page(); });
 }
 
 std::string K2ohCfsView::runout_summary(const AmsSystemInfo& info, int loaded_slot) {
