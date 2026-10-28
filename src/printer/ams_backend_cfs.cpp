@@ -1786,8 +1786,10 @@ void AmsBackendCfs::handle_status_update(const nlohmann::json& notification) {
                         fork_switches_[sw.field] = it->get<bool>();
                     }
                 }
-                if (auto it = box.find("load_path"); it != box.end() && it->is_object()) {
-                    load_path_ = *it;
+                for (const char* key : {"load_path", "runout", "runout_groups", "runout_order"}) {
+                    if (auto it = box.find(key); it != box.end()) {
+                        k2oh_fields_[key] = *it;
+                    }
                 }
             }
         } else {
@@ -4304,9 +4306,10 @@ std::vector<helix::printer::DeviceAction> AmsBackendCfs::get_device_actions() co
     return actions;
 }
 
-nlohmann::json AmsBackendCfs::load_path() const {
+nlohmann::json AmsBackendCfs::box_field(const std::string& key) const {
     std::lock_guard<std::mutex> lock(mutex_);
-    return load_path_;
+    auto it = k2oh_fields_.find(key);
+    return it != k2oh_fields_.end() ? *it : nlohmann::json();
 }
 
 bool AmsBackendCfs::supports_gate_check() const {
