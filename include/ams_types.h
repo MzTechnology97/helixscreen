@@ -915,6 +915,10 @@ struct SlotInfo {
     // Length-based remaining filament (CFS measuring wheel, etc.)
     float remaining_length_m = 0.0f; ///< Remaining filament in meters (0 = unknown)
 
+    /// Remaining share of the spool, 0-1 (-1 = unknown), for backends that know
+    /// the fraction but not the weight (K2-OpenHost CFS: Kalico's rfid_percent).
+    float remaining_fraction = -1.0f;
+
     // Per-slot environment sensors (optional — most backends don't have these)
     std::optional<EnvironmentData> environment; ///< nullopt = no per-slot sensors
 
@@ -1004,6 +1008,9 @@ struct SlotInfo {
         }
         if (total_weight_g > 0.0f && remaining_weight_g >= 0.0f) {
             return remaining_weight_g / total_weight_g;
+        }
+        if (remaining_fraction >= 0.0f) {
+            return remaining_fraction;
         }
         if (has_filament_info()) {
             return 1.0f;
