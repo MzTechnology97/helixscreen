@@ -81,9 +81,7 @@ Dove si perde tempo, in ordine di guadagno atteso:
 3. **Indicizzazione del G-code all'avvio della stampa.**
    - Circa 33 s per 15 M di righe, durante i quali il touch risponde a fatica.
    - Interventi: priorità più bassa o in background a blocchi; oppure saltarla, perché il CM5 ha già i metadati (miniatura, tempi) tramite Moonraker.
-4. **Telecamera.**
-   - Spegnere `ustreamer` sul T113 (0.4, fatto).
-   - Puntare la vista telecamera di HelixScreen al flusso del CM5 (crowsnest).
+4. **Telecamera.** Spegnere `ustreamer` sul T113 (0.4, fatto). Nessuna vista telecamera sullo schermo: non serve.
 5. **Conversione dei colori.**
    - LVGL disegna in RGB565 ma lo schermo è XRGB8888 a 32 bit, quindi c'è una conversione a ogni aggiornamento.
    - Da misurare prima: un framebuffer a 16 bit dipende dal driver del kernel.
