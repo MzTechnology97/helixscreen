@@ -577,6 +577,9 @@ class AmsBackendCfs : public AmsSubscriptionBackend {
     /// carries only the fields that changed (a slot edit sends `slots` and no
     /// temp_c). Main thread only, like stock_box_state_.
     nlohmann::json flat_box_state_ = nlohmann::json::object();
+    /// What the flat parse last took from load_path (flat_load_path_view), to
+    /// tell a frame that only moved the encoder from one that matters.
+    std::string flat_load_path_view_;
     bool motor_ready_ = true;
 
     // K1 vs K2 macro dialect, latched in ctor from PrinterDetector. Most
