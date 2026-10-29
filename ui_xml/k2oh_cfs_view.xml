@@ -46,9 +46,9 @@
         <icon src="filament" size="xs" variant="secondary" clickable="false" event_bubble="true"/>
         <text_small name="ext_label" text="" clickable="false" event_bubble="true"/>
       </lv_obj>
-      <ui_button name="btn_cfs_check_all" width="#button_height_sm" height="#button_height_sm" variant="secondary"
+      <ui_button name="btn_cfs_check_all" width="#button_height_sm" height="#button_height_sm" variant="ghost" style_bg_color="#elevated_bg" style_bg_opa="255"
                  icon="sync"/>
-      <ui_button name="btn_cfs_settings" width="#button_height_sm" height="#button_height_sm" variant="secondary"
+      <ui_button name="btn_cfs_settings" width="#button_height_sm" height="#button_height_sm" variant="ghost" style_bg_color="#elevated_bg" style_bg_opa="255"
                  icon="cog"/>
     </lv_obj>
 
@@ -114,13 +114,13 @@
     <lv_obj name="action_row"
             width="100%" height="content" style_pad_all="0" style_pad_gap="#space_sm" style_bg_opa="0"
             style_border_width="0" flex_flow="row" scrollable="false">
-      <ui_button name="btn_load_unload" flex_grow="1" height="#button_height" variant="secondary"
+      <ui_button name="btn_load_unload" flex_grow="1" height="#button_height" variant="ghost" style_bg_color="#elevated_bg" style_bg_opa="255"
                  icon="tray_arrow_up" text="Unload" translation_tag="Unload"/>
-      <ui_button name="btn_rfid" flex_grow="1" height="#button_height" variant="secondary" icon="sync"
+      <ui_button name="btn_rfid" flex_grow="1" height="#button_height" variant="ghost" style_bg_color="#elevated_bg" style_bg_opa="255" icon="sync"
                  text="Reread RFID" translation_tag="Reread RFID"/>
-      <ui_button name="btn_edit" flex_grow="1" height="#button_height" variant="secondary" icon="pencil"
+      <ui_button name="btn_edit" flex_grow="1" height="#button_height" variant="ghost" style_bg_color="#elevated_bg" style_bg_opa="255" icon="pencil"
                  text="Edit" translation_tag="Edit"/>
-      <ui_button name="btn_more" flex_grow="1" height="#button_height" variant="secondary" icon="dots_vertical"
+      <ui_button name="btn_more" flex_grow="1" height="#button_height" variant="ghost" style_bg_color="#elevated_bg" style_bg_opa="255" icon="dots_vertical"
                  text="More" translation_tag="More"/>
     </lv_obj>
   </view>

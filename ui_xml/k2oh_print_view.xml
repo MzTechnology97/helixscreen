@@ -145,14 +145,14 @@
           <event_cb trigger="clicked" callback="on_print_status_reprint"/>
           <bind_flag_if_eq subject="print_outcome" flag="hidden" ref_value="0"/>
         </ui_button>
-        <ui_button name="btn_tune" flex_grow="3" height="#button_height" variant="secondary" icon="tune"
+        <ui_button name="btn_tune" flex_grow="3" height="#button_height" variant="ghost" style_bg_color="#elevated_bg" style_bg_opa="255" icon="tune"
                    text="Tune" translation_tag="Tune"/>
-        <ui_button name="btn_light" flex_grow="3" height="#button_height" variant="secondary"
+        <ui_button name="btn_light" flex_grow="3" height="#button_height" variant="ghost" style_bg_color="#elevated_bg" style_bg_opa="255"
                    bind_icon="light_button_icon" text="Light" translation_tag="Light">
           <event_cb trigger="clicked" callback="on_print_status_light"/>
           <bind_flag_if_eq subject="led_controllable" flag="hidden" ref_value="0"/>
         </ui_button>
-        <ui_button name="btn_timelapse" flex_grow="3" height="#button_height" variant="secondary"
+        <ui_button name="btn_timelapse" flex_grow="3" height="#button_height" variant="ghost" style_bg_color="#elevated_bg" style_bg_opa="255"
                    bind_icon="timelapse_button_icon" bind_text="timelapse_button_label">
           <event_cb trigger="clicked" callback="on_print_status_timelapse"/>
           <bind_flag_if_eq subject="printer_has_timelapse" flag="hidden" ref_value="0"/>
@@ -163,7 +163,7 @@
           <bind_state_if_eq subject="print_control_stop_enabled" state="disabled" ref_value="0"/>
           <bind_flag_if_not_eq subject="print_outcome" flag="hidden" ref_value="0"/>
         </ui_button>
-        <ui_button name="btn_close" flex_grow="2" height="#button_height" variant="secondary" icon="close">
+        <ui_button name="btn_close" flex_grow="2" height="#button_height" variant="ghost" style_bg_color="#elevated_bg" style_bg_opa="255" icon="close">
           <event_cb trigger="clicked" callback="on_print_status_dismiss_overlay"/>
           <bind_flag_if_eq subject="print_outcome" flag="hidden" ref_value="0"/>
         </ui_button>
