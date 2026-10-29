@@ -2764,3 +2764,14 @@ TEST_CASE("UpdateChecker service_dest_probe_error mirrors the installer's write 
 
     fs::remove_all(base);
 }
+
+TEST_CASE("sha256_from_github_digest reads a release asset's digest (K2-OpenHost)",
+          "[update_checker][k2oh]") {
+    const std::string hex(64, 'a');
+    CHECK(sha256_from_github_digest("sha256:" + hex) == hex);
+    CHECK(sha256_from_github_digest("sha256:" + std::string(64, 'B')) == std::string(64, 'b'));
+    CHECK(sha256_from_github_digest("").empty());
+    CHECK(sha256_from_github_digest("sha1:" + hex).empty());
+    CHECK(sha256_from_github_digest("sha256:abc").empty());
+    CHECK(sha256_from_github_digest("sha256:" + std::string(63, 'a') + "z").empty());
+}
