@@ -28,9 +28,9 @@
 
     <lv_obj width="100%" height="content" style_pad_all="0" style_pad_gap="#space_sm" style_bg_opa="0"
             style_border_width="0" flex_flow="row" scrollable="false">
-      <ui_button name="btn_mode_auto" flex_grow="1" height="#button_height" variant="secondary" icon="sync"
+      <ui_button name="btn_mode_auto" flex_grow="1" height="#button_height" variant="ghost" style_bg_color="#elevated_bg" style_bg_opa="255" icon="sync"
                  text="Automatic" translation_tag="Automatic"/>
-      <ui_button name="btn_mode_manual" flex_grow="1" height="#button_height" variant="secondary"
+      <ui_button name="btn_mode_manual" flex_grow="1" height="#button_height" variant="ghost" style_bg_color="#elevated_bg" style_bg_opa="255"
                  icon="swap_vertical" text="Manual" translation_tag="Manual"/>
     </lv_obj>
     <text_small name="mode_hint" text="" width="100%" style_text_color="#text_muted"/>
