@@ -55,6 +55,9 @@ class K2ohCfsView {
     /// one first; the generic endless-spool sentence when there are no groups.
     static std::string runout_summary(const AmsSystemInfo& info, int loaded_slot);
 
+    /// The slot the print swaps to when @p loaded_slot runs out, -1 if none.
+    static int runout_next_slot(const AmsSystemInfo& info, int loaded_slot);
+
     /// Builds the view inside @p panel (once), hidden.
     void create(lv_obj_t* panel);
     void set_visible(bool visible);

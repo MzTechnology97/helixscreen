@@ -90,9 +90,9 @@ bool is_empty(const SlotInfo& slot) {
     return slot.status == SlotStatus::EMPTY || slot.status == SlotStatus::UNKNOWN;
 }
 
-/// "PETG: 4 (8%) » 2 (85%)" (the font has no arrow glyph) for each group of spools that back each other up,
-/// the loaded one first. Without groups, the generic endless-spool sentence.
-std::string runout_text(const AmsSystemInfo& info, int loaded_slot) {
+/// The groups of spools that back each other up (two or more), each in swap
+/// order: the loaded one first.
+std::map<int, std::vector<const SlotInfo*>> runout_groups(const AmsSystemInfo& info, int loaded_slot) {
     std::map<int, std::vector<const SlotInfo*>> groups;
     for (const auto& unit : info.units) {
         for (const auto& slot : unit.slots) {
@@ -103,9 +103,10 @@ std::string runout_text(const AmsSystemInfo& info, int loaded_slot) {
             }
         }
     }
-    std::string text;
-    for (auto& [id, members] : groups) {
+    for (auto it = groups.begin(); it != groups.end();) {
+        auto& members = it->second;
         if (members.size() < 2) {
+            it = groups.erase(it);
             continue;
         }
         // shortcut: Kalico's default strategy (lowest_remaining_first) ordering;
@@ -116,6 +117,16 @@ std::string runout_text(const AmsSystemInfo& info, int loaded_slot) {
             }
             return a->get_remaining_percent() < b->get_remaining_percent();
         });
+        ++it;
+    }
+    return groups;
+}
+
+/// "PETG: 4 (8%) » 2 (85%)" (the font has no arrow glyph) for each group of spools that back each other up,
+/// the loaded one first. Without groups, the generic endless-spool sentence.
+std::string runout_text(const AmsSystemInfo& info, int loaded_slot) {
+    std::string text;
+    for (const auto& [id, members] : runout_groups(info, loaded_slot)) {
         std::string line = members.front()->material + ":";
         for (size_t i = 0; i < members.size(); ++i) {
             line += (i ? " » " : " ") + std::to_string(members[i]->global_index + 1);
@@ -220,6 +231,15 @@ void k2oh_register_nav_callbacks() {
 
 std::string K2ohCfsView::runout_summary(const AmsSystemInfo& info, int loaded_slot) {
     return runout_text(info, loaded_slot);
+}
+
+int K2ohCfsView::runout_next_slot(const AmsSystemInfo& info, int loaded_slot) {
+    for (const auto& [id, members] : runout_groups(info, loaded_slot)) {
+        if (members.front()->global_index == loaded_slot) {
+            return members[1]->global_index;
+        }
+    }
+    return -1;
 }
 
 void K2ohCfsView::on_root_deleted(lv_event_t* e) {
