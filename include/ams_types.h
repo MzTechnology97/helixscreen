@@ -919,6 +919,9 @@ struct SlotInfo {
     /// the fraction but not the weight (K2-OpenHost CFS: Kalico's rfid_percent).
     float remaining_fraction = -1.0f;
 
+    /// remaining_length_m is an estimate, not a reading (shown with a "~").
+    bool remaining_estimated = false;
+
     // Per-slot environment sensors (optional — most backends don't have these)
     std::optional<EnvironmentData> environment; ///< nullopt = no per-slot sensors
 
@@ -1056,7 +1059,8 @@ struct SlotInfo {
             remaining_length_m == 255.0f) {
             return {};
         }
-        return std::to_string(static_cast<int>(remaining_length_m)) + "m";
+        return std::string(remaining_estimated ? "~" : "") +
+               std::to_string(static_cast<int>(remaining_length_m)) + "m";
     }
 
     /**

@@ -169,4 +169,27 @@ inline void assign_tool_slot(AmsSystemInfo& info, int tool_number, int global_sl
     tool_map_detail::publish_ledger(info, ledger, slot_count);
 }
 
+/**
+ * @brief Badge text for a lane: "T0/T3" when the forward map routes several
+ *        tools through it, else "T<mapped_tool>", "" when none.
+ *
+ * SlotRegistry keeps one mapped_tool per lane, so a firmware map that sends two
+ * tools to one lane (CFS box.map T1A -> T1D next to T1D -> T1D) would badge only
+ * the last of them while both tools load that lane.
+ */
+inline std::string slot_tools_label(const std::vector<int>& tool_to_slot, int global_slot,
+                                    int mapped_tool) {
+    std::string tools;
+    int count = 0;
+    for (size_t t = 0; t < tool_to_slot.size(); ++t) {
+        if (tool_to_slot[t] == global_slot) {
+            tools += (count++ > 0 ? "/T" : "T") + std::to_string(t);
+        }
+    }
+    if (count >= 2) {
+        return tools;
+    }
+    return mapped_tool >= 0 ? "T" + std::to_string(mapped_tool) : std::string{};
+}
+
 } // namespace helix::printer
