@@ -50,4 +50,11 @@ class K2ohHomeView {
     bool mirroring_external_ = false; ///< set while writing Kalico's profile in
 };
 
+/**
+ * @brief Put the K2-OpenHost layout on the Home grid (page 1), when the printer
+ * is a K2 on Kalico's CFS. Used once at first start and by the catalog's Reset.
+ * @return false (nothing changed) on any other printer
+ */
+bool k2oh_apply_home_layout();
+
 } // namespace helix::ui
