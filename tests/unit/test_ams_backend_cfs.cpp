@@ -5896,3 +5896,18 @@ TEST_CASE("CFS flat: the spool percent comes from Kalico's rfid_percent (K2-Open
     // No percent published: still unknown.
     CHECK(info.get_slot_global(3)->get_remaining_percent() == Catch::Approx(-1.0f));
 }
+
+TEST_CASE("CFS flat: api_version after a slots delta still enables Fork control (K2-OpenHost)",
+          "[ams][cfs][flat][k2oh]") {
+    CfsRemapHelper backend;
+    const json full = make_flat_fork_box();
+    // During a print a slots delta can come before the full answer.
+    json delta;
+    delta["slots"] = full["slots"];
+    CfsTestAccess::handle_status(backend, make_cfs_notification(delta));
+    REQUIRE(CfsTestAccess::macro_variant(backend) != CfsMacroVariant::Fork);
+
+    CfsTestAccess::handle_status(backend, make_cfs_notification(full));
+    CHECK(CfsTestAccess::macro_variant(backend) == CfsMacroVariant::Fork);
+    CHECK(backend.supports_gate_check());
+}

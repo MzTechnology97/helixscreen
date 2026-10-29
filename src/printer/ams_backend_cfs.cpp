@@ -1782,16 +1782,22 @@ void AmsBackendCfs::handle_status_update(const nlohmann::json& notification) {
             is_full_update = false;
         }
 
-        if (is_flat && schema_ != CfsSchema::Flat) {
+        const bool flat_entered = is_flat && schema_ != CfsSchema::Flat;
+        if (flat_entered) {
             schema_ = CfsSchema::Flat;
-            // Select the command dialect from the explicit API version, not by
-            // assuming every `slots[]` payload implements the same commands.
+        }
+        // Select the command dialect from the explicit API version, not by
+        // assuming every `slots[]` payload implements the same commands.
+        // K2-OpenHost: during a print a slots delta can arrive before the full
+        // answer that carries api_version, so a later api_version still counts.
+        if (is_flat && macro_variant_ != CfsMacroVariant::Fork &&
+            (flat_entered || box.contains("api_version"))) {
             if (detect_fork_dialect(state)) {
                 macro_variant_ = CfsMacroVariant::Fork;
                 spdlog::info("[AMS CFS] Flat box schema + fork dialect detected "
                              "(community box.py, API v{}) — Fork control enabled",
                              helix::json_util::safe_int(state, "api_version", 0));
-            } else {
+            } else if (flat_entered) {
                 spdlog::warn("[AMS CFS] Flat box schema without a supported API version — "
                              "slot display active, control paths disabled (no verified "
                              "command dialect)");
