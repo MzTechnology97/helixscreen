@@ -83,15 +83,32 @@ platform_wait_for_services() {
     # Use 127.0.0.1 (not localhost): K2 has no /etc/hosts entry for localhost.
     # Timeout and endpoint are overridable (non-standard Moonraker host/port, or
     # tests); production defaults match the stock K2 layout.
+    # K2-OpenHost: without an explicit URL the Moonraker of the active printer in
+    # settings.json is polled, so a Moonraker on an external host (and the
+    # in-app updates that rewrite the init script) keep a working boot wait.
     local timeout_sec="${HELIX_MOONRAKER_WAIT_TIMEOUT:-120}"
-    local ready_url="${HELIX_MOONRAKER_READY_URL:-http://127.0.0.1:7125/server/info}"
+    local ready_url="${HELIX_MOONRAKER_READY_URL:-}"
+    local settings="${HELIX_SETTINGS_FILE:-${DAEMON_DIR:-/opt/helixscreen}/config/settings.json}"
     local status_file="${HELIX_SPLASH_STATUS_FILE:-/tmp/helix-splash-status}"
-    python3 - "$timeout_sec" "$status_file" "$ready_url" <<'PY'
-import sys, time, urllib.request
+    python3 - "$timeout_sec" "$status_file" "$ready_url" "$settings" <<'PY'
+import json, sys, time, urllib.request
 
 timeout = int(sys.argv[1])
 status_file = sys.argv[2]
 ready_url = sys.argv[3]
+if not ready_url:
+    host, port = "127.0.0.1", 7125
+    try:
+        with open(sys.argv[4]) as f:
+            settings = json.load(f)
+        printer = settings["printers"][settings.get("active_printer_id") or "default"]
+        host = printer.get("moonraker_host") or host
+        port = int(printer.get("moonraker_port") or port)
+    except (OSError, ValueError, KeyError, TypeError, AttributeError):
+        pass
+    if host == "localhost":
+        host = "127.0.0.1"
+    ready_url = "http://%s:%d/server/info" % (host, port)
 start = time.monotonic()
 
 def write_status(msg):

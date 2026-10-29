@@ -596,6 +596,15 @@ install_camera_k2() {
     local platform="${1:-}"
     [ "$platform" = "k2" ] || return 0
 
+    # K2-OpenHost: with Klipper on an external host the cameras are wired to
+    # that host and the T113 has no video device; ustreamer would only retry it
+    # and kill cam_app every few seconds.
+    local video_dev="${HELIX_K2_VIDEO_DEVICE:-/dev/video0}"
+    if [ ! -e "$video_dev" ]; then
+        log_info "No camera at $video_dev - skipping K2 camera setup"
+        return 0
+    fi
+
     log_info "Configuring K2 ustreamer camera..."
 
     # (a0) DETECT the community "K2-Camera-main" mod and reversibly disable its
