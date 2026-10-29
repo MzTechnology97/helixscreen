@@ -12,7 +12,7 @@
             width="100%" height="content" style_pad_all="0" style_pad_gap="#space_sm" style_bg_opa="0"
             style_border_width="0" flex_flow="row" style_flex_cross_place="center" scrollable="false">
       <lv_obj name="cfs_back"
-              width="content" height="#button_height_sm" style_pad_all="0" style_pad_right="#space_sm"
+              width="content" height="48" ext_click_area="8" style_pad_all="0" style_pad_right="#space_md"
               style_pad_gap="#space_xs" style_bg_opa="0" style_border_width="0" flex_flow="row"
               style_flex_cross_place="center" scrollable="false" clickable="true">
         <icon src="back" size="lg" variant="text" clickable="false" event_bubble="true"/>
@@ -46,9 +46,9 @@
         <icon src="filament" size="xs" variant="secondary" clickable="false" event_bubble="true"/>
         <text_small name="ext_label" text="" clickable="false" event_bubble="true"/>
       </lv_obj>
-      <ui_button name="btn_cfs_check_all" width="#button_height_sm" height="#button_height_sm" variant="ghost" style_bg_color="#elevated_bg" style_bg_opa="255"
+      <ui_button name="btn_cfs_check_all" width="52" height="44" ext_click_area="8" variant="ghost" style_bg_color="#elevated_bg" style_bg_opa="255"
                  icon="sync"/>
-      <ui_button name="btn_cfs_settings" width="#button_height_sm" height="#button_height_sm" variant="ghost" style_bg_color="#elevated_bg" style_bg_opa="255"
+      <ui_button name="btn_cfs_settings" width="52" height="44" ext_click_area="8" variant="ghost" style_bg_color="#elevated_bg" style_bg_opa="255"
                  icon="cog"/>
     </lv_obj>
 

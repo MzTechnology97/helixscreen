@@ -8,7 +8,13 @@
 #include "theme_manager.h"
 #include "ui_k2oh_cfs_view.h"
 
+#include "ams_backend.h"
+#if HELIX_HAS_CFS
+#include "ams_backend_cfs.h"
+#endif
 #include "ams_state.h"
+#include "app_globals.h"
+#include "i_moonraker_api.h"
 #include "config.h"
 #include "lvgl/src/others/translation/lv_translation.h"
 #include "observer_factory.h"
@@ -19,6 +25,8 @@
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
+#include <cctype>
+#include <cstdlib>
 #include <ctime>
 #include <string>
 
@@ -28,6 +36,64 @@ namespace {
 
 constexpr int kStatusHeight = 40;
 constexpr uint32_t kTickMs = 10000;
+
+/// Kalico's external spool entry (box.slots[] with external: true).
+struct ExternalProfile {
+    bool valid = false;
+    int index = -1;
+    std::string material;
+    std::string brand;
+    std::string name;
+    uint32_t color = 0;
+    int temp = 0;
+};
+
+std::string text_field(const nlohmann::json& obj, const char* key) {
+    const auto it = obj.find(key);
+    return it != obj.end() && it->is_string() ? it->get<std::string>() : std::string();
+}
+
+ExternalProfile kalico_external() {
+    ExternalProfile p;
+#if HELIX_HAS_CFS
+    auto* cfs = dynamic_cast<printer::AmsBackendCfs*>(AmsState::instance().get_backend());
+    const nlohmann::json slots = cfs ? cfs->box_field("slots") : nlohmann::json();
+    if (!slots.is_array()) {
+        return p;
+    }
+    for (const auto& slot : slots) {
+        if (!slot.is_object() || !slot.value("external", false)) {
+            continue;
+        }
+        p.valid = true;
+        p.index = slot.value("index", -1);
+        p.material = text_field(slot, "material");
+        p.brand = text_field(slot, "brand");
+        p.name = text_field(slot, "name");
+        std::string hex = text_field(slot, "color");
+        if (!hex.empty() && hex[0] == '#') {
+            hex.erase(0, 1);
+        }
+        p.color = hex.size() == 6 ? static_cast<uint32_t>(std::strtoul(hex.c_str(), nullptr, 16)) : 0;
+        if (const auto it = slot.find("target_temp"); it != slot.end() && it->is_number()) {
+            p.temp = it->get<int>();
+        }
+        break;
+    }
+#endif
+    return p;
+}
+
+std::string upper(std::string s) {
+    std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) { return std::toupper(c); });
+    return s;
+}
+
+/// Same spool as far as Kalico keeps it (material is stored uppercase there).
+bool same_profile(const ExternalProfile& k, const SlotInfo& s) {
+    return upper(k.material) == upper(s.material) && k.brand == s.brand && k.name == s.spool_name &&
+           (k.color & 0xFFFFFFu) == (s.color_rgb & 0xFFFFFFu);
+}
 constexpr const char* kSeededFlag = "/k2oh/home_layout_seeded";
 
 struct Placement {
@@ -91,6 +157,14 @@ void K2ohHomeView::create(lv_obj_t* panel) {
     for (lv_subject_t* s : {ps.get_print_state_enum_subject(), ps.get_print_progress_subject()}) {
         observers_.push_back(observe_int_sync<K2ohHomeView>(s, this, state));
     }
+    observers_.push_back(observe_int_sync<K2ohHomeView>(
+        ams.get_slots_version_subject(), this,
+        [](K2ohHomeView* self, int) { self->sync_external_from_kalico(); },
+        ams.get_subjects_lifetime()));
+    observers_.push_back(observe_int_sync<K2ohHomeView>(
+        ams.get_external_spool_color_subject(), this,
+        [](K2ohHomeView* self, int) { self->push_external_to_kalico(); },
+        ams.get_subjects_lifetime()));
     auto k2oh = [](K2ohHomeView* self, int) { self->update_visibility(); };
     for (lv_subject_t* s : {ams.get_ams_type_subject(), ams.get_slots_version_subject()}) {
         observers_.push_back(
@@ -225,6 +299,59 @@ void K2ohHomeView::on_timer(lv_timer_t* timer) {
     if (self->root_ && !lv_obj_has_flag(self->root_, LV_OBJ_FLAG_HIDDEN)) {
         self->refresh_clock();
     }
+}
+
+void K2ohHomeView::sync_external_from_kalico() {
+    if (!K2ohCfsView::applies()) {
+        return;
+    }
+    const ExternalProfile k = kalico_external();
+    if (!k.valid) {
+        return;
+    }
+    auto& ams = AmsState::instance();
+    SlotInfo next = ams.get_external_spool_info().value_or(SlotInfo{});
+    if (same_profile(k, next)) {
+        return;
+    }
+    next.material = k.material;
+    next.brand = k.brand;
+    next.spool_name = k.name;
+    next.color_rgb = k.color;
+    next.nozzle_temp_min = k.temp;
+    next.nozzle_temp_max = k.temp;
+    next.slot_index = -2;
+    next.global_index = -2;
+    spdlog::info("[K2oh Home] external spool from Kalico: {} {} {}", k.brand, k.material, k.name);
+    mirroring_external_ = true;
+    ams.set_external_spool_info_in_memory(next);
+    mirroring_external_ = false;
+}
+
+void K2ohHomeView::push_external_to_kalico() {
+    if (mirroring_external_ || !K2ohCfsView::applies()) {
+        return;
+    }
+    const ExternalProfile k = kalico_external();
+    const auto spool = AmsState::instance().get_external_spool_info();
+    if (!k.valid || k.index < 0 || !spool || spool->material.empty() || same_profile(k, *spool)) {
+        return;
+    }
+#if HELIX_HAS_CFS
+    const std::string gcode = printer::AmsBackendCfs::slot_set_gcode(
+        k.index, spool->material, spool->color_rgb, spool->brand, spool->spool_name,
+        spool->spoolman_id);
+    IMoonrakerAPI* api = get_moonraker_api();
+    if (gcode.empty() || !api) {
+        return;
+    }
+    spdlog::info("[K2oh Home] external spool to Kalico: {}", gcode);
+    api->execute_gcode(
+        gcode, []() {},
+        [gcode](const MoonrakerError& err) {
+            spdlog::warn("[K2oh Home] {} failed: {}", gcode, err.message);
+        });
+#endif
 }
 
 } // namespace helix::ui
