@@ -156,7 +156,7 @@ lv_obj_t* K2ohPrintView::map_parent() const {
     if (!root_ || lv_obj_has_flag(root_, LV_OBJ_FLAG_HIDDEN)) {
         return nullptr;
     }
-    return lv_obj_find_by_name(root_, "ring_card");
+    return root_;
 }
 
 void K2ohPrintView::refresh() {
