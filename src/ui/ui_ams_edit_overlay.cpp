@@ -29,6 +29,8 @@
 #include "label_printer_utils.h"
 #endif
 #include "ui_breakpoint.h"
+#include "filament_op_dispatch.h"
+#include "ui_k2oh_cfs_view.h"
 #include "ui_k2oh_slot_params.h"
 #include "ui_overlay_qr_scanner.h"
 #include "ui_toast_manager.h"
@@ -720,6 +722,11 @@ void AmsEditOverlay::handle_change_filament() {
     enter_spool_edit();
 }
 
+namespace {
+/// The profile list's height on the K2 (800x480) once the gram fields are gone.
+constexpr int kK2ohSelectorHeight = 340;
+} // namespace
+
 bool AmsEditOverlay::populate_spool_edit_view() {
     // Everything the spool-edit view shows that XML alone cannot produce: the
     // catalog selector's vendor/type dropdown options and product rows, the
@@ -736,6 +743,19 @@ bool AmsEditOverlay::populate_spool_edit_view() {
     }
 
     populate_detail_fields();
+
+    // K2-OpenHost: Kalico tracks metres, not grams, so without a Spoolman spool
+    // the gram fields go and the profile list takes their room.
+    if (helix::ui::K2ohCfsView::applies() && working_info_.spoolman_id <= 0) {
+        for (const char* name : {"detail_field_remaining", "detail_field_spool_weight"}) {
+            if (lv_obj_t* field = find_widget(name)) {
+                lv_obj_add_flag(lv_obj_get_parent(field), LV_OBJ_FLAG_HIDDEN);
+            }
+        }
+        if (lv_obj_t* selector = find_widget("details_catalog_selector")) {
+            lv_obj_set_height(selector, kK2ohSelectorHeight);
+        }
+    }
     return true;
 }
 
@@ -1432,6 +1452,9 @@ void AmsEditOverlay::update_ui() {
         const std::string chip = helix::compose_filament_label(
             identity_brand, working_info_.spool_name, identity_material, " \xC2\xB7 ");
         snprintf(chip_text_buf_, sizeof(chip_text_buf_), "%s", chip.c_str());
+    } else if (working_info_.material.empty() && working_info_.brand.empty()) {
+        // Nothing assigned yet (an empty external spool): say so instead of "Generic / -".
+        snprintf(chip_text_buf_, sizeof(chip_text_buf_), "%s", lv_tr("No profile"));
     } else {
         snprintf(chip_text_buf_, sizeof(chip_text_buf_), "%s \xC2\xB7 %s", identity_brand,
                  identity_material);
@@ -1519,7 +1542,9 @@ void AmsEditOverlay::update_ui() {
     // AD5X IFS set true unconditionally: before `_IFS_VARS` discovery the
     // dropdown was offered and its write went into local state the firmware
     // replays nothing from.
-    const bool can_edit_mapping = backend && helix::printer::can_write_mapping_table(*backend);
+    // The external spool is no lane of the box's tool table (BOX_MODIFY_TN takes CFS slots only).
+    const bool can_edit_mapping = backend && helix::printer::can_write_mapping_table(*backend) &&
+                                  slot_index_ != helix::ui::EXTERNAL_SPOOL_SLOT;
 
     if (tool_remap_row) {
         if (can_edit_mapping) {

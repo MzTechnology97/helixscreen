@@ -212,6 +212,14 @@ void k2oh_add_slot_params(lv_obj_t* form_view, int slot_index) {
         set_text(root, "param_temp", std::to_string(it->get<int>()) + " °C");
     }
     set_text(root, "param_runout", runout_text(st->kalico_slot));
+    // The external spool has no runout partner: Kalico swaps between CFS slots only.
+    if (lv_obj_t* runout = lv_obj_find_by_name(root, "param_runout")) {
+        if (entry->value("external", false)) {
+            lv_obj_add_flag(lv_obj_get_parent(runout), LV_OBJ_FLAG_HIDDEN);
+        } else {
+            lv_obj_remove_flag(lv_obj_get_parent(runout), LV_OBJ_FLAG_HIDDEN);
+        }
+    }
 }
 
 } // namespace helix::ui

@@ -46,6 +46,7 @@ struct ExternalProfile {
     std::string name;
     uint32_t color = 0;
     int temp = 0;
+    std::string catalog_id; ///< "k2oh-<Kalico library id>" when a library profile is assigned
 };
 
 std::string text_field(const nlohmann::json& obj, const char* key) {
@@ -78,6 +79,9 @@ ExternalProfile kalico_external() {
         if (const auto it = slot.find("target_temp"); it != slot.end() && it->is_number()) {
             p.temp = it->get<int>();
         }
+        if (const std::string id = text_field(slot, "filament_id"); !id.empty()) {
+            p.catalog_id = "k2oh-" + id;
+        }
         break;
     }
 #endif
@@ -92,7 +96,8 @@ std::string upper(std::string s) {
 /// Same spool as far as Kalico keeps it (material is stored uppercase there).
 bool same_profile(const ExternalProfile& k, const SlotInfo& s) {
     return upper(k.material) == upper(s.material) && k.brand == s.brand && k.name == s.spool_name &&
-           (k.color & 0xFFFFFFu) == (s.color_rgb & 0xFFFFFFu);
+           (k.color & 0xFFFFFFu) == (s.color_rgb & 0xFFFFFFu) &&
+           upper(k.catalog_id) == upper(s.catalog_id);
 }
 constexpr const char* kSeededFlag = "/k2oh/home_layout_seeded";
 
@@ -330,6 +335,7 @@ void K2ohHomeView::sync_external_from_kalico() {
     next.color_rgb = k.color;
     next.nozzle_temp_min = k.temp;
     next.nozzle_temp_max = k.temp;
+    next.catalog_id = k.catalog_id;
     next.slot_index = -2;
     next.global_index = -2;
     spdlog::info("[K2oh Home] external spool from Kalico: {} {} {}", k.brand, k.material, k.name);
@@ -348,9 +354,9 @@ void K2ohHomeView::push_external_to_kalico() {
         return;
     }
 #if HELIX_HAS_CFS
-    const std::string gcode = printer::AmsBackendCfs::slot_set_gcode(
-        k.index, spool->material, spool->color_rgb, spool->brand, spool->spool_name,
-        spool->spoolman_id);
+    const std::string gcode = printer::AmsBackendCfs::slot_profile_gcode(
+        k.index, spool->catalog_id, spool->material, spool->color_rgb, spool->brand,
+        spool->spool_name, spool->spoolman_id);
     IMoonrakerAPI* api = get_moonraker_api();
     if (gcode.empty() || !api) {
         return;
