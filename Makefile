@@ -196,6 +196,11 @@ HELIX_VERSION := $(shell cat VERSION.txt 2>/dev/null || echo "0.0.0")
 HELIX_VERSION_MAJOR := $(word 1,$(subst ., ,$(HELIX_VERSION)))
 HELIX_VERSION_MINOR := $(word 2,$(subst ., ,$(HELIX_VERSION)))
 HELIX_VERSION_PATCH := $(word 3,$(subst ., ,$(HELIX_VERSION)))
+# K2-OpenHost fork build (VERSION-k2oh.txt, e.g. k2oh.1): HELIX_VERSION becomes
+# 1.0.6-k2oh.1, so the release tag, archive names and the in-app update check
+# tell fork builds apart; MAJOR/MINOR/PATCH stay upstream's.
+K2OH_SUFFIX := $(addprefix -,$(shell cat VERSION-k2oh.txt 2>/dev/null))
+HELIX_VERSION := $(HELIX_VERSION)$(K2OH_SUFFIX)
 # The short git hash is produced by scripts/gen-git-hash.sh into a generated
 # header, not read here: a make variable would be a second source of the same
 # value, free to drift from the one the binary actually reports.
