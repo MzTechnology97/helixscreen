@@ -27,6 +27,7 @@
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
+#include <cmath>
 #include <cstring>
 #include <memory>
 #include <unordered_map>
@@ -93,6 +94,8 @@ struct AmsSlotData {
     lv_obj_t* slot_badge = nullptr;      // Slot number label inside status badge
     lv_obj_t* tool_badge_bg = nullptr;   // Tool badge background (top-left corner)
     lv_obj_t* tool_badge = nullptr;      // Tool badge label (T0, T1, etc.)
+    lv_obj_t* percent_badge_bg = nullptr; // Remaining-percent badge (bottom-left)
+    lv_obj_t* percent_badge = nullptr;    // Remaining-percent label ("85%")
     lv_obj_t* container = nullptr;       // The ams_slot widget itself
 
     // Fill level for Spoolman integration (0.0 = empty, 1.0 = full)
@@ -234,6 +237,24 @@ static void apply_slot_fill_pct(AmsSlotData* data, int pct) {
     pct = std::clamp(pct, 0, 100);
     data->fill_level = static_cast<float>(pct) / 100.0f;
     update_filament_ring_size(data);
+
+    // K2-OpenHost: the remaining percent as text, next to the slot number. The
+    // fill subject moves with it, so this observer keeps it current.
+    if (!data->percent_badge_bg || !data->percent_badge)
+        return;
+    auto* backend = AmsState::instance().get_backend(data->backend_index);
+    const float remaining =
+        backend && data->slot_index >= 0
+            ? backend->get_slot_info(data->slot_index).get_remaining_percent()
+            : -1.0f;
+    if (remaining < 0.0f) {
+        lv_obj_add_flag(data->percent_badge_bg, LV_OBJ_FLAG_HIDDEN);
+        return;
+    }
+    char text[8];
+    snprintf(text, sizeof(text), "%d%%", std::clamp(static_cast<int>(std::lround(remaining)), 0, 100));
+    lv_label_set_text(data->percent_badge, text);
+    lv_obj_remove_flag(data->percent_badge_bg, LV_OBJ_FLAG_HIDDEN);
 }
 
 /**
@@ -970,6 +991,8 @@ static void* ams_slot_xml_create(lv_xml_parser_state_t* state, const char** attr
     data->slot_badge = lv_obj_find_by_name(obj, "slot_badge_label");
     data->tool_badge_bg = lv_obj_find_by_name(obj, "tool_badge");
     data->tool_badge = lv_obj_find_by_name(obj, "tool_badge_label");
+    data->percent_badge_bg = lv_obj_find_by_name(obj, "percent_badge");
+    data->percent_badge = lv_obj_find_by_name(obj, "percent_badge_label");
 
     // Validate required children were found
     if (!data->spool_container) {
