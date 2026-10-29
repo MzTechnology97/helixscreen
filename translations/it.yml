@@ -27,18 +27,27 @@ translations:
   Auto-swap at spool end: Cambio automatico
   CFS ready: CFS pronta
   CFS settings: Impostazioni CFS
+  Change the touch settings when the printer is not printing: Cambia le impostazioni del touch a stampante ferma
   Clog guard: Anti-intasamento
   Config: Impost.
+  'Controller threshold: higher = lighter touch': 'Soglia del controller: più alta = tocco più leggero'
+  Debounce filter: Filtro antirimbalzo
   Device operations: Operazioni dispositivo
+  Double: Doppi
   Elapsed: Trascorso
   Ends: Fine
+  Gloves: Guanti
+  High: Alta
   'Home, recover, abort, bypass mode': 'Home, recupera, interrompi, modalità bypass'
   IN HEAD: IN TESTA
   IN USE: IN USO
+  Ignores ghost and double touches: Ignora tocchi fantasma e doppi tocchi
   Left: Restano
   Light off: Spenta
   Light on: Accesa
+  Low: Bassa
   Max volumetric flow: Flusso massimo
+  Mild: Leggero
   More: Altro
   'No spool to swap to: it takes two identical spools (same material and colour).': 'Nessuna bobina di riserva: servono due bobine identiche (stesso materiale e colore).'
   'No spool to swap to: it takes two identical spools (same material and colour).': 'Nessuna bobina di riserva: servono due bobine identiche (stesso materiale e colore).'
@@ -57,14 +66,22 @@ translations:
   Read a spool's tag when it is inserted: Legge il tag di una bobina quando viene inserita
   Read every spool's tag when Klipper starts: Legge il tag di ogni bobina all'avvio di Klipper
   Reread RFID: Rileggi RFID
+  Restore original: Ripristina originale
   'Runout order not saved: {}': 'Ordine del cambio non salvato: {}'
   'Runout order not saved: {}': 'Ordine del cambio non salvato: {}'
   'Runout order not saved: {}': 'Ordine del cambio non salvato: {}'
   Runout swap: Cambio automatico
   Save order: Salva ordine
+  Saved in the touch controller: Salvato nel controller del touch
+  Sensitivity: Sensibilità
   Sent: Inviato
+  Strong: Forte
   'Switch, automatic or manual sequence': 'Interruttore, sequenza automatica o manuale'
   'The spool with the least left (RFID) goes first, then slot order.': 'Prima la bobina con meno filamento (RFID), poi in ordine di slot.'
+  The touch controller did not accept the change: Il controller del touch non ha accettato la modifica
+  'Touch controller not readable, nothing changed': 'Controller del touch non leggibile, nessuna modifica'
+  Touches: Tocchi
+  Try the touch: Prova il touch
   Unload After Print: Scarica a fine stampa
   Unload the filament into the CFS when a print ends: Riporta il filamento nella CFS a fine stampa
   'When a spool runs out, the print goes on with an identical one (same material and colour).': 'Quando una bobina finisce, la stampa continua con una identica (stesso materiale e colore).'

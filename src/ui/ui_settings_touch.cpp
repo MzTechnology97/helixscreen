@@ -3,6 +3,7 @@
 
 #include "ui_settings_touch.h"
 
+#include "ui_k2oh_touch.h"
 #include "ui_nav_manager.h"
 
 #include "input_settings_manager.h"
@@ -55,6 +56,7 @@ lv_obj_t* TouchSettingsOverlay::create(lv_obj_t* parent) {
         spdlog::error("[{}] Failed to create overlay from XML", get_name());
         return nullptr;
     }
+    helix::ui::k2oh_touch_setup(overlay_root_);
     lv_obj_add_flag(overlay_root_, LV_OBJ_FLAG_HIDDEN);
     spdlog::info("[{}] Overlay created", get_name());
     return overlay_root_;

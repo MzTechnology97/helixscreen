@@ -27,18 +27,27 @@ translations:
   Auto-swap at spool end: Auto-swap at spool end
   CFS ready: CFS ready
   CFS settings: CFS settings
+  Change the touch settings when the printer is not printing: Change the touch settings when the printer is not printing
   Clog guard: Clog guard
   Config: Config
+  'Controller threshold: higher = lighter touch': 'Controller threshold: higher = lighter touch'
+  Debounce filter: Debounce filter
   Device operations: Device operations
+  Double: Double
   Elapsed: Elapsed
   Ends: Ends
+  Gloves: Gloves
+  High: High
   'Home, recover, abort, bypass mode': 'Home, recover, abort, bypass mode'
   IN HEAD: IN HEAD
   IN USE: IN USE
+  Ignores ghost and double touches: Ignores ghost and double touches
   Left: Left
   Light off: Light off
   Light on: Light on
+  Low: Low
   Max volumetric flow: Max volumetric flow
+  Mild: Mild
   More: More
   'No spool to swap to: it takes two identical spools (same material and colour).': 'No spool to swap to: it takes two identical spools (same material and colour).'
   'No spool to swap to: it takes two identical spools (same material and colour).': 'No spool to swap to: it takes two identical spools (same material and colour).'
@@ -57,14 +66,22 @@ translations:
   Read a spool's tag when it is inserted: Read a spool's tag when it is inserted
   Read every spool's tag when Klipper starts: Read every spool's tag when Klipper starts
   Reread RFID: Reread RFID
+  Restore original: Restore original
   'Runout order not saved: {}': 'Runout order not saved: {}'
   'Runout order not saved: {}': 'Runout order not saved: {}'
   'Runout order not saved: {}': 'Runout order not saved: {}'
   Runout swap: Runout swap
   Save order: Save order
+  Saved in the touch controller: Saved in the touch controller
+  Sensitivity: Sensitivity
   Sent: Sent
+  Strong: Strong
   'Switch, automatic or manual sequence': 'Switch, automatic or manual sequence'
   'The spool with the least left (RFID) goes first, then slot order.': 'The spool with the least left (RFID) goes first, then slot order.'
+  The touch controller did not accept the change: The touch controller did not accept the change
+  'Touch controller not readable, nothing changed': 'Touch controller not readable, nothing changed'
+  Touches: Touches
+  Try the touch: Try the touch
   Unload After Print: Unload After Print
   Unload the filament into the CFS when a print ends: Unload the filament into the CFS when a print ends
   'When a spool runs out, the print goes on with an identical one (same material and colour).': 'When a spool runs out, the print goes on with an identical one (same material and colour).'

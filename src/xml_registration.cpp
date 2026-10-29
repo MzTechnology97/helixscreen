@@ -527,6 +527,8 @@ void register_xml_components() {
     register_xml("components/panel_widget_k2oh_light.xml");
     register_xml("components/panel_widget_k2oh_fans.xml");
     register_xml("k2oh_slot_params.xml"); // K2-OpenHost slot editor card
+    register_xml("k2oh_touch_controller.xml"); // K2-OpenHost Touch & Input
+    register_xml("k2oh_touch_test.xml");
     register_xml("components/panel_widget_led_controls.xml");
     register_xml("components/panel_widget_humidity.xml");
     register_xml("components/panel_widget_width_sensor.xml");
