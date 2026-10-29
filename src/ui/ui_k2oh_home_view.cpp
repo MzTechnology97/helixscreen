@@ -217,9 +217,20 @@ void K2ohHomeView::seed_layout_once() {
     if (!config || config->get<bool>(kSeededFlag, false)) {
         return;
     }
+    if (!k2oh_apply_home_layout()) {
+        return;
+    }
+    config->set<bool>(kSeededFlag, true);
+    config->save();
+}
+
+bool k2oh_apply_home_layout() {
+    if (!K2ohCfsView::applies()) {
+        return false;
+    }
     auto& widgets = PanelWidgetManager::instance().get_widget_config("home");
     if (widgets.pages().empty()) {
-        return;
+        return false;
     }
     auto& entries = widgets.page_entries_mut(0);
     for (auto& entry : entries) {
@@ -239,10 +250,9 @@ void K2ohHomeView::seed_layout_once() {
         it->rowspan = p.rowspan;
     }
     widgets.save();
-    config->set<bool>(kSeededFlag, true);
-    config->save();
     spdlog::info("[K2oh Home] K2-OpenHost Home layout applied (still editable)");
     PanelWidgetManager::instance().notify_config_changed("home");
+    return true;
 }
 
 void K2ohHomeView::refresh_state() {
