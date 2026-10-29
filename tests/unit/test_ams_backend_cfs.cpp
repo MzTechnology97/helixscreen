@@ -5884,6 +5884,47 @@ TEST_CASE("CFS Fork: Kalico's box switches are device actions (K2-OpenHost)",
     CHECK(backend.captured[1] == "_BOX_SET_UNLOAD_AFTER_PRINT ENABLE=1");
 }
 
+TEST_CASE("CFS flat: frames that only move unread fields skip the parse (K2-OpenHost)",
+          "[ams][cfs][flat][k2oh]") {
+    CfsRemapHelper backend;
+    int state_events = 0;
+    backend.set_event_callback([&](const std::string& event, const std::string&) {
+        if (event == AmsBackend::EVENT_STATE_CHANGED) {
+            ++state_events;
+        }
+    });
+    json box = make_flat_fork_box();
+    box["load_path"] = json::parse(R"({"box_addr": 1, "encoder": {"position_mm": -35984.2},
+        "buffer": {"active": false}, "clog_detection": {"encoder_delta_mm": 0.08}})");
+    CfsTestAccess::handle_status(backend, make_cfs_notification(box));
+    REQUIRE(state_events > 0);
+    const int after_full = state_events;
+
+    // Encoder and clog counters moved, plus fields nothing reads: no parse.
+    json delta;
+    delta["load_path"] = json::parse(R"({"box_addr": 1, "encoder": {"position_mm": -35983.9},
+        "buffer": {"active": false}, "clog_detection": {"encoder_delta_mm": 0.1}})");
+    delta["filament_check"] = json::parse(R"({"tools": [{"available_m": 371.3}]})");
+    CfsTestAccess::handle_status(backend, make_cfs_notification(delta));
+    CHECK(state_events == after_full);
+
+    // The buffer switch is shown: that frame is parsed.
+    delta = json::object();
+    delta["load_path"] = json::parse(R"({"box_addr": 1, "encoder": {"position_mm": -35983.0},
+        "buffer": {"active": true}})");
+    CfsTestAccess::handle_status(backend, make_cfs_notification(delta));
+    CHECK(state_events > after_full);
+    const int after_buffer = state_events;
+
+    // A slot change is always parsed.
+    delta = json::object();
+    delta["slots"] = box["slots"];
+    delta["slots"][1]["material"] = "PETG";
+    CfsTestAccess::handle_status(backend, make_cfs_notification(delta));
+    CHECK(state_events > after_buffer);
+    CHECK(backend.get_slot_info(1).material == "PETG");
+}
+
 TEST_CASE("CFS flat: the spool percent comes from Kalico's rfid_percent (K2-OpenHost)",
           "[ams][cfs][flat][k2oh]") {
     json box = make_flat_fork_box();
