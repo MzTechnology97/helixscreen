@@ -25,7 +25,9 @@
 
 #include <spdlog/spdlog.h>
 
+#include <algorithm>
 #include <cctype>
+#include <cstdlib>
 #include <optional>
 #include <string>
 #include <unordered_map>
@@ -673,6 +675,38 @@ AmsBackendCfs::parse_box_status(const nlohmann::json& box_json,
 // absent. The Fork firmware registers T<that index> for the external spool
 // holder (external_slot = max_physical_slot + 1 — it moves with the configured
 // box_count, so it must be read from the payload, never recomputed).
+// Tool mapping from a box "map" object ({"T1A": "T1D", ...}: tool -> lane in
+// TnnA form). Shared by the stock parse and the Kalico (flat) parse, which
+// publishes the same object.
+static void parse_tnn_tool_map(const nlohmann::json& map, AmsSystemInfo& info) {
+    // Find maximum tool index to size the mapping vector
+    int max_tool = -1;
+    for (auto& [tnn_key, tnn_val] : map.items()) {
+        int slot = CfsMaterialDb::tnn_to_slot(tnn_key);
+        if (slot >= 0 && slot > max_tool) {
+            max_tool = slot;
+        }
+    }
+    if (max_tool >= 0) {
+        info.tool_to_slot_map.resize(max_tool + 1, -1);
+        for (auto& [tnn_key, tnn_val] : map.items()) {
+            // The map value is a "TnnA" string; anything else (null for an
+            // unmapped tool, or a number) would make get<std::string>()
+            // throw type_error.302 out of parse_box_status and drop the
+            // whole box frame. Skip the entry instead — same is_string()
+            // discipline as the same_material group parse below.
+            if (!tnn_val.is_string()) {
+                continue;
+            }
+            int src = CfsMaterialDb::tnn_to_slot(tnn_key);
+            int dst = CfsMaterialDb::tnn_to_slot(tnn_val.get<std::string>());
+            if (src >= 0 && dst >= 0 && src < static_cast<int>(info.tool_to_slot_map.size())) {
+                info.tool_to_slot_map[src] = dst;
+            }
+        }
+    }
+}
+
 static int find_external_slot_index(const nlohmann::json& box_json) {
     auto it = box_json.find("slots");
     if (it == box_json.end() || !it->is_array()) {
@@ -730,32 +764,7 @@ AmsBackendCfs::parse_stock_box_status(const nlohmann::json& box_json,
 
     // Parse tool mapping from "map" object
     if (box_json.contains("map") && box_json["map"].is_object()) {
-        // Find maximum tool index to size the mapping vector
-        int max_tool = -1;
-        for (auto& [tnn_key, tnn_val] : box_json["map"].items()) {
-            int slot = CfsMaterialDb::tnn_to_slot(tnn_key);
-            if (slot >= 0 && slot > max_tool) {
-                max_tool = slot;
-            }
-        }
-        if (max_tool >= 0) {
-            info.tool_to_slot_map.resize(max_tool + 1, -1);
-            for (auto& [tnn_key, tnn_val] : box_json["map"].items()) {
-                // The map value is a "TnnA" string; anything else (null for an
-                // unmapped tool, or a number) would make get<std::string>()
-                // throw type_error.302 out of parse_box_status and drop the
-                // whole box frame. Skip the entry instead — same is_string()
-                // discipline as the same_material group parse below.
-                if (!tnn_val.is_string()) {
-                    continue;
-                }
-                int src = CfsMaterialDb::tnn_to_slot(tnn_key);
-                int dst = CfsMaterialDb::tnn_to_slot(tnn_val.get<std::string>());
-                if (src >= 0 && dst >= 0 && src < static_cast<int>(info.tool_to_slot_map.size())) {
-                    info.tool_to_slot_map[src] = dst;
-                }
-            }
-        }
+        parse_tnn_tool_map(box_json["map"], info);
     }
 
     // Build same_material lookup: material_type code -> material name string
@@ -1339,6 +1348,19 @@ AmsSystemInfo AmsBackendCfs::parse_flat_box_status(const nlohmann::json& box_jso
             slot.status =
                 loaded ? SlotStatus::LOADED : (present ? SlotStatus::AVAILABLE : SlotStatus::EMPTY);
 
+            // K2-OpenHost (Kalico): remaining filament. rfid_remaining_m is the
+            // CFS's own count or Kalico's estimate (rfid_remaining_source says
+            // which) and rfid_percent the matching share of the spool; both are
+            // null when unknown. No grams: a weight would reach Spoolman.
+            if (present || loaded) {
+                slot.remaining_length_m = std::max(
+                    0.0f, helix::json_util::safe_float(slot_json, "rfid_remaining_m", 0.0f));
+                const float pct = helix::json_util::safe_float(slot_json, "rfid_percent", -1.0f);
+                if (pct >= 0.0f) {
+                    slot.remaining_fraction = std::min(pct, 100.0f) / 100.0f;
+                }
+            }
+
             unit.slots.push_back(std::move(slot));
         }
     }
@@ -1398,10 +1420,53 @@ AmsSystemInfo AmsBackendCfs::parse_flat_box_status(const nlohmann::json& box_jso
         info.units.push_back(std::move(box));
     }
 
-    // Same single-writer pass as the stock parse. The flat payload carries no
-    // `map`, so tool_to_slot_map is empty here and identity_fallback supplies
-    // the 1:1 default in BOTH directions rather than in one of them.
-    sync_tool_map_from_forward(info, /*identity_fallback=*/true);
+    // K2-OpenHost (Kalico): which lane each Tn takes. During a print Kalico
+    // routes the file's tools through print_mapping.map alone (any other tool
+    // pauses the print) and clears it when the print ends; otherwise Tn follows
+    // box.map, in the stock TnnA form. Without either, identity_fallback gives
+    // the 1:1 default; with a print map it does not, as Kalico has none then.
+    const nlohmann::json* print_map = nullptr;
+    int active_tool = -1;
+    int active_slot = -1;
+    if (auto pm = box_json.find("print_mapping"); pm != box_json.end() && pm->is_object()) {
+        auto file_it = pm->find("filename");
+        auto map_it = pm->find("map");
+        if (file_it != pm->end() && file_it->is_string() && map_it != pm->end() &&
+            map_it->is_object()) {
+            print_map = &*map_it;
+            active_tool = helix::json_util::safe_int(*pm, "active_tool", -1);
+            active_slot = helix::json_util::safe_int(*pm, "active_slot", -1);
+        }
+    }
+    if (print_map != nullptr) {
+        for (const auto& [key, val] : print_map->items()) {
+            char* end = nullptr;
+            const long tool = std::strtol(key.c_str(), &end, 10);
+            if (key.empty() || *end != '\0' || tool < 0 || tool > 255 ||
+                !val.is_number_integer()) {
+                continue;
+            }
+            if (tool >= static_cast<long>(info.tool_to_slot_map.size())) {
+                info.tool_to_slot_map.resize(static_cast<size_t>(tool) + 1, -1);
+            }
+            info.tool_to_slot_map[static_cast<size_t>(tool)] = val.get<int>();
+        }
+    } else if (auto map_it = box_json.find("map");
+               map_it != box_json.end() && map_it->is_object()) {
+        parse_tnn_tool_map(*map_it, info);
+    }
+    sync_tool_map_from_forward(info, /*identity_fallback=*/print_map == nullptr);
+
+    // current_tool names the tool routed through the seated lane, as in the
+    // stock parse; the print's active tool wins when two tools share the lane.
+    if (info.current_slot >= 0) {
+        const auto* seated = info.get_slot_global(info.current_slot);
+        const int seated_tool = seated ? seated->mapped_tool : -1;
+        info.current_tool = seated_tool >= 0 ? seated_tool : info.current_slot;
+        if (active_tool >= 0 && active_slot == info.current_slot) {
+            info.current_tool = active_tool;
+        }
+    }
 
     return info;
 }
