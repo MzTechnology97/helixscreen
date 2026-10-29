@@ -15,6 +15,8 @@
     - slot_badge_label: text_small inside status_badge showing slot number
     - tool_badge: rounded rect at top-left showing tool assignment (T0, T1)
     - tool_badge_label: text_small inside tool_badge
+    - percent_badge: rounded rect at bottom-left showing the spool's remaining percent
+    - percent_badge_label: text_small inside percent_badge
 
     Requires C++ backing (ui_ams_slot.cpp) to handle:
     - Creating spool_canvas inside spool_container (3D visualization)
@@ -63,6 +65,17 @@
               hidden="true">
         <!-- Tool number label (T0, T1, etc.) -->
         <text_small name="tool_badge_label"
+                    text="" align="center" style_text_color="#text" clickable="false" event_bubble="true"/>
+      </lv_obj>
+
+      <!-- Remaining percent (bottom-left), hidden while unknown. K2-OpenHost. -->
+      <lv_obj name="percent_badge"
+              width="content" height="#ams_slot_status_badge_size" align="bottom_left" style_translate_x="2"
+              style_translate_y="-2" style_radius="10" style_bg_color="#ams_badge_bg" style_bg_opa="255"
+              style_border_width="#ams_slot_badge_border_w" style_border_color="#card_bg"
+              style_pad_left="#ams_slot_badge_pad_h" style_pad_right="#ams_slot_badge_pad_h" style_pad_top="0"
+              style_pad_bottom="0" scrollable="false" clickable="false" event_bubble="true" hidden="true">
+        <text_small name="percent_badge_label"
                     text="" align="center" style_text_color="#text" clickable="false" event_bubble="true"/>
       </lv_obj>
 
