@@ -35,6 +35,9 @@ class K2ohPrintView {
     void create(lv_obj_t* content);
     /// Shows it (and hides the stock content) while K2ohCfsView::applies().
     void update_visibility();
+    /// Where the exclude-object bed map goes while this view covers the stock
+    /// preview (the progress ring card); nullptr when the view is hidden.
+    lv_obj_t* map_parent() const;
 
   private:
     void refresh();

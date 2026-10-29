@@ -990,6 +990,10 @@ lv_obj_t* PrintStatusPanel::create(lv_obj_t* parent) {
 
     // Find thumbnail section for nested widgets
     lv_obj_t* thumbnail_section = lv_obj_find_by_name(overlay_content, "thumbnail_section");
+    // K2-OpenHost: the stock preview is hidden under the K2 view; the map covers its ring card.
+    if (lv_obj_t* k2oh_parent = k2oh_print_ ? k2oh_print_->map_parent() : nullptr) {
+        thumbnail_section = k2oh_parent;
+    }
     if (!thumbnail_section) {
         spdlog::error("[{}] thumbnail_section not found!", get_name());
         return nullptr;
@@ -1721,6 +1725,10 @@ void PrintStatusPanel::show_exclude_map_view() {
         return;
     }
     lv_obj_t* thumbnail_section = lv_obj_find_by_name(overlay_content, "thumbnail_section");
+    // K2-OpenHost: the stock preview is hidden under the K2 view; the map covers its ring card.
+    if (lv_obj_t* k2oh_parent = k2oh_print_ ? k2oh_print_->map_parent() : nullptr) {
+        thumbnail_section = k2oh_parent;
+    }
 
     int viewer_mode = lv_subject_get_int(&gcode_viewer_mode_subject_);
     bool thumbnail_mode = (viewer_mode == 0);

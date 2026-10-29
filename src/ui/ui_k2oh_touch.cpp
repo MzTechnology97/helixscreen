@@ -20,7 +20,6 @@
 #include <cstring>
 #include <filesystem>
 #include <fstream>
-#include <sstream>
 
 #ifdef __linux__
 #include <fcntl.h>
@@ -35,22 +34,6 @@ namespace helix::ui {
 namespace k2oh_touch {
 
 constexpr size_t kChecksum = 184; // 0x80FF, then 0x8100 config fresh
-
-std::vector<uint8_t> parse_proc_config(const std::string& text) {
-    const auto pos = text.find("real value");
-    if (pos == std::string::npos) {
-        return {};
-    }
-    std::istringstream in(text.substr(pos));
-    std::vector<uint8_t> out;
-    std::string token;
-    while (in >> token) {
-        if (token.rfind("0x", 0) == 0) {
-            out.push_back(static_cast<uint8_t>(std::strtoul(token.c_str(), nullptr, 16)));
-        }
-    }
-    return out;
-}
 
 std::vector<uint8_t> build_config(const std::vector<uint8_t>& cfg, uint8_t touch_level,
                                   uint8_t leave_level, uint8_t shake) {
@@ -76,7 +59,6 @@ namespace {
 
 using namespace k2oh_touch;
 
-constexpr const char* kProcPath = "/proc/gt9xx_config";
 constexpr const char* kDriverDir = "/sys/bus/i2c/drivers/gt9xxnew_ts";
 
 struct Level {
@@ -87,16 +69,6 @@ struct Level {
 constexpr Level kSensitivity[] = {{120, 90}, {100, 70}, {75, 50}, {55, 38}};
 // Off / Light (stock K2: 1) / Strong.
 constexpr uint8_t kShakeCount[] = {0, 1, 3};
-
-std::vector<uint8_t> read_controller() {
-    std::ifstream in(kProcPath);
-    if (!in) {
-        return {};
-    }
-    std::stringstream text;
-    text << in.rdbuf();
-    return parse_proc_config(text.str());
-}
 
 std::string backup_path() {
     return helix::get_user_config_dir() + "/gt911-config.orig";
@@ -126,8 +98,10 @@ bool save_backup(const std::vector<uint8_t>& cfg) {
     return static_cast<bool>(out);
 }
 
-/// One I2C message to the chip: register 0x8047 then the 186 config bytes.
-bool write_controller(const std::vector<uint8_t>& cfg) {
+/// The chip's config registers (0x8047..0x8100) over I2C: read into @p data when
+/// @p read, else written from it. Not /proc/gt9xx_config: the K2 driver overflows
+/// its buffer (kernel oops) when that file is read in chunks under ~2.5 KB.
+bool transfer(std::vector<uint8_t>& data, bool read) {
 #ifdef __linux__
     std::error_code ec;
     for (const auto& entry : std::filesystem::directory_iterator(kDriverDir, ec)) {
@@ -143,22 +117,39 @@ bool write_controller(const std::vector<uint8_t>& cfg) {
             spdlog::warn("[K2oh Touch] open {} failed: {}", dev, std::strerror(errno));
             return false;
         }
-        std::vector<uint8_t> buf{0x80, 0x47};
-        buf.insert(buf.end(), cfg.begin(), cfg.end());
-        i2c_msg msg{addr, 0, static_cast<uint16_t>(buf.size()), buf.data()};
-        i2c_rdwr_ioctl_data data{&msg, 1};
-        const bool ok = ioctl(fd, I2C_RDWR, &data) == 1;
+        uint8_t reg[2] = {0x80, 0x47};
+        std::vector<uint8_t> out(reg, reg + 2);
+        if (!read) {
+            out.insert(out.end(), data.begin(), data.end());
+        }
+        data.resize(kConfigLen);
+        i2c_msg msgs[2] = {{addr, 0, static_cast<uint16_t>(read ? 2 : out.size()), out.data()},
+                           {addr, I2C_M_RD, static_cast<uint16_t>(kConfigLen), data.data()}};
+        const int count = read ? 2 : 1;
+        i2c_rdwr_ioctl_data xfer{msgs, static_cast<uint32_t>(count)};
+        const bool ok = ioctl(fd, I2C_RDWR, &xfer) == count;
         if (!ok) {
-            spdlog::warn("[K2oh Touch] I2C write to {} 0x{:02X} failed: {}", dev, addr,
-                         std::strerror(errno));
+            spdlog::warn("[K2oh Touch] I2C {} {} 0x{:02X} failed: {}", read ? "read" : "write", dev,
+                         addr, std::strerror(errno));
         }
         close(fd);
         return ok;
     }
 #else
-    (void)cfg;
+    (void)data;
+    (void)read;
 #endif
     return false;
+}
+
+std::vector<uint8_t> read_controller() {
+    std::vector<uint8_t> cfg;
+    return transfer(cfg, true) ? cfg : std::vector<uint8_t>{};
+}
+
+bool write_controller(const std::vector<uint8_t>& cfg) {
+    std::vector<uint8_t> data = cfg;
+    return transfer(data, false);
 }
 
 struct Controller {
