@@ -90,24 +90,42 @@
         </lv_obj>
         <ui_switch name="runout_switch" size="small"/>
       </lv_obj>
-      <!-- Bypass: print from the external spool instead of the CFS. Shown when
-           the box has an external slot (ams_supports_bypass). -->
+      <!-- The external spool's card: its spool and profile, and the bypass switch
+           (print from it instead of the CFS). Shown when the box has an external
+           slot (ams_supports_bypass). -->
       <lv_obj name="bypass_row"
               height="content" flex_grow="1" style_radius="#border_radius" style_bg_color="#card_bg"
               style_bg_opa="255" style_border_width="0" style_pad_all="#space_xs" style_pad_left="#space_sm"
               style_pad_right="#space_sm" style_pad_gap="#space_sm" flex_flow="row" style_flex_cross_place="center"
               scrollable="false" clickable="true">
         <bind_flag_if_eq subject="ams_supports_bypass" flag="hidden" ref_value="0"/>
-        <icon src="filament" size="md" variant="primary" clickable="false" event_bubble="true"/>
+        <!-- The spool: filament colour with its hub hole, "E" while not set. -->
+        <lv_obj name="ext_core"
+                width="44" height="44" style_radius="22" style_bg_color="#elevated_bg" style_bg_opa="255"
+                style_border_width="3" style_border_color="#elevated_bg" style_pad_all="0" scrollable="false"
+                clickable="false" event_bubble="true">
+          <lv_obj name="ext_hole"
+                  width="12" height="12" align="center" style_radius="6" style_bg_color="#card_bg" style_bg_opa="255"
+                  style_border_width="0" scrollable="false" clickable="false" event_bubble="true"/>
+          <text_small name="ext_letter" text="E" align="center" style_text_color="#text_muted" clickable="false"
+                      event_bubble="true"/>
+        </lv_obj>
         <lv_obj height="content" flex_grow="1" style_pad_all="0" style_pad_gap="0" style_bg_opa="0"
                 style_border_width="0" flex_flow="column" scrollable="false" clickable="false" event_bubble="true">
-          <text_body text="Bypass" translation_tag="Bypass" clickable="false" event_bubble="true"/>
+          <text_body text="External spool" translation_tag="External spool" long_mode="dots" width="100%"
+                     clickable="false" event_bubble="true"/>
           <text_small name="bypass_detail" text="" long_mode="dots" width="100%" style_text_color="#text_muted"
                       clickable="false" event_bubble="true"/>
         </lv_obj>
-        <ui_switch name="bypass_switch_k2oh" size="small">
-          <bind_state_if_eq subject="ams_bypass_active" state="checked" ref_value="1"/>
-        </ui_switch>
+        <lv_obj width="content" height="content" style_pad_all="0" style_pad_gap="2" style_bg_opa="0"
+                style_border_width="0" flex_flow="column" style_flex_cross_place="center" scrollable="false"
+                clickable="false" event_bubble="true">
+          <text_xs text="Bypass" translation_tag="Bypass" style_text_color="#text_muted" clickable="false"
+                   event_bubble="true"/>
+          <ui_switch name="bypass_switch_k2oh" size="small">
+            <bind_state_if_eq subject="ams_bypass_active" state="checked" ref_value="1"/>
+          </ui_switch>
+        </lv_obj>
       </lv_obj>
     </lv_obj>
 

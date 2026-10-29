@@ -627,6 +627,15 @@ void K2ohCfsView::update_header(const AmsSystemInfo& info) {
     set_hidden(child(root_, "ext_chip"), !ext || info.supports_bypass);
     set_text(root_, "ext_label", std::string(lv_tr("External spool")) + ": " + ext_spool);
     set_text(root_, "bypass_detail", ext_spool);
+    // The external spool card's spool: the filament colour once a profile is set.
+    const bool ext_set = ext && !ext->material.empty();
+    if (lv_obj_t* core = child(root_, "ext_core")) {
+        lv_obj_set_style_bg_color(core, ext_set ? lv_color_hex(ext->color_rgb)
+                                                : theme_manager_get_color("elevated_bg"),
+                                  LV_PART_MAIN);
+    }
+    set_hidden(child(root_, "ext_hole"), !ext_set);
+    set_hidden(child(root_, "ext_letter"), ext_set);
 
     set_text(root_, "runout_detail", runout_text(info, loaded_slot_));
 
