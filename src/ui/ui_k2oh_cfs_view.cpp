@@ -30,6 +30,7 @@
 #include <any>
 #include <cmath>
 #include <cstring>
+#include <iterator>
 #include <map>
 #include <optional>
 #include <string>
@@ -146,6 +147,49 @@ K2ohCfsView::~K2ohCfsView() {
     }
 }
 
+namespace {
+
+/// Rail highlight for the overlays opened from it: 1 = CFS, 2 = Motion, 0 = back to
+/// the bound active-panel look. Local styles, so they win over the bound ones.
+void mark_rail(int which) {
+    static constexpr const char* kEntries[] = {
+        "nav_btn_home",     "nav_btn_print",    "nav_btn_cfs",      "nav_btn_motion",
+        "nav_btn_controls", "nav_btn_filament", "nav_btn_settings", "nav_btn_advanced"};
+    for (const char* name : kEntries) {
+        lv_obj_t* btn = lv_obj_find_by_name(lv_screen_active(), name);
+        if (!btn) {
+            continue;
+        }
+        const bool mine = (which == 1 && std::strcmp(name, "nav_btn_cfs") == 0) ||
+                          (which == 2 && std::strcmp(name, "nav_btn_motion") == 0);
+        if (which == 0) {
+            lv_obj_remove_local_style_prop(btn, LV_STYLE_BG_COLOR, LV_PART_MAIN);
+            lv_obj_remove_local_style_prop(btn, LV_STYLE_BG_OPA, LV_PART_MAIN);
+        } else {
+            lv_obj_set_style_bg_color(btn, theme_manager_get_color("primary"), LV_PART_MAIN);
+            lv_obj_set_style_bg_opa(btn, mine ? 45 : LV_OPA_TRANSP, LV_PART_MAIN);
+        }
+        // ui_button paints its labels with the text colour; the opened entry's goes primary.
+        if (lv_obj_t* label = lv_obj_find_by_name(btn, "nav_label")) {
+            lv_obj_set_style_text_color(label, theme_manager_get_color(mine ? "primary" : "text"),
+                                        LV_PART_MAIN);
+        }
+        if (lv_obj_t* icon = lv_obj_find_by_name(btn, "nav_icon")) {
+            ui_icon_set_variant(icon, mine ? "primary" : "muted");
+        }
+    }
+}
+
+void mark_rail_until_closed(lv_obj_t* overlay, int which) {
+    if (!overlay) {
+        return;
+    }
+    mark_rail(which);
+    NavigationManager::instance().register_overlay_close_callback(overlay, []() { mark_rail(0); });
+}
+
+} // namespace
+
 void k2oh_open_cfs_page() {
     auto& ams_panel = get_global_ams_panel();
     if (!ams_panel.are_subjects_initialized()) {
@@ -158,8 +202,10 @@ void k2oh_open_cfs_page() {
 }
 
 void k2oh_register_nav_callbacks() {
-    lv_xml_register_event_cb(nullptr, "k2oh_nav_cfs_clicked",
-                             [](lv_event_t* /*e*/) { k2oh_open_cfs_page(); });
+    lv_xml_register_event_cb(nullptr, "k2oh_nav_cfs_clicked", [](lv_event_t* /*e*/) {
+        k2oh_open_cfs_page();
+        mark_rail_until_closed(get_global_ams_panel().get_panel(), 1);
+    });
     lv_xml_register_event_cb(nullptr, "k2oh_nav_print_clicked", [](lv_event_t* /*e*/) {
         NavigationManager::instance().set_active(PanelId::PrintSelect);
     });
@@ -168,6 +214,7 @@ void k2oh_register_nav_callbacks() {
         static lv_obj_t* motion = nullptr;
         helix::ui::lazy_create_and_push_overlay<MotionPanel>(get_global_motion_panel, motion,
                                                              lv_screen_active(), "Motion", "K2ohNav");
+        mark_rail_until_closed(motion, 2);
     });
 }
 
@@ -181,6 +228,10 @@ void K2ohCfsView::on_root_deleted(lv_event_t* e) {
     self->action_observer_.reset();
     self->current_slot_observer_.reset();
     self->print_state_observer_.reset();
+    if (self->stage_timer_) {
+        lv_timer_delete(self->stage_timer_);
+        self->stage_timer_ = nullptr;
+    }
     self->root_ = nullptr;
     self->panel_ = nullptr;
     self->cards_row_ = nullptr;
@@ -430,6 +481,57 @@ void K2ohCfsView::update_card(Card& card, const SlotInfo& slot, bool loaded, boo
     set_text(root, "source_label", slot.remaining_estimated ? lv_tr("estimate") : "RFID");
 }
 
+namespace {
+
+/// "Loading 2 · to the head 3/5" from Kalico's operation stage; empty when unknown.
+std::string operation_stage_text() {
+    nlohmann::json op;
+#if HELIX_HAS_CFS
+    if (auto* cfs = dynamic_cast<printer::AmsBackendCfs*>(AmsState::instance().get_backend())) {
+        op = cfs->box_field("operation");
+    }
+#endif
+    if (!op.is_object() || !op.value("active", false) || !op["kind"].is_string() ||
+        !op["stage"].is_string()) {
+        return "";
+    }
+    struct Stage {
+        const char* id;
+        const char* label;
+    };
+    static constexpr Stage kLoad[] = {{"preparing", "preparing"},
+                                      {"feeding_to_buffer", "to the buffer"},
+                                      {"feeding_to_printhead", "to the head"},
+                                      {"seating", "seating"},
+                                      {"verifying", "checking"}};
+    static constexpr Stage kUnload[] = {{"preparing", "preparing"},
+                                        {"retracting_from_printhead", "out of the head"},
+                                        {"retracting_to_cfs", "back to the CFS"},
+                                        {"verifying", "checking"}};
+    const std::string kind = op["kind"].get<std::string>();
+    const std::string stage = op["stage"].get<std::string>();
+    const bool load = kind == "load";
+    if (!load && kind != "unload") {
+        return "";
+    }
+    const Stage* stages = load ? kLoad : kUnload;
+    const size_t count = load ? std::size(kLoad) : std::size(kUnload);
+    for (size_t i = 0; i < count; ++i) {
+        if (stage != stages[i].id) {
+            continue;
+        }
+        std::string text = lv_tr(load ? "Loading" : "Unloading");
+        if (op["slot"].is_number_integer()) {
+            text += " " + std::to_string(op["slot"].get<int>() + 1);
+        }
+        return text + " · " + lv_tr(stages[i].label) + " " + std::to_string(i + 1) + "/" +
+               std::to_string(count);
+    }
+    return "";
+}
+
+} // namespace
+
 void K2ohCfsView::update_header(const AmsSystemInfo& info) {
     const bool error = info.action == AmsAction::ERROR;
     const bool busy = info.action != AmsAction::IDLE && !error;
@@ -437,6 +539,26 @@ void K2ohCfsView::update_header(const AmsSystemInfo& info) {
     if (error || busy) {
         state = info.operation_detail.empty() ? lv_tr(ams_action_to_string(info.action))
                                               : info.operation_detail;
+    }
+    if (busy) {
+        if (const std::string stage = operation_stage_text(); !stage.empty()) {
+            state = stage;
+        }
+        // A stage change alone bumps no AmsState subject: poll it while busy.
+        if (!stage_timer_) {
+            stage_timer_ = lv_timer_create(
+                [](lv_timer_t* t) {
+                    auto* self = static_cast<K2ohCfsView*>(lv_timer_get_user_data(t));
+                    AmsBackend* backend = AmsState::instance().get_backend();
+                    if (backend) { // also ends the timer once the operation is over
+                        self->update_header(backend->get_system_info());
+                    }
+                },
+                500, this);
+        }
+    } else if (stage_timer_) {
+        lv_timer_delete(stage_timer_);
+        stage_timer_ = nullptr;
     }
     set_text(root_, "state_label", state);
     if (lv_obj_t* icon = child(root_, "state_icon")) {

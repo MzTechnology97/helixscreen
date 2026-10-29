@@ -2897,10 +2897,12 @@
   <translation tag="active" en="active"/>
   <translation tag="active, no events" en="active, no events"/>
   <translation tag="at rest" en="at rest"/>
+  <translation tag="back to the CFS" en="back to the CFS"/>
   <translation tag="bed" en="bed"/>
   <translation tag="by Preston Brown" en="by Preston Brown"/>
   <translation tag="cancelled" en="cancelled"/>
   <translation tag="chamber heater" en="chamber heater"/>
+  <translation tag="checking" en="checking"/>
   <translation tag="clog detected" en="clog detected"/>
   <translation tag="complete" en="complete"/>
   <translation tag="completed" en="completed"/>
@@ -2949,12 +2951,15 @@
   <translation tag="off" en="off"/>
   <translation tag="ok" en="ok"/>
   <translation tag="or type a macro name" en="or type a macro name"/>
+  <translation tag="out of the head" en="out of the head"/>
+  <translation tag="preparing" en="preparing"/>
   <translation tag="printer default" en="printer default"/>
   <translation tag="prints" en="prints"/>
   <translation tag="profile" en="profile"/>
   <translation tag="remaining" en="remaining"/>
   <translation tag="remaining before clog detection triggers" en="remaining before clog detection triggers"/>
   <translation tag="rendering" en="rendering"/>
+  <translation tag="seating" en="seating"/>
   <translation tag="sensor error" en="sensor error"/>
   <translation tag="slot" en="slot"/>
   <translation tag="slot order" en="slot order"/>
@@ -2963,6 +2968,8 @@
   <translation tag="steppers" en="steppers"/>
   <translation tag="still" en="still"/>
   <translation tag="tall" en="tall"/>
+  <translation tag="to the buffer" en="to the buffer"/>
+  <translation tag="to the head" en="to the head"/>
   <translation tag="today" en="today"/>
   <translation tag="tool(s)" en="tool(s)"/>
   <translation tag="unknown tag" en="unknown tag"/>

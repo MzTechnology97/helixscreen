@@ -2897,10 +2897,12 @@
   <translation tag="active" it="attivo"/>
   <translation tag="active, no events" it="attivo, nessun evento"/>
   <translation tag="at rest" it="a riposo"/>
+  <translation tag="back to the CFS" it="rientro nel CFS"/>
   <translation tag="bed" it="piano"/>
   <translation tag="by Preston Brown" it="di Preston Brown"/>
   <translation tag="cancelled" it="annullata"/>
   <translation tag="chamber heater" it="riscaldatore camera"/>
+  <translation tag="checking" it="verifica"/>
   <translation tag="clog detected" it="intasamento!"/>
   <translation tag="complete" it="completato"/>
   <translation tag="completed" it="completata"/>
@@ -2949,12 +2951,15 @@
   <translation tag="off" it="spento"/>
   <translation tag="ok" it="normale"/>
   <translation tag="or type a macro name" it="oppure digita un nome di macro"/>
+  <translation tag="out of the head" it="uscita dalla testa"/>
+  <translation tag="preparing" it="preparazione"/>
   <translation tag="printer default" it="predefinito stampante"/>
   <translation tag="prints" it="stampe"/>
   <translation tag="profile" it="profilo"/>
   <translation tag="remaining" it="rimanente"/>
   <translation tag="remaining before clog detection triggers" it="rimanente prima che si attivi il rilevamento intasamento"/>
   <translation tag="rendering" it="rendering"/>
+  <translation tag="seating" it="innesto"/>
   <translation tag="sensor error" it="errore sensore"/>
   <translation tag="slot" it="slot"/>
   <translation tag="slot order" it="ordine degli slot"/>
@@ -2963,6 +2968,8 @@
   <translation tag="steppers" it="motori passo-passo"/>
   <translation tag="still" it="fermo"/>
   <translation tag="tall" it="di altezza"/>
+  <translation tag="to the buffer" it="verso il buffer"/>
+  <translation tag="to the head" it="verso la testa"/>
   <translation tag="today" it="oggi"/>
   <translation tag="tool(s)" it="utensile/i"/>
   <translation tag="unknown tag" it="tag sconosciuto"/>

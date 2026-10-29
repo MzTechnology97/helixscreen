@@ -112,6 +112,8 @@ class K2ohCfsView {
     ObserverGuard action_observer_;
     ObserverGuard current_slot_observer_;
     ObserverGuard print_state_observer_;
+    /// Re-reads Kalico's operation stage while a load or unload runs.
+    lv_timer_t* stage_timer_ = nullptr;
 };
 
 } // namespace helix::ui
