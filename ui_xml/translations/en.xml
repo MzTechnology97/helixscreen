@@ -1580,6 +1580,7 @@
   <translation tag="No USB printer detected" en="No USB printer detected"/>
   <translation tag="No USB printers found" en="No USB printers found"/>
   <translation tag="No automatic backup-spool package is installed" en="No automatic backup-spool package is installed"/>
+  <translation tag="No backup spool" en="No backup spool"/>
   <translation tag="No buffer data available" en="No buffer data available"/>
   <translation tag="No camera — use USB barcode scanner" en="No camera — use USB barcode scanner"/>
   <translation tag="No chamber temperature sensor detected" en="No chamber temperature sensor detected"/>

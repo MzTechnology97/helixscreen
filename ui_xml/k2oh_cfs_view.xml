@@ -85,7 +85,7 @@
                 style_border_width="0" flex_flow="column" scrollable="false" clickable="false">
           <text_body text="Auto-swap at spool end" translation_tag="Auto-swap at spool end" long_mode="dots"
                      width="100%" clickable="false"/>
-          <text_small name="runout_detail" text="" long_mode="dots" width="100%" style_text_color="#text_muted"
+          <text_small name="runout_detail" text="" long_mode="dots" width="100%" style_max_height="40" style_text_color="#text_muted"
                       clickable="false"/>
         </lv_obj>
         <ui_switch name="runout_switch" size="small"/>

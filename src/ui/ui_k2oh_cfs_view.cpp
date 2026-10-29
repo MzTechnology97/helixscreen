@@ -137,7 +137,15 @@ std::string runout_text(const AmsSystemInfo& info, int loaded_slot) {
         text += (text.empty() ? "" : "  ·  ") + line;
     }
     if (text.empty()) {
-        text = lv_subject_get_string(AmsState::instance().get_endless_text_subject());
+        // One short line: the card has no room for the stock sentence and its reason.
+        auto& ams = AmsState::instance();
+        if (static_cast<helix::printer::EndlessSpoolStatusKind>(lv_subject_get_int(ams.get_endless_state_subject())) ==
+            helix::printer::EndlessSpoolStatusKind::OnWithoutBackup) {
+            text = lv_tr("No backup spool");
+        } else {
+            text = lv_subject_get_string(ams.get_endless_text_subject());
+            text = text.substr(0, text.find('\n'));
+        }
     }
     return text;
 }
