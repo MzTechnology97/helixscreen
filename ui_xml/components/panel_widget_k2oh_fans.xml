@@ -1,0 +1,77 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- K2-OpenHost Home widget: part, hotend and aux fans with their speed; the
+     icon is coloured while a fan spins. Tapping opens the fan controls. -->
+<component>
+  <view name="panel_widget_k2oh_fans"
+        extends="lv_obj" height="100%" flex_grow="1" style_bg_color="#card_bg" style_bg_opa="255" style_radius="#border_radius" style_border_width="0" style_pad_all="#space_sm" style_pad_gap="#space_xs"
+        flex_flow="column" scrollable="false" clickable="true">
+    <lv_obj width="100%" height="content" style_pad_all="0" style_pad_gap="#space_xs" style_bg_opa="0"
+            style_border_width="0" flex_flow="row" style_flex_cross_place="center" scrollable="false"
+            clickable="false" event_bubble="true">
+      <icon src="fan" size="xs" variant="muted" clickable="false" event_bubble="true"/>
+      <text_xs text="Fans" translation_tag="Fans" text_transform="uppercase" flex_grow="1"
+               style_text_color="#text_muted" clickable="false" event_bubble="true"/>
+    </lv_obj>
+    <lv_obj name="fan_part_row" width="100%" flex_grow="1" style_pad_all="0" style_pad_gap="#space_sm"
+            style_bg_opa="0" style_border_width="0" flex_flow="row" style_flex_cross_place="center"
+            scrollable="false" clickable="false" event_bubble="true">
+      <lv_obj width="34" height="34" style_radius="10" style_bg_color="#elevated_bg" style_bg_opa="255"
+              style_border_width="0" style_pad_all="0" scrollable="false" clickable="false" event_bubble="true">
+        <icon name="fan_part_icon" src="fan" size="sm" variant="muted" align="center" clickable="false"
+              event_bubble="true"/>
+      </lv_obj>
+      <lv_obj flex_grow="1" height="content" style_pad_all="0" style_pad_gap="4" style_bg_opa="0"
+              style_border_width="0" flex_flow="column" scrollable="false" clickable="false" event_bubble="true">
+        <lv_obj width="100%" height="content" style_pad_all="0" style_bg_opa="0" style_border_width="0"
+                flex_flow="row" scrollable="false" clickable="false" event_bubble="true">
+          <text_small name="fan_part_name" text="" flex_grow="1" long_mode="clip" style_text_color="#text_muted"
+                      clickable="false" event_bubble="true"/>
+          <text_small name="fan_part_value" text="" clickable="false" event_bubble="true"/>
+        </lv_obj>
+        <lv_bar name="fan_part_bar" width="100%" height="6" min_value="0" max_value="100" style_radius="3"
+                style_bg_color="#elevated_bg" style_bg_opa="255" clickable="false" event_bubble="true"/>
+      </lv_obj>
+    </lv_obj>
+    <lv_obj name="fan_hotend_row" width="100%" flex_grow="1" style_pad_all="0" style_pad_gap="#space_sm"
+            style_bg_opa="0" style_border_width="0" flex_flow="row" style_flex_cross_place="center"
+            scrollable="false" clickable="false" event_bubble="true">
+      <lv_obj width="34" height="34" style_radius="10" style_bg_color="#elevated_bg" style_bg_opa="255"
+              style_border_width="0" style_pad_all="0" scrollable="false" clickable="false" event_bubble="true">
+        <icon name="fan_hotend_icon" src="fan" size="sm" variant="muted" align="center" clickable="false"
+              event_bubble="true"/>
+      </lv_obj>
+      <lv_obj flex_grow="1" height="content" style_pad_all="0" style_pad_gap="4" style_bg_opa="0"
+              style_border_width="0" flex_flow="column" scrollable="false" clickable="false" event_bubble="true">
+        <lv_obj width="100%" height="content" style_pad_all="0" style_bg_opa="0" style_border_width="0"
+                flex_flow="row" scrollable="false" clickable="false" event_bubble="true">
+          <text_small name="fan_hotend_name" text="" flex_grow="1" long_mode="clip" style_text_color="#text_muted"
+                      clickable="false" event_bubble="true"/>
+          <text_small name="fan_hotend_value" text="" clickable="false" event_bubble="true"/>
+        </lv_obj>
+        <lv_bar name="fan_hotend_bar" width="100%" height="6" min_value="0" max_value="100" style_radius="3"
+                style_bg_color="#elevated_bg" style_bg_opa="255" clickable="false" event_bubble="true"/>
+      </lv_obj>
+    </lv_obj>
+    <lv_obj name="fan_aux_row" width="100%" flex_grow="1" style_pad_all="0" style_pad_gap="#space_sm"
+            style_bg_opa="0" style_border_width="0" flex_flow="row" style_flex_cross_place="center"
+            scrollable="false" clickable="false" event_bubble="true">
+      <lv_obj width="34" height="34" style_radius="10" style_bg_color="#elevated_bg" style_bg_opa="255"
+              style_border_width="0" style_pad_all="0" scrollable="false" clickable="false" event_bubble="true">
+        <icon name="fan_aux_icon" src="fan" size="sm" variant="muted" align="center" clickable="false"
+              event_bubble="true"/>
+      </lv_obj>
+      <lv_obj flex_grow="1" height="content" style_pad_all="0" style_pad_gap="4" style_bg_opa="0"
+              style_border_width="0" flex_flow="column" scrollable="false" clickable="false" event_bubble="true">
+        <lv_obj width="100%" height="content" style_pad_all="0" style_bg_opa="0" style_border_width="0"
+                flex_flow="row" scrollable="false" clickable="false" event_bubble="true">
+          <text_small name="fan_aux_name" text="" flex_grow="1" long_mode="clip" style_text_color="#text_muted"
+                      clickable="false" event_bubble="true"/>
+          <text_small name="fan_aux_value" text="" clickable="false" event_bubble="true"/>
+        </lv_obj>
+        <lv_bar name="fan_aux_bar" width="100%" height="6" min_value="0" max_value="100" style_radius="3"
+                style_bg_color="#elevated_bg" style_bg_opa="255" clickable="false" event_bubble="true"/>
+      </lv_obj>
+    </lv_obj>
+  </view>
+</component>

@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- K2-OpenHost Home widget: the CFS spools with their share, the one in the
+     head tagged, and the box humidity. Tapping opens the CFS page. -->
+<component>
+  <view name="panel_widget_k2oh_cfs"
+        extends="lv_obj" height="100%" flex_grow="1" style_bg_color="#card_bg" style_bg_opa="255" style_radius="#border_radius" style_border_width="0" style_pad_all="#space_sm" style_pad_gap="#space_xs"
+        flex_flow="column" scrollable="false" clickable="true">
+    <lv_obj width="100%" height="content" style_pad_all="0" style_pad_gap="#space_xs" style_bg_opa="0"
+            style_border_width="0" flex_flow="row" style_flex_cross_place="center" scrollable="false"
+            clickable="false" event_bubble="true">
+      <icon src="album" size="xs" variant="muted" clickable="false" event_bubble="true"/>
+      <text_xs text="CFS" text_transform="uppercase" flex_grow="1"
+               style_text_color="#text_muted" clickable="false" event_bubble="true"/>
+      <lv_obj name="env_chip" width="content" height="content" style_radius="12" style_bg_color="#success"
+              style_bg_opa="45" style_border_width="0" style_pad_left="#space_sm" style_pad_right="#space_sm"
+              style_pad_top="1" style_pad_bottom="1" style_pad_gap="#space_xxs" flex_flow="row"
+              style_flex_cross_place="center" scrollable="false" clickable="false" event_bubble="true" hidden="true">
+        <icon name="env_icon" src="water" size="xs" variant="success" clickable="false" event_bubble="true"/>
+        <text_xs name="cfs_env" text="" clickable="false" event_bubble="true"/>
+      </lv_obj>
+    </lv_obj>
+    <lv_obj name="spools_row" width="100%" flex_grow="1" style_pad_all="0" style_pad_gap="#space_xs"
+            style_pad_top="#space_xs" style_bg_opa="0" style_border_width="0" flex_flow="row" scrollable="false"
+            clickable="false" event_bubble="true"/>
+  </view>
+</component>

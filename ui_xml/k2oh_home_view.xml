@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- K2-OpenHost Home status line, fixed above the widget grid: printer state,
+     name and clock. The right end leaves room for the e-stop. -->
+<component>
+  <view extends="lv_obj"
+        width="100%" height="40" style_pad_left="#space_sm" style_pad_right="56" style_pad_top="#space_xs"
+        style_pad_bottom="0" style_pad_gap="#space_sm" style_bg_opa="0" style_border_width="0" flex_flow="row"
+        style_flex_cross_place="center" scrollable="false">
+    <lv_obj name="state_chip"
+            width="content" height="content" style_radius="14" style_bg_color="#success" style_bg_opa="45"
+            style_border_width="0" style_pad_left="#space_sm" style_pad_right="#space_sm" style_pad_top="#space_xxs"
+            style_pad_bottom="#space_xxs" style_pad_gap="#space_xs" flex_flow="row" style_flex_cross_place="center"
+            scrollable="false" clickable="false">
+      <icon name="state_icon" src="check_circle" size="xs" variant="success" clickable="false"/>
+      <text_small name="state_label" text="" clickable="false"/>
+    </lv_obj>
+    <text_muted name="printer_label" text="K2-OpenHost" clickable="false"/>
+    <lv_obj width="1" height="1" flex_grow="1" style_bg_opa="0" style_border_width="0" scrollable="false"
+            clickable="false"/>
+    <icon src="wifi" size="xs" variant="muted" clickable="false">
+      <bind_flag_if_eq subject="wifi_connected" flag="hidden" ref_value="0"/>
+    </icon>
+    <!-- Notifications, as the stock alerts widget: tap for the history, badge with the count. -->
+    <lv_obj width="content" height="content" style_pad_all="0" style_bg_opa="0" style_border_width="0"
+            scrollable="false">
+      <icon src="notifications" size="sm" variant="muted" clickable="true" click_focusable="false"
+            ext_click_area="8">
+        <event_cb trigger="clicked" callback="status_notification_history_clicked"/>
+      </icon>
+      <notification_badge align="top_right" x="4" y="-4" hidden="true" clickable="false"
+                          bind_text="notification_count_text">
+        <bind_flag_if_eq subject="notification_count" flag="hidden" ref_value="0"/>
+      </notification_badge>
+    </lv_obj>
+    <text_body name="clock_label" text="" clickable="false"/>
+  </view>
+</component>

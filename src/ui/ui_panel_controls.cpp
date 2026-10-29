@@ -1028,8 +1028,9 @@ void ControlsPanel::populate_secondary_fans() {
 
         // "N additional fans" label
         char more_buf[32];
-        std::snprintf(more_buf, sizeof(more_buf), lv_tr("%d additional fan%s"), additional,
-                      additional == 1 ? "" : "s");
+        // One string per number: the English "s" suffix broke other languages.
+        std::snprintf(more_buf, sizeof(more_buf),
+                      lv_tr(additional == 1 ? "%d additional fan" : "%d additional fans"), additional);
         lv_obj_t* more_label = lv_label_create(more_row);
         lv_label_set_text(more_label, more_buf);
         lv_obj_set_style_text_color(more_label, theme_manager_get_color("text_muted"), 0);

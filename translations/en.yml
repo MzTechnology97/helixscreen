@@ -6,6 +6,8 @@ translations:
   '"%s" failed to load': '"%s" failed to load'
   '%.1f Hz difference': '%.1f Hz difference'
   '%d additional fan%s': '%d additional fan%s'
+  '%d additional fan': '%d additional fan'
+  '%d additional fans': '%d additional fans'
   '%d disabled': '%d disabled'
   '%d failed to load - see details below': '%d failed to load - see details below'
   '%d more sensors': '%d more sensors'
@@ -19,6 +21,110 @@ translations:
   '%zu changes': '%zu changes'
   '%zu events queued': '%zu events queued'
   '%zu plugins failed to load': '%zu plugins failed to load'
+  .: .
+  'Are you sure you want to delete ''%s''? This action cannot be undone.': 'Are you sure you want to delete ''%s''? This action cannot be undone.'
+  'Arrange each group with the arrows, then save.': 'Arrange each group with the arrows, then save.'
+  Auto-swap at spool end: Auto-swap at spool end
+  CFS ready: CFS ready
+  CFS settings: CFS settings
+  Change the touch settings when the printer is not printing: Change the touch settings when the printer is not printing
+  Clog guard: Clog guard
+  Config: Config
+  'Controller threshold: higher = lighter touch': 'Controller threshold: higher = lighter touch'
+  Debounce filter: Debounce filter
+  Device operations: Device operations
+  Double: Double
+  Elapsed: Elapsed
+  Ends: Ends
+  Gloves: Gloves
+  High: High
+  'Home, recover, abort, bypass mode': 'Home, recover, abort, bypass mode'
+  IN HEAD: IN HEAD
+  IN USE: IN USE
+  Ignores ghost and double touches: Ignores ghost and double touches
+  Left: Left
+  Light off: Light off
+  Light on: Light on
+  Low: Low
+  Max volumetric flow: Max volumetric flow
+  Mild: Mild
+  More: More
+  No backup spool: No backup spool
+  No profile: No profile
+  'No spool to swap to: it takes two identical spools (same material and colour).': 'No spool to swap to: it takes two identical spools (same material and colour).'
+  'No spool to swap to: it takes two identical spools (same material and colour).': 'No spool to swap to: it takes two identical spools (same material and colour).'
+  'No spool to swap to: it takes two identical spools (same material and colour).': 'No spool to swap to: it takes two identical spools (same material and colour).'
+  Not recognised: Not recognised
+  Nozzle temperature: Nozzle temperature
+  Pause when the CFS stops feeding: Pause when the CFS stops feeding
+  'Pressure advance not saved: {}': 'Pressure advance not saved: {}'
+  Pressure advance: Pressure advance
+  Print a file: Print a file
+  Print parameters: Print parameters
+  Printhead sensor: Printhead sensor
+  Profile: Profile
+  Read RFID At Startup: Read RFID At Startup
+  Read RFID On Insert: Read RFID On Insert
+  Read a spool's tag when it is inserted: Read a spool's tag when it is inserted
+  Read every spool's tag when Klipper starts: Read every spool's tag when Klipper starts
+  Reread RFID: Reread RFID
+  Restore original: Restore original
+  'Runout order not saved: {}': 'Runout order not saved: {}'
+  'Runout order not saved: {}': 'Runout order not saved: {}'
+  'Runout order not saved: {}': 'Runout order not saved: {}'
+  Runout swap: Runout swap
+  Save order: Save order
+  Saved in the touch controller: Saved in the touch controller
+  Sensitivity: Sensitivity
+  Sent: Sent
+  Strong: Strong
+  'Switch, automatic or manual sequence': 'Switch, automatic or manual sequence'
+  'The spool with the least left (RFID) goes first, then slot order.': 'The spool with the least left (RFID) goes first, then slot order.'
+  The touch controller did not accept the change: The touch controller did not accept the change
+  'Touch controller not readable, nothing changed': 'Touch controller not readable, nothing changed'
+  Touches: Touches
+  Try the touch: Try the touch
+  Unload After Print: Unload After Print
+  Unload the filament into the CFS when a print ends: Unload the filament into the CFS when a print ends
+  'When a spool runs out, the print goes on with an identical one (same material and colour).': 'When a spool runs out, the print goes on with an identical one (same material and colour).'
+  active, no events: active, no events
+  active: active
+  at rest: at rest
+  back to the CFS: back to the CFS
+  cancelled: cancelled
+  checking: checking
+  clog detected: clog detected
+  completed: completed
+  dry: dry
+  empty: empty
+  estimate: estimate
+  events: events
+  failed: failed
+  feeding: feeding
+  filament present: filament present
+  humid: humid
+  in use: in use
+  last: last
+  layer: layer
+  lowest remaining first: lowest remaining first
+  manual order: manual order
+  moving: moving
+  no filament: no filament
+  no identical spool: no identical spool
+  ok: ok
+  out of the head: out of the head
+  preparing: preparing
+  profile: profile
+  seating: seating
+  sensor error: sensor error
+  slot: slot
+  slot order: slot order
+  still: still
+  to the buffer: to the buffer
+  to the head: to the head
+  today: today
+  unknown tag: unknown tag
+  yesterday: yesterday
   "'{}' already exists. Replace the stored mesh?": "'{}' already exists. Replace the stored mesh?"
   "'{}' and '{}' already exist. Replace the stored meshes?": "'{}' and '{}' already exist. Replace the stored meshes?"
   (different grade): (different grade)
@@ -339,6 +445,8 @@ translations:
   Button taps and navigation sounds: Button taps and navigation sounds
   Buzz Servo: Buzz Servo
   Bypass: Bypass
+  External spool: External spool
+  not set: not set
   Bypass Is Active: Bypass Is Active
   Bypass Mode: Bypass Mode
   Bypass active — this print runs on the external spool.: Bypass active — this print runs on the external spool.

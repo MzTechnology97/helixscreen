@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- K2-OpenHost slot editor: the print parameters Kalico keeps for the slot
+     (profile, pressure advance, max flow, nozzle temperature) and its runout
+     group. Pressure advance is changed here and saved with Apply. -->
+<component>
+  <view extends="lv_obj"
+        width="100%" height="content" style_bg_color="#card_bg" style_bg_opa="255" style_radius="#border_radius"
+        style_border_width="0" style_pad_all="#space_sm" style_pad_gap="#space_xs" style_margin_left="#space_md"
+        style_margin_right="#space_md" flex_flow="column" scrollable="false">
+    <lv_obj width="100%" height="content" style_pad_all="0" style_pad_gap="#space_xs" style_bg_opa="0"
+            style_border_width="0" flex_flow="row" style_flex_cross_place="center" scrollable="false">
+      <icon src="tune" size="xs" variant="muted"/>
+      <text_xs text="Print parameters" translation_tag="Print parameters" text_transform="uppercase"
+               style_text_color="#text_muted"/>
+    </lv_obj>
+    <lv_obj width="100%" height="content" style_pad_all="0" style_bg_opa="0" style_border_width="0"
+            flex_flow="row" style_flex_cross_place="center" scrollable="false">
+      <text_small text="Profile" translation_tag="Profile" flex_grow="1" style_text_color="#text_muted"/>
+      <text_small name="param_profile" text="—"/>
+    </lv_obj>
+    <lv_obj width="100%" height="content" style_pad_all="0" style_pad_gap="#space_xs" style_bg_opa="0"
+            style_border_width="0" flex_flow="row" style_flex_cross_place="center" scrollable="false">
+      <text_small text="Pressure advance" translation_tag="Pressure advance" flex_grow="1"
+                  style_text_color="#text_muted"/>
+      <text_xs name="param_pa_source" text="" style_text_color="#text_subtle"/>
+      <ui_button name="btn_pa_minus" width="40" height="34" variant="secondary" icon="minus"/>
+      <text_body name="param_pa" text="—" width="64" style_text_align="center"/>
+      <ui_button name="btn_pa_plus" width="40" height="34" variant="secondary" icon="plus"/>
+      <ui_button name="btn_pa_apply" height="34" variant="primary" text="Apply" translation_tag="Apply"
+                 hidden="true"/>
+    </lv_obj>
+    <lv_obj width="100%" height="content" style_pad_all="0" style_bg_opa="0" style_border_width="0"
+            flex_flow="row" style_flex_cross_place="center" scrollable="false">
+      <text_small text="Max volumetric flow" translation_tag="Max volumetric flow" flex_grow="1"
+                  style_text_color="#text_muted"/>
+      <text_small name="param_flow" text="—"/>
+    </lv_obj>
+    <lv_obj width="100%" height="content" style_pad_all="0" style_bg_opa="0" style_border_width="0"
+            flex_flow="row" style_flex_cross_place="center" scrollable="false">
+      <text_small text="Nozzle temperature" translation_tag="Nozzle temperature" flex_grow="1"
+                  style_text_color="#text_muted"/>
+      <text_small name="param_temp" text="—"/>
+    </lv_obj>
+    <lv_obj width="100%" height="content" style_pad_all="0" style_bg_opa="0" style_border_width="0"
+            flex_flow="row" style_flex_cross_place="center" scrollable="false">
+      <text_small text="Runout swap" translation_tag="Runout swap" flex_grow="1" style_text_color="#text_muted"/>
+      <text_small name="param_runout" text="—"/>
+    </lv_obj>
+  </view>
+</component>

@@ -120,46 +120,46 @@ ThemeModeSupport ThemeData::get_mode_support() const {
 
 ThemeData get_builtin_fallback_theme() {
     ThemeData theme;
-    theme.name = "HelixScreen";
+    theme.name = "K2-OpenHost";
     theme.filename = DEFAULT_THEME;
 
-    // Mirrors assets/config/themes/defaults/helixscreen.json. Kept in sync by
+    // Mirrors assets/config/themes/defaults/k2-openhost.json. Kept in sync by
     // hand: this copy is what runs when that file cannot be read at all.
-    theme.dark.screen_bg = "#19191C";
-    theme.dark.overlay_bg = "#333338";
-    theme.dark.card_bg = "#202023";
-    theme.dark.elevated_bg = "#4A4A52";
-    theme.dark.border = "#36363C";
-    theme.dark.text = "#E8E8EC";
-    theme.dark.text_muted = "#B8B8C0";
-    theme.dark.text_subtle = "#787882";
+    theme.dark.screen_bg = "#18181B";
+    theme.dark.overlay_bg = "#2C2C31";
+    theme.dark.card_bg = "#232327";
+    theme.dark.elevated_bg = "#303036";
+    theme.dark.border = "#38383E";
+    theme.dark.text = "#ECECF0";
+    theme.dark.text_muted = "#9A9AA3";
+    theme.dark.text_subtle = "#6C6C74";
     theme.dark.primary = "#3A7CC8";
     theme.dark.secondary = "#6A9CC8";
-    theme.dark.tertiary = "#7C6CC8";
+    theme.dark.tertiary = "#7A6CF0";
     theme.dark.info = "#3A7CC8";
-    theme.dark.success = "#5CB85C";
-    theme.dark.warning = "#E8A83A";
-    theme.dark.danger = "#D94848";
+    theme.dark.success = "#55C37A";
+    theme.dark.warning = "#F0A83A";
+    theme.dark.danger = "#E0504A";
     theme.dark.focus = "#3A7CC8";
 
     theme.light.screen_bg = "#F0F0F4";
     theme.light.overlay_bg = "#E6E6EC";
     theme.light.card_bg = "#FFFFFF";
-    theme.light.elevated_bg = "#D8D8E0";
+    theme.light.elevated_bg = "#E4E4EA";
     theme.light.border = "#C0C0CA";
     theme.light.text = "#2A2A2E";
-    theme.light.text_muted = "#4A4A52";
+    theme.light.text_muted = "#55555E";
     theme.light.text_subtle = "#6A6A74";
-    theme.light.primary = "#1B3A5C";
+    theme.light.primary = "#2F6FC4";
     theme.light.secondary = "#4578A8";
     theme.light.tertiary = "#5C48A8";
-    theme.light.info = "#1B3A5C";
+    theme.light.info = "#2F6FC4";
     theme.light.success = "#38874A";
     theme.light.warning = "#C87A12";
     theme.light.danger = "#C43030";
-    theme.light.focus = "#1B3A5C";
+    theme.light.focus = "#2F6FC4";
 
-    theme.properties.border_radius_size = 3; // "Soft"
+    theme.properties.border_radius_size = 5; // "Pill"
     theme.properties.border_width = 1;
     theme.properties.border_opacity = 40;
     theme.properties.shadow_intensity = 0;

@@ -302,6 +302,10 @@ class AmsBackendCfs : public AmsSubscriptionBackend {
     // K2-OpenHost (Kalico, Fork dialect): "Check slot" rereads the slot's RFID
     // tag with _BOX_RFID_READ_SLOT, third-party decoders (Bambu, QIDI) included.
     [[nodiscard]] bool supports_gate_check() const override;
+
+    /// K2-OpenHost: a copy of one of the Kalico box fields the K2-OpenHost pages
+    /// read (load_path, runout, runout_groups, runout_order); null if never seen.
+    [[nodiscard]] nlohmann::json box_field(const std::string& key) const;
     AmsError check_gate(int slot_index) override;
     AmsError check_all_gates() override;
 
@@ -355,6 +359,19 @@ class AmsBackendCfs : public AmsSubscriptionBackend {
     static std::string slot_set_gcode(int global_slot_index, const std::string& material,
                                       uint32_t color_rgb, const std::string& brand,
                                       const std::string& name, int spoolman_id);
+
+    /// Fork dialect: the write for a slot (CFS or external) whose profile was
+    /// picked from the catalog. A K2-OpenHost catalog product ("k2oh-<id>", the
+    /// Kalico library synced by k2oh-helix-filaments) is assigned whole with
+    /// `_BOX_SLOT_ASSIGN` (temperature, PA, max flow, Orca id), keeping the
+    /// picked colour; anything else, or a Spoolman-bound slot, is slot_set_gcode().
+    static std::string slot_profile_gcode(int global_slot_index, const std::string& catalog_id,
+                                          const std::string& material, uint32_t color_rgb,
+                                          const std::string& brand, const std::string& name,
+                                          int spoolman_id);
+
+    /// The Kalico library id behind a K2-OpenHost catalog id, "" for other ids.
+    static std::string kalico_filament_id(const std::string& catalog_id);
 
     // GCode helpers (public for testing)
     static std::string load_gcode(int global_slot_index,
@@ -625,6 +642,8 @@ class AmsBackendCfs : public AmsSubscriptionBackend {
     /// K2-OpenHost (Kalico): box switches by field name (clog_detection_enabled,
     /// ...), as last published; a switch is offered once its field arrived.
     std::unordered_map<std::string, bool> fork_switches_;
+    /// The Kalico box fields box_field() serves, guarded by mutex_ (read by the UI thread).
+    nlohmann::json k2oh_fields_ = nlohmann::json::object();
 
     /// Records a toggle_auto_refill send Klipper completed as the current state
     /// and announces it. Takes mutex_ itself; main thread.

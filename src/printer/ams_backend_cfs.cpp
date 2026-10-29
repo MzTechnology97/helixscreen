@@ -1222,6 +1222,28 @@ AmsSystemInfo AmsBackendCfs::parse_flat_box_status(const nlohmann::json& box_jso
     info.endless_spool_enabled =
         helix::json_util::safe_bool(box_json, "runout_swap_enabled", false);
 
+    // K2-OpenHost: runout_groups lists the spools that back each other up (same
+    // material and colour), as 0-based global slots: the endless-spool groups.
+    if (auto it = box_json.find("runout_groups"); it != box_json.end() && it->is_array()) {
+        info.endless_spool_groups_reported = true;
+        info.endless_spool_group_ids.assign(16, -1);
+        int ordinal = 0;
+        for (const auto& group : *it) {
+            if (!group.is_object()) {
+                continue;
+            }
+            if (auto slots = group.find("slots"); slots != group.end() && slots->is_array()) {
+                for (const auto& slot : *slots) {
+                    const int index = slot.is_number_integer() ? slot.get<int>() : -1;
+                    if (index >= 0 && index < static_cast<int>(info.endless_spool_group_ids.size())) {
+                        info.endless_spool_group_ids[static_cast<size_t>(index)] = ordinal;
+                    }
+                }
+            }
+            ++ordinal;
+        }
+    }
+
     // Runout is the box gate's own presence boolean, negated. No reading (key
     // absent, or null before the sensor's first read) is not a runout, and the
     // merge gate in handle_status_update tests the same optional so such a
@@ -1350,6 +1372,11 @@ AmsSystemInfo AmsBackendCfs::parse_flat_box_status(const nlohmann::json& box_jso
             slot.material = flat_text_field(slot_json, "material");
             slot.brand = flat_text_field(slot_json, "brand");
             slot.spool_name = flat_text_field(slot_json, "name");
+            // K2-OpenHost (Kalico): the library profile behind the slot, as the
+            // catalog id k2oh-helix-filaments gives it, so the editor opens on it.
+            if (const std::string id = flat_text_field(slot_json, "filament_id"); !id.empty()) {
+                slot.catalog_id = "k2oh-" + id;
+            }
             // Colors need no such guard: "None" is not six hex digits, so
             // parse_flat_slot_color already falls back to the default.
             slot.color_rgb =
@@ -1764,6 +1791,12 @@ void AmsBackendCfs::handle_status_update(const nlohmann::json& notification) {
                         fork_switches_[sw.field] = it->get<bool>();
                     }
                 }
+                for (const char* key : {"load_path", "operation", "runout", "runout_groups",
+                                         "runout_order", "slots"}) {
+                    if (auto it = box.find(key); it != box.end()) {
+                        k2oh_fields_[key] = *it;
+                    }
+                }
             }
         } else {
             if (!flat_box_state_.empty()) {
@@ -1916,10 +1949,14 @@ void AmsBackendCfs::handle_status_update(const nlohmann::json& notification) {
                 // the one deliberate exception: it is a schema transition, not
                 // a delta omission, and the flat dialect never sends
                 // same_material - retaining stock-era grouping would answer
-                // from a dead schema forever, so it is cleared.
+                // from a dead schema forever, so it is replaced. The flat parse
+                // reads the merged box, so its groups (Kalico's runout_groups,
+                // K2-OpenHost) are the whole answer, empty when absent.
                 if (is_flat) {
-                    system_info_.endless_spool_group_ids.clear();
-                    system_info_.endless_spool_groups_reported = false;
+                    system_info_.endless_spool_group_ids =
+                        std::move(new_info.endless_spool_group_ids);
+                    system_info_.endless_spool_groups_reported =
+                        new_info.endless_spool_groups_reported;
                 } else if (new_info.endless_spool_groups_reported) {
                     system_info_.endless_spool_group_ids =
                         std::move(new_info.endless_spool_group_ids);
@@ -2781,8 +2818,8 @@ void AmsBackendCfs::push_slot_identity_to_firmware(int global_index, const std::
                                                                   /*has_color=*/true, color_rgb)});
             }
         }
-        std::string gcode =
-            slot_set_gcode(global_index, slot_material, color_rgb, slot_brand, name, spoolman_id);
+        std::string gcode = slot_profile_gcode(global_index, catalog_id, slot_material, color_rgb,
+                                               slot_brand, name, spoolman_id);
         if (gcode.empty()) {
             spdlog::debug("{} slot-set skipped for slot {}", backend_log_tag(), global_index);
             std::lock_guard<std::mutex> lock(mutex_);
@@ -3351,6 +3388,27 @@ std::string AmsBackendCfs::slot_set_gcode(int global_slot_index, const std::stri
            " MATERIAL=" + quote_gcode_param(upper) + " COLOR=" + quote_gcode_param(color) +
            " BRAND=" + quote_gcode_param(brand) + " NAME=" + quote_gcode_param(name) +
            " SPOOLMAN_ID=" + std::to_string(spoolman_id > 0 ? spoolman_id : -1);
+}
+
+std::string AmsBackendCfs::kalico_filament_id(const std::string& catalog_id) {
+    constexpr std::string_view kPrefix = "k2oh-";
+    return catalog_id.size() > kPrefix.size() && catalog_id.compare(0, kPrefix.size(), kPrefix) == 0
+               ? catalog_id.substr(kPrefix.size())
+               : std::string();
+}
+
+std::string AmsBackendCfs::slot_profile_gcode(int global_slot_index, const std::string& catalog_id,
+                                              const std::string& material, uint32_t color_rgb,
+                                              const std::string& brand, const std::string& name,
+                                              int spoolman_id) {
+    const std::string filament_id = kalico_filament_id(catalog_id);
+    if (filament_id.empty() || spoolman_id > 0 || global_slot_index < 0) {
+        return slot_set_gcode(global_slot_index, material, color_rgb, brand, name, spoolman_id);
+    }
+    char color[10];
+    std::snprintf(color, sizeof(color), "#%06X", color_rgb & 0xFFFFFFu);
+    return "_BOX_SLOT_ASSIGN SLOT=" + std::to_string(global_slot_index) +
+           " FILAMENT_ID=" + quote_gcode_param(filament_id) + " COLOR=" + quote_gcode_param(color);
 }
 
 std::string AmsBackendCfs::load_gcode(int idx, CfsMacroVariant variant) {
@@ -4273,6 +4331,12 @@ std::vector<helix::printer::DeviceAction> AmsBackendCfs::get_device_actions() co
     };
     actions.insert(actions.end(), fork_switches.begin(), fork_switches.end());
     return actions;
+}
+
+nlohmann::json AmsBackendCfs::box_field(const std::string& key) const {
+    std::lock_guard<std::mutex> lock(mutex_);
+    auto it = k2oh_fields_.find(key);
+    return it != k2oh_fields_.end() ? *it : nlohmann::json();
 }
 
 bool AmsBackendCfs::supports_gate_check() const {

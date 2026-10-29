@@ -19,7 +19,7 @@
 namespace helix {
 
 /// Default theme filename (without .json extension)
-constexpr const char* DEFAULT_THEME = "helixscreen";
+constexpr const char* DEFAULT_THEME = "k2-openhost"; // K2-OpenHost fork default
 
 /**
  * @brief Mode support for themes

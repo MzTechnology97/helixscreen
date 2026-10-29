@@ -135,6 +135,15 @@ void ensure_ams_widgets_registered() {
     lv_xml_register_component_from_file(
         helix::asset_component_uri("ui_xml/components/ams_sidebar.xml").c_str());
     lv_xml_register_component_from_file(helix::asset_component_uri("ui_xml/ams_panel.xml").c_str());
+    // K2-OpenHost CFS page (card first: the view instantiates it).
+    lv_xml_register_component_from_file(
+        helix::asset_component_uri("ui_xml/k2oh_cfs_card.xml").c_str());
+    lv_xml_register_component_from_file(
+        helix::asset_component_uri("ui_xml/k2oh_cfs_view.xml").c_str());
+    lv_xml_register_component_from_file(
+        helix::asset_component_uri("ui_xml/k2oh_runout_view.xml").c_str());
+    lv_xml_register_component_from_file(
+        helix::asset_component_uri("ui_xml/k2oh_cfs_settings.xml").c_str());
     lv_xml_register_component_from_file(
         helix::asset_component_uri("ui_xml/ams_context_menu.xml").c_str());
     lv_xml_register_component_from_file(
@@ -448,6 +457,32 @@ void AmsPanel::setup(lv_obj_t* panel, lv_obj_t* parent_screen) {
     sidebar_->setup(panel_);
     sidebar_->init_observers();
 
+    // K2-OpenHost CFS page. Its actions go through the sidebar and the panel's
+    // own editors, so they keep the preheat and unload guards.
+    k2oh_cfs_ = std::make_unique<helix::ui::K2ohCfsView>(
+        printer_state_,
+        helix::ui::K2ohCfsView::Actions{
+            [this](int slot) {
+                if (sidebar_)
+                    sidebar_->handle_load_with_preheat(slot);
+            },
+            [this](int slot) {
+                if (sidebar_)
+                    sidebar_->handle_unload(slot);
+            },
+            [this](int slot) { show_edit_modal(slot); },
+            [this](int slot, lv_obj_t* near) {
+                lv_area_t area;
+                lv_obj_get_coords(near, &area);
+                show_context_menu(slot, near, {(area.x1 + area.x2) / 2, area.y1});
+            },
+            [this](lv_obj_t* anchor) {
+                helix::ui::show_external_spool_menu(
+                    parent_screen_, anchor, context_menu_,
+                    [this](bool open_on_picker) { show_edit_modal(-2, open_on_picker); });
+            }});
+    k2oh_cfs_->create(panel_);
+
     spdlog::debug("[{}] Setup complete!", get_name());
 }
 
@@ -456,6 +491,20 @@ void AmsPanel::on_activate() {
 
     // Sync state when panel becomes visible
     AmsState::instance().sync_from_backend();
+
+    // K2-OpenHost: Kalico's CFS gets its own page instead of the generic view.
+    if (k2oh_cfs_) {
+        const bool k2oh = helix::ui::K2ohCfsView::applies();
+        for (const char* name : {"overlay_content", "right_column"}) {
+            if (lv_obj_t* obj = lv_obj_find_by_name(panel_, name)) {
+                if (k2oh)
+                    lv_obj_add_flag(obj, LV_OBJ_FLAG_HIDDEN);
+                else
+                    lv_obj_remove_flag(obj, LV_OBJ_FLAG_HIDDEN);
+            }
+        }
+        k2oh_cfs_->set_visible(k2oh);
+    }
 
     int slot_count = lv_subject_get_int(AmsState::instance().get_slot_count_subject());
     if (slot_count != current_slot_count_) {

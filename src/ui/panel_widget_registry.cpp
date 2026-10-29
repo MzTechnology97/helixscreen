@@ -43,6 +43,7 @@ void register_fan_widget();
 void register_temp_graph_widget();
 void register_tool_switcher_widget();
 void register_nozzle_temps_widget();
+void register_k2oh_home_widgets();
 void register_active_spool_widget();
 void register_bypass_widget();
 #if HELIX_HAS_CAMERA
@@ -96,6 +97,12 @@ static std::vector<PanelWidgetDef> s_widget_defs = {
     {"camera",           "Camera",            "video",            "Live webcam feed",           nullptr,              nullptr,                               false, 2, 2, 1, 1, 4, 3},
 #endif
     {"notifications",    "Notifications",     "notifications",    "Pending alerts and system messages",    nullptr,              nullptr,                               true,  1, 1, 1, 1, 2, 1},
+    // K2-OpenHost look: off by default, placed by the K2-OpenHost Home layout.
+    {"k2oh_job",         "Print Job (K2-OpenHost)", "printer_3d", "Progress, times and controls; print and preheat when idle", nullptr, nullptr,     false, 4, 2, 3, 2, 6, 2},
+    {"k2oh_temps",       "Temperatures (K2-OpenHost)", "thermometer", "Nozzle, bed and chamber",           nullptr,              nullptr,                               false, 2, 2, 2, 1, 3, 3},
+    {"k2oh_cfs",         "CFS (K2-OpenHost)", "filament",         "CFS spools with what is left",       "ams_slot_count",     "Requires Multi-Filament System or MMU hardware", false, 4, 2, 2, 1, 6, 2},
+    {"k2oh_light",       "Light (K2-OpenHost)", "lightbulb_outline", "Tap to switch the light",         "led_controllable",   "No LED strips detected",              false, 1, 2, 1, 1, 2, 2},
+    {"k2oh_fans",        "Fans (K2-OpenHost)", "fan",             "Part, hotend and aux fans",          nullptr,              nullptr,                               false, 1, 2, 1, 1, 2, 2},
 };
 // clang-format on
 
@@ -186,6 +193,7 @@ void init_widget_registrations() {
     register_bypass_widget();
     register_tool_switcher_widget();
     register_nozzle_temps_widget();
+    register_k2oh_home_widgets();
 #if HELIX_HAS_CAMERA
     register_camera_widget();
 #endif

@@ -164,7 +164,8 @@ void PrinterMotionState::update_from_status(const nlohmann::json& status) {
         }
 
         if (gcode_move.contains("speed") && gcode_move["speed"].is_number()) {
-            int speed_mm_s = static_cast<int>(gcode_move["speed"].get<double>());
+            // Klipper reports the last G-code feed rate in mm/min (the F value).
+            int speed_mm_s = static_cast<int>(std::lround(gcode_move["speed"].get<double>() / 60.0));
             if (lv_subject_get_int(&gcode_speed_) != speed_mm_s) {
                 lv_subject_set_int(&gcode_speed_, speed_mm_s);
             }

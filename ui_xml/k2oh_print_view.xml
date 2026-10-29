@@ -1,0 +1,173 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- K2-OpenHost print status: progress ring with the thumbnail, times, the
+     spool in use and the next one, temperatures, speed/flow/fan and the
+     controls. K2ohPrintView fills it. -->
+<component>
+  <view extends="lv_obj"
+        width="100%" height="100%" style_pad_all="#space_sm" style_pad_gap="#space_sm" style_bg_color="#screen_bg"
+        style_bg_opa="255" style_border_width="0" style_radius="0" flex_flow="row" scrollable="false">
+    <lv_obj name="ring_card"
+            width="38%" height="100%" style_radius="#border_radius" style_bg_color="#card_bg" style_bg_opa="255"
+            style_border_width="0" style_pad_all="#space_sm" style_pad_gap="#space_xs" flex_flow="column"
+            style_flex_main_place="center" style_flex_cross_place="center" scrollable="false">
+      <lv_obj name="ring_box" width="220" height="220" style_pad_all="0" style_bg_opa="0" style_border_width="0"
+              scrollable="false">
+        <lv_image name="thumb" width="120" height="120" align="center" style_translate_y="-14"
+                  inner_align="contain"/>
+        <text_heading name="percent" text="" align="bottom_mid" style_translate_y="-34"
+                      style_text_font="#font_xl"/>
+      </lv_obj>
+      <text_muted name="layer" text=""/>
+      <text_small name="filament_used" text="" bind_text="print_filament_used_text" style_text_color="#text_muted"/>
+      <text_small name="start_message" text="" bind_text="print_start_message" width="100%" long_mode="dots"
+                  style_text_align="center" style_text_color="#primary" hidden="true"/>
+      <text_small name="pause_reason" text="" bind_text="print_pause_reason" width="100%" long_mode="dots"
+                  style_text_align="center" style_text_color="#warning" hidden="true">
+        <bind_flag_if_eq subject="print_pause_reason_visible" flag="hidden" ref_value="0"/>
+      </text_small>
+      <text_small name="display_message" text="" bind_text="display_message" width="100%"
+                  long_mode="scroll_circular" style_text_align="center" style_text_color="#text_muted" hidden="true">
+        <bind_flag_if_eq subject="display_message_visible" flag="hidden" ref_value="0"/>
+      </text_small>
+      <!-- Exclude objects, only for a print with several objects. -->
+      <lv_obj name="btn_objects"
+              width="content" height="#button_height_sm" align="top_right" floating="true" style_radius="14"
+              style_bg_color="#elevated_bg" style_bg_opa="255" style_border_width="0" style_pad_left="#space_sm"
+              style_pad_right="#space_sm" style_pad_gap="#space_xs" flex_flow="row" style_flex_cross_place="center"
+              scrollable="false" clickable="true">
+        <bind_flag_if_eq subject="exclude_objects_available" flag="hidden" ref_value="0"/>
+        <icon src="cube_outline" size="sm" variant="primary" clickable="false" event_bubble="true"/>
+        <text_small text="" bind_text="print_objects_text" clickable="false" event_bubble="true"/>
+        <event_cb trigger="clicked" callback="on_print_status_objects"/>
+      </lv_obj>
+    </lv_obj>
+
+    <lv_obj height="100%" flex_grow="1" style_pad_all="0" style_pad_gap="#space_sm" style_bg_opa="0"
+            style_border_width="0" flex_flow="column" style_flex_main_place="space_between" scrollable="false">
+      <lv_obj name="times_card"
+              width="100%" height="content" style_radius="#border_radius" style_bg_color="#card_bg" style_bg_opa="255"
+              style_border_width="0" style_pad_all="#space_sm" flex_flow="row" scrollable="false">
+        <lv_obj flex_grow="1" height="content" style_pad_all="0" style_bg_opa="0" style_border_width="0"
+                flex_flow="column" style_flex_cross_place="center" scrollable="false">
+          <text_muted text="Elapsed" translation_tag="Elapsed"/>
+          <text_heading name="elapsed" text=""/>
+        </lv_obj>
+        <lv_obj flex_grow="1" height="content" style_pad_all="0" style_bg_opa="0" style_border_width="0"
+                flex_flow="column" style_flex_cross_place="center" scrollable="false">
+          <text_muted text="Left" translation_tag="Left"/>
+          <text_heading name="left" text="" style_text_color="#primary"/>
+        </lv_obj>
+        <lv_obj flex_grow="1" height="content" style_pad_all="0" style_bg_opa="0" style_border_width="0"
+                flex_flow="column" style_flex_cross_place="center" scrollable="false">
+          <text_muted text="Ends" translation_tag="Ends"/>
+          <text_heading name="ends" text=""/>
+        </lv_obj>
+      </lv_obj>
+
+      <lv_obj name="slot_card"
+              width="100%" height="content" style_radius="#border_radius" style_bg_color="#card_bg" style_bg_opa="255"
+              style_border_width="0" style_pad_all="#space_sm" style_pad_gap="#space_sm" flex_flow="row"
+              style_flex_cross_place="center" scrollable="false" clickable="true">
+        <lv_obj name="slot_swatch" width="34" height="34" style_radius="17" style_bg_opa="255"
+                style_border_width="3" style_border_color="#elevated_bg" scrollable="false" clickable="false"
+                event_bubble="true"/>
+        <lv_obj flex_grow="1" height="content" style_pad_all="0" style_bg_opa="0" style_border_width="0"
+                flex_flow="column" scrollable="false" clickable="false" event_bubble="true">
+          <text_body name="slot_title" text="" long_mode="dots" width="100%" clickable="false" event_bubble="true"/>
+          <text_small name="slot_detail" text="" long_mode="dots" width="100%" clickable="false"
+                      event_bubble="true"/>
+        </lv_obj>
+        <icon src="chevron_right" size="sm" variant="secondary" clickable="false" event_bubble="true"/>
+      </lv_obj>
+
+      <lv_obj width="100%" height="content" style_pad_all="0" style_pad_gap="#space_sm" style_bg_opa="0"
+              style_border_width="0" flex_flow="row" scrollable="false">
+        <lv_obj flex_grow="1" height="#button_height" style_radius="#border_radius" style_bg_color="#card_bg"
+                style_bg_opa="255" style_border_width="0" style_pad_left="#space_sm" style_pad_gap="#space_xs"
+                flex_flow="row" style_flex_cross_place="center" scrollable="false">
+          <icon src="thermometer" size="sm" variant="secondary"/>
+          <text_body name="nozzle" text=""/>
+        </lv_obj>
+        <lv_obj flex_grow="1" height="#button_height" style_radius="#border_radius" style_bg_color="#card_bg"
+                style_bg_opa="255" style_border_width="0" style_pad_left="#space_sm" style_pad_gap="#space_xs"
+                flex_flow="row" style_flex_cross_place="center" scrollable="false">
+          <icon src="radiator" size="sm" variant="secondary"/>
+          <text_body name="bed" text=""/>
+        </lv_obj>
+        <lv_obj flex_grow="1" height="#button_height" style_radius="#border_radius" style_bg_color="#card_bg"
+                style_bg_opa="255" style_border_width="0" style_pad_left="#space_sm" style_pad_gap="#space_xs"
+                flex_flow="row" style_flex_cross_place="center" scrollable="false">
+          <icon src="home_thermometer" size="sm" variant="secondary"/>
+          <text_body name="chamber" text=""/>
+        </lv_obj>
+      </lv_obj>
+
+      <lv_obj name="factors_row" width="100%" height="content" style_pad_all="0" style_pad_gap="#space_sm"
+              style_bg_opa="0" style_border_width="0" flex_flow="row" scrollable="false" clickable="true">
+        <lv_obj flex_grow="1" height="#button_height" style_radius="#border_radius" style_bg_color="#card_bg"
+                style_bg_opa="255" style_border_width="0" style_pad_left="#space_sm" style_pad_right="#space_sm"
+                style_pad_gap="#space_xs" flex_flow="row" style_flex_cross_place="center" scrollable="false"
+                clickable="false" event_bubble="true">
+          <icon src="speed" size="sm" variant="primary" clickable="false" event_bubble="true"/>
+          <lv_obj width="1" height="1" flex_grow="1" style_bg_opa="0" style_border_width="0" clickable="false" event_bubble="true"/>
+          <text_body name="speed" text="" clickable="false" event_bubble="true"/>
+        </lv_obj>
+        <lv_obj flex_grow="1" height="#button_height" style_radius="#border_radius" style_bg_color="#card_bg"
+                style_bg_opa="255" style_border_width="0" style_pad_left="#space_sm" style_pad_right="#space_sm"
+                style_pad_gap="#space_xs" flex_flow="row" style_flex_cross_place="center" scrollable="false"
+                clickable="false" event_bubble="true">
+          <icon src="water" size="sm" variant="primary" clickable="false" event_bubble="true"/>
+          <lv_obj width="1" height="1" flex_grow="1" style_bg_opa="0" style_border_width="0" clickable="false" event_bubble="true"/>
+          <text_body name="flow" text="" clickable="false" event_bubble="true"/>
+        </lv_obj>
+        <lv_obj flex_grow="1" height="#button_height" style_radius="#border_radius" style_bg_color="#card_bg"
+                style_bg_opa="255" style_border_width="0" style_pad_left="#space_sm" style_pad_right="#space_sm"
+                style_pad_gap="#space_xs" flex_flow="row" style_flex_cross_place="center" scrollable="false"
+                clickable="true">
+          <event_cb trigger="clicked" callback="on_print_status_fans_clicked"/>
+          <icon src="fan" size="sm" variant="primary" clickable="false" event_bubble="true"/>
+          <lv_obj width="1" height="1" flex_grow="1" style_bg_opa="0" style_border_width="0" clickable="false" event_bubble="true"/>
+          <text_body name="fan" text="" clickable="false" event_bubble="true"/>
+        </lv_obj>
+      </lv_obj>
+
+      <lv_obj width="100%" height="content" style_pad_all="0" style_pad_gap="#space_sm" style_bg_opa="0"
+              style_border_width="0" flex_flow="row" scrollable="false">
+        <ui_button name="btn_pause" flex_grow="3" height="#button_height" variant="primary"
+                   bind_icon="print_control_primary_icon" text="Pause" translation_tag="Pause">
+          <event_cb trigger="clicked" callback="on_print_control_primary"/>
+          <bind_state_if_eq subject="print_control_primary_enabled" state="disabled" ref_value="0"/>
+          <bind_flag_if_not_eq subject="print_outcome" flag="hidden" ref_value="0"/>
+        </ui_button>
+        <ui_button name="btn_reprint" flex_grow="3" height="#button_height" variant="primary" icon="refresh"
+                   text="Reprint" translation_tag="Reprint">
+          <event_cb trigger="clicked" callback="on_print_status_reprint"/>
+          <bind_flag_if_eq subject="print_outcome" flag="hidden" ref_value="0"/>
+        </ui_button>
+        <ui_button name="btn_tune" flex_grow="3" height="#button_height" variant="ghost" style_bg_color="#elevated_bg" style_bg_opa="255" icon="tune"
+                   text="Tune" translation_tag="Tune"/>
+        <ui_button name="btn_light" flex_grow="3" height="#button_height" variant="ghost" style_bg_color="#elevated_bg" style_bg_opa="255"
+                   bind_icon="light_button_icon" text="Light" translation_tag="Light">
+          <event_cb trigger="clicked" callback="on_print_status_light"/>
+          <bind_flag_if_eq subject="led_controllable" flag="hidden" ref_value="0"/>
+        </ui_button>
+        <ui_button name="btn_timelapse" flex_grow="3" height="#button_height" variant="ghost" style_bg_color="#elevated_bg" style_bg_opa="255"
+                   bind_icon="timelapse_button_icon" bind_text="timelapse_button_label">
+          <event_cb trigger="clicked" callback="on_print_status_timelapse"/>
+          <bind_flag_if_eq subject="printer_has_timelapse" flag="hidden" ref_value="0"/>
+          <bind_state_if_eq subject="print_controls_enabled" state="disabled" ref_value="0"/>
+        </ui_button>
+        <ui_button name="btn_stop" flex_grow="2" height="#button_height" variant="danger" icon="stop">
+          <event_cb trigger="clicked" callback="on_print_control_stop"/>
+          <bind_state_if_eq subject="print_control_stop_enabled" state="disabled" ref_value="0"/>
+          <bind_flag_if_not_eq subject="print_outcome" flag="hidden" ref_value="0"/>
+        </ui_button>
+        <ui_button name="btn_close" flex_grow="2" height="#button_height" variant="ghost" style_bg_color="#elevated_bg" style_bg_opa="255" icon="close">
+          <event_cb trigger="clicked" callback="on_print_status_dismiss_overlay"/>
+          <bind_flag_if_eq subject="print_outcome" flag="hidden" ref_value="0"/>
+        </ui_button>
+      </lv_obj>
+    </lv_obj>
+  </view>
+</component>

@@ -25,6 +25,9 @@
 #include "panel_widget_config.h"
 #include "panel_widget_manager.h"
 #include "panel_widgets/print_status_widget.h"
+#include "data_root_resolver.h"
+#include "ui_panel_print_status.h"
+#include "ui_print_tune_overlay.h"
 #include "panel_widgets/printer_image_widget.h"
 #include "printer_image_manager.h"
 #include "printer_state.h"
@@ -701,6 +704,13 @@ void HomePanel::finalize_setup() {
 
     // Build carousel with pages from config
     build_carousel();
+
+    // K2-OpenHost Home: a status line above the grid and, once, the K2-OpenHost
+    // widget layout; the grid itself stays customisable.
+    lv_xml_register_component_from_file(
+        helix::asset_component_uri("ui_xml/k2oh_home_view.xml").c_str());
+    k2oh_home_ = std::make_unique<helix::ui::K2ohHomeView>(printer_state_);
+    k2oh_home_->create(panel_);
 
     // Observe hardware gate subjects so widgets appear/disappear when
     // capabilities change (e.g. power devices discovered after startup).
