@@ -22,6 +22,7 @@ translations:
   '%zu events queued': '%zu events queued'
   '%zu plugins failed to load': '%zu plugins failed to load'
   .: .
+  'Are you sure you want to delete ''%s''? This action cannot be undone.': 'Are you sure you want to delete ''%s''? This action cannot be undone.'
   'Arrange each group with the arrows, then save.': 'Arrange each group with the arrows, then save.'
   Auto-swap at spool end: Auto-swap at spool end
   CFS ready: CFS ready

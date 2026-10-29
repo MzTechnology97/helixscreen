@@ -9,6 +9,10 @@
     <prop name="message" type="string"/>
     <prop name="message_tag" type="string" default=""/>
   </api>
+  <styles>
+    <!-- K2-OpenHost: an Error dialog's confirm is a danger action (red). -->
+    <style name="dialog_primary_danger" bg_color="#danger"/>
+  </styles>
   <!-- Dialog card (backdrop created programmatically) -->
   <view name="modal_dialog"
         extends="ui_dialog" width="70%" height="content" style_max_height="85%" align="center" flex_flow="column"
@@ -46,7 +50,7 @@
     <!-- Button row -->
     <lv_obj width="100%" height="#button_height" style_pad_all="0" style_pad_gap="0" flex_flow="row">
       <!-- Secondary button - hidden by default, shown when dialog_show_cancel=1 -->
-      <ui_button name="btn_secondary"
+      <ui_button name="btn_secondary" variant="secondary"
                  height="100%" flex_grow="1" style_radius="0" focusable="false" hidden="true"
                  bind_text="dialog_cancel_text">
         <bind_flag_if_eq subject="dialog_show_cancel" flag="hidden" ref_value="0"/>
@@ -59,6 +63,7 @@
       <!-- Primary button (always visible) -->
       <ui_button name="btn_primary"
                  height="100%" flex_grow="1" style_radius="0" focusable="false" bind_text="dialog_primary_text">
+        <bind_style name="dialog_primary_danger" subject="dialog_severity" ref_value="2"/>
         <!-- NOTE: Callbacks wired programmatically per-instance, not via XML -->
       </ui_button>
     </lv_obj>

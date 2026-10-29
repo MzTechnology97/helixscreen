@@ -22,6 +22,7 @@ translations:
   '%zu events queued': '%zu eventi in coda'
   '%zu plugins failed to load': Caricamento di %zu plugin non riuscito
   .: ª
+  'Are you sure you want to delete ''%s''? This action cannot be undone.': 'Eliminare ''%s''? L''operazione non si può annullare.'
   'Arrange each group with the arrows, then save.': 'Ordina ogni gruppo con le frecce, poi salva.'
   Auto-swap at spool end: Cambio automatico
   CFS ready: CFS pronta

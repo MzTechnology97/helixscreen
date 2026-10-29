@@ -206,6 +206,7 @@
   <translation tag="Archive" it="Archivia"/>
   <translation tag="Archive Spool?" it="Archiviare bobina?"/>
   <translation tag="Are you sure you want to cancel this print? All progress will be lost." it="Sei sicuro di voler annullare questa stampa? Tutto il progresso verrà perso."/>
+  <translation tag="Are you sure you want to delete &apos;%s&apos;? This action cannot be undone." it="Eliminare &apos;%s&apos;? L&apos;operazione non si può annullare."/>
   <translation tag="Are you sure? This will power off or restart this device." it="Sei sicuro? Questo spegnerà o riavvierà questo dispositivo."/>
   <translation tag="Arrange each group with the arrows, then save." it="Ordina ogni gruppo con le frecce, poi salva."/>
   <translation tag="Ask before switching to another tool" it="Chiedi prima di passare a un altro utensile"/>
