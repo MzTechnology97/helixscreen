@@ -158,6 +158,9 @@ void k2oh_open_cfs_page() {
 void k2oh_register_nav_callbacks() {
     lv_xml_register_event_cb(nullptr, "k2oh_nav_cfs_clicked",
                              [](lv_event_t* /*e*/) { k2oh_open_cfs_page(); });
+    lv_xml_register_event_cb(nullptr, "k2oh_nav_print_clicked", [](lv_event_t* /*e*/) {
+        NavigationManager::instance().set_active(PanelId::PrintSelect);
+    });
     lv_xml_register_event_cb(nullptr, "k2oh_nav_motion_clicked", [](lv_event_t* /*e*/) {
         // The same overlay as Controls > Motion, cached for the process.
         static lv_obj_t* motion = nullptr;

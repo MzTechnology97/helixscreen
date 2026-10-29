@@ -40,6 +40,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
+#include <optional>
 #include <ctime>
 
 namespace helix {
@@ -566,9 +567,8 @@ void K2ohHomeWidget::build_spools(int count) {
         lv_obj_set_style_bg_opa(badge, LV_OPA_COVER, LV_PART_MAIN);
         lv_obj_set_style_bg_color(badge, theme_manager_get_color("border"), LV_PART_MAIN);
         lv_obj_add_flag(badge, LV_OBJ_FLAG_EVENT_BUBBLE);
-        lv_obj_t* num = make_label(badge, theme_manager_get_font("font_xs"), "text");
-        lv_label_set_text(num, std::to_string(i + 1).c_str());
-        lv_obj_center(num);
+        s.number = make_label(badge, theme_manager_get_font("font_xs"), "text");
+        lv_obj_center(s.number);
 
         s.hole = lv_obj_create(s.core);
         lv_obj_remove_style_all(s.hole);
@@ -595,7 +595,7 @@ void K2ohHomeWidget::build_spools(int count) {
         lv_obj_set_style_pad_ver(s.tag, 1, LV_PART_MAIN);
         lv_obj_add_flag(s.tag, LV_OBJ_FLAG_EVENT_BUBBLE);
         lv_label_set_text(make_label(s.tag, theme_manager_get_font("font_xs"), "text"),
-                          lv_tr("k2oh_in_head"));
+                          lv_tr("IN HEAD"));
         spools_.push_back(s);
     }
 }
@@ -612,20 +612,37 @@ void K2ohHomeWidget::refresh_cfs() {
             slots.push_back(&slot);
         }
     }
+    // The external spool (bypass) joins the row while bypass is on or once it has
+    // been set up, so a bypass print shows what is feeding the head.
+    const bool bypass = info.supports_bypass && backend->is_bypass_active();
+    std::optional<SlotInfo> external = AmsState::instance().get_external_spool_info();
+    if (info.supports_bypass && (bypass || (external && !external->material.empty()))) {
+        if (!external) {
+            external = SlotInfo{};
+        }
+        if (bypass) {
+            external->status = SlotStatus::LOADED;
+        } else if (external->status == SlotStatus::LOADED) {
+            external->status = SlotStatus::AVAILABLE;
+        }
+        slots.push_back(&*external);
+    }
     if (slots.size() != spools_.size()) {
         build_spools(static_cast<int>(slots.size()));
     }
     for (size_t i = 0; i < slots.size() && i < spools_.size(); ++i) {
         const SlotInfo& slot = *slots[i];
         Spool& s = spools_[i];
-        const bool empty = slot.status == SlotStatus::EMPTY || slot.status == SlotStatus::UNKNOWN;
+        const bool is_external = external && slots[i] == &*external;
+        lv_label_set_text(s.number, is_external ? "E" : std::to_string(slot.global_index + 1).c_str());
+        const bool empty = !is_external && (slot.status == SlotStatus::EMPTY || slot.status == SlotStatus::UNKNOWN);
         const bool unknown = !empty && slot.material.empty();
         const float raw = slot.get_remaining_percent();
         const int pct = raw < 0 ? -1 : std::clamp(static_cast<int>(std::lround(raw)), 0, 100);
         const bool low = pct >= 0 && pct <= kLowPercent;
         const lv_color_t filament = lv_color_hex(slot.color_rgb);
 
-        const bool loaded = slot.status == SlotStatus::LOADED;
+        const bool loaded = slot.status == SlotStatus::LOADED && (is_external || !bypass);
         lv_obj_set_style_border_opa(s.root, loaded ? LV_OPA_COVER : LV_OPA_TRANSP, LV_PART_MAIN);
         lv_obj_set_style_bg_opa(s.root, loaded ? LV_OPA_20 : LV_OPA_TRANSP, LV_PART_MAIN);
         set_hidden(s.tag, !loaded);
@@ -638,7 +655,9 @@ void K2ohHomeWidget::refresh_cfs() {
             LV_PART_MAIN);
         set_hidden(s.hole, empty || unknown);
 
-        lv_label_set_text(s.material, empty ? lv_tr("Empty") : unknown ? "?" : slot.material.c_str());
+        lv_label_set_text(s.material, empty     ? lv_tr("Empty")
+                                      : unknown ? (is_external ? lv_tr("External") : "?")
+                                                : slot.material.c_str());
         lv_obj_set_style_text_color(s.material, theme_manager_get_color(empty ? "text_muted" : "text"),
                                     LV_PART_MAIN);
         lv_label_set_text(s.percent, pct >= 0 ? (std::to_string(pct) + "%").c_str() : "");
@@ -659,7 +678,7 @@ void K2ohHomeWidget::refresh_cfs() {
     if (humidity >= 0 && chip) {
         const bool dry = humidity <= kDryHumidity;
         const bool ok = humidity <= kHumidHumidity;
-        const char* band = dry ? "k2oh_dry" : ok ? "k2oh_humidity_ok" : "k2oh_humid";
+        const char* band = dry ? "dry" : ok ? "ok" : "humid";
         const char* color = dry ? "success" : ok ? "info" : "warning";
         set_text(root_, "cfs_env", std::to_string(humidity) + "% · " + lv_tr(band));
         lv_obj_set_style_bg_color(chip, theme_manager_get_color(color), LV_PART_MAIN);
@@ -682,7 +701,7 @@ void K2ohHomeWidget::refresh_light() {
 }
 
 void K2ohHomeWidget::show_brightness(int pct, bool on) {
-    std::string state = lv_tr(on ? "light_lit" : "light_unlit");
+    std::string state = lv_tr(on ? "Light on" : "Light off");
     if (on && pct > 0) {
         state += " · " + std::to_string(pct) + "%";
     }

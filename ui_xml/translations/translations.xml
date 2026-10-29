@@ -40,6 +40,7 @@
   <translation tag="-- kWh" de="-- kWh" en="-- kWh" es="-- kWh" fr="-- kWh" it="-- kWh" ja="-- kWh" pt="-- kWh" ru="-- кВт·ч" zh="-- kWh"/>
   <translation tag="--°C" de="--°C" en="--°C" es="--°C" fr="--°C" it="--°C" ja="--°C" pt="--°C" ru="--°C" zh="--°C"/>
   <translation tag="-0.5 Hz" de="-0,5 Hz" en="-0.5 Hz" es="-0,5 Hz" fr="-0,5 Hz" it="-0,5 Hz" ja="-0.5 Hz" pt="-0,5 Hz" ru="-0,5 Гц" zh="-0.5 Hz"/>
+  <translation tag="." en="." it="ª"/>
   <translation tag="..." de="..." en="..." es="..." fr="..." it="..." ja="..." pt="..." ru="..." zh="..."/>
   <translation tag="0 = computed" de="0 = berechnet" en="0 = computed" es="0 = calculado" fr="0 = calculé" it="0 = calcolato" ja="0 = 自動計算" pt="0 = calculado" ru="0 = вычислено" zh="0 = 自动计算"/>
   <translation tag="0 events queued" de="0 Ereignisse in Warteschlange" en="0 events queued" es="0 eventos en cola" fr="0 événement en file" it="0 eventi in coda" ja="待機中のイベントなし" pt="0 eventos na fila" ru="0 событий в очереди" zh="0 个事件已排队"/>
@@ -509,6 +510,7 @@
   <translation tag="Completed {}h ago" de="Vor {} Std. abgeschlossen" en="Completed {}h ago" es="Completado hace {} h" fr="Terminé il y a {} h" it="Completato {} h fa" ja="{} 時間前に完了" pt="Concluído há {} h" ru="Завершено {} ч назад" zh="{} 小时前完成"/>
   <translation tag="Completed {}m ago" de="Vor {} Min. abgeschlossen" en="Completed {}m ago" es="Completado hace {} min" fr="Terminé il y a {} min" it="Completato {} min fa" ja="{} 分前に完了" pt="Concluído há {} min" ru="Завершено {} мин назад" zh="{} 分钟前完成"/>
   <translation tag="Computing calibration..." de="Kalibrierung wird berechnet..." en="Computing calibration..." es="Calculando calibración..." fr="Calcul de la calibration..." it="Calcolo calibrazione..." ja="キャリブレーション計算中..." pt="Calculando calibração..." ru="Вычисление калибровки..." zh="正在计算校准..."/>
+  <translation tag="Config" en="Config" it="Impost."/>
   <translation tag="Config Dir" de="Konfig-Verzeichnis" en="Config Dir" es="Directorio de Configuración" fr="Dossier de configuration" it="Dir configurazione" ja="設定ディレクトリ" pt="Diretório de Configuração" ru="Директория конфигурации" zh="配置目录"/>
   <translation tag="Config-defined (read-only)" de="Konfigurationsdefiniert (schreibgeschützt)" en="Config-defined (read-only)" es="Definido en configuración (solo lectura)" fr="Défini par la config (lecture seule)" it="Definito nella configurazione (sola lettura)" ja="設定で定義済み（読み取り専用）" pt="Definido na configuração (somente leitura)" ru="Определено в конфигурации (только чтение)" zh="配置定义（只读）"/>
   <translation tag="Configuration added successfully." de="Konfiguration erfolgreich hinzugefügt." en="Configuration added successfully." es="Configuración añadida correctamente." fr="Configuration ajoutée avec succès." it="Configurazione aggiunta con successo." ja="設定が正常に追加されました。" pt="Configuração adicionada com sucesso." ru="Конфигурация успешно добавлена." zh="配置添加成功。"/>
@@ -1193,6 +1195,7 @@
   <translation tag="Hyperlapse captures frames at fixed time intervals. Good for very long prints." de="Hyperlapse erfasst Bilder in festen Zeitintervallen. Gut für sehr lange Drucke." en="Hyperlapse captures frames at fixed time intervals. Good for very long prints." es="Hyperlapse captura fotogramas a intervalos de tiempo fijos. Bueno para impresiones muy largas." fr="Lhyperlapse capture des images à intervalles de temps fixes. Idéal pour les impressions très longues." it="Hyperlapse cattura i fotogrammi a intervalli di tempo fissi. Ideale per stampe molto lunghe." ja="ハイパーラプスは一定の時間間隔でフレームを撮影します。非常に長い印刷に適しています。" pt="O Hyperlapse captura quadros em intervalos de tempo fixos. Bom para impressões muito longas." ru="Гиперлапс захватывает кадры через фиксированные интервалы времени. Подходит для очень долгих печатей." zh="延时拍摄以固定时间间隔捕获帧。适合超长时间打印。"/>
   <translation tag="ID (optional)" de="ID (optional)" en="ID (optional)" es="ID (opcional)" fr="ID (facultatif)" it="ID (opzionale)" ja="ID（任意）" pt="ID (opcional)" ru="ID (необязательно)" zh="ID（可选）"/>
   <translation tag="IMPORT FROM USB" de="VON USB IMPORTIEREN" en="IMPORT FROM USB" es="IMPORTAR DESDE USB" fr="IMPORTER DEPUIS USB" it="IMPORTA DA USB" ja="USBからインポート" pt="IMPORTAR DO USB" ru="ИМПОРТ С USB" zh="从 USB 导入"/>
+  <translation tag="IN HEAD" en="IN HEAD" it="IN TESTA"/>
   <translation tag="IN USE" en="IN USE" it="IN USO"/>
   <translation tag="IP Address / Hostname" de="IP-Adresse / Hostname" en="IP Address / Hostname" es="Dirección IP / Nombre de host" fr="Adresse IP / Nom d&apos;hôte" it="Indirizzo IP / Hostname" ja="IPアドレス / ホスト名" pt="Endereço IP / Hostname" ru="IP-адрес / Имя хоста" zh="IP 地址 / 主机名"/>
   <translation tag="IP:" de="IP:" en="IP:" es="IP:" fr="IP :" it="IP:" ja="IP:" pt="IP:" ru="IP:" zh="IP："/>
@@ -1333,6 +1336,8 @@
   <translation tag="Library" de="Bibliothek" en="Library" es="Biblioteca" fr="Bibliothèque" it="Libreria" ja="ライブラリ" pt="Biblioteca" ru="Библиотека" zh="库"/>
   <translation tag="Lifetime Print Stats" de="Gesamte Druckstatistik" en="Lifetime Print Stats" es="Estadísticas de impresión totales" fr="Statistiques d&apos;impression totales" it="Statistiche stampe totali" ja="累計印刷統計" pt="Estatísticas de Impressão Totais" ru="Статистика за всё время" zh="累计打印统计"/>
   <translation tag="Light" de="Hell" en="Light" es="Claro" fr="Clair" it="Luce" ja="ライト" pt="Claro" ru="Подсветка" zh="浅色"/>
+  <translation tag="Light off" en="Light off" it="Spenta"/>
+  <translation tag="Light on" en="Light on" it="Accesa"/>
   <translation tag="Light will switch when the current operation finishes" de="Das Licht schaltet sich, sobald der aktuelle Vorgang abgeschlossen ist." en="Light will switch when the current operation finishes" es="La luz cambiará cuando termine la operación actual" fr="La lumière basculera dès que l&apos;opération en cours sera terminée." it="La luce si attiverà al termine dell&apos;operazione in corso" ja="現在の操作が完了したらライトを切り替えます" pt="A luz será alternada quando a operação atual terminar" ru="Подсветка переключится после завершения текущей операции" zh="灯光将在当前操作完成后切换"/>
   <translation tag="Line {} calls {}, which this printer treats as an emergency stop. Re-slice the file with a profile made for this printer." de="Zeile {} ruft {} auf, das dieser Drucker als Notaus behandelt. Slicen Sie die Datei mit einem Profil für diesen Drucker neu." en="Line {} calls {}, which this printer treats as an emergency stop. Re-slice the file with a profile made for this printer." es="La línea {} llama a {}, que esta impresora trata como una parada de emergencia. Vuelva a laminar el archivo con un perfil hecho para esta impresora." fr="La ligne {} appelle {}, que cette imprimante traite comme un arrêt d&apos;urgence. Retranchez le fichier avec un profil conçu pour cette imprimante." it="La riga {} chiama {}, che questa stampante tratta come un arresto di emergenza. Sezionare di nuovo il file con un profilo creato per questa stampante." ja="{} 行目で {} を実行します。このプリンターでは緊急停止とみなされます。このプリンター用のプロファイルでファイルを再スライスしてください。" pt="A linha {} chama {}, que esta impressora trata como uma parada de emergência. Fatie o arquivo novamente com um perfil feito para esta impressora." ru="Строка {} вызывает {}, что этот принтер считает аварийной остановкой. Нарежьте файл заново с профилем для этого принтера." zh="第 {} 行调用 {}，此打印机将其视为紧急停止。请使用为此打印机制作的配置重新切片该文件。"/>
   <translation tag="Listen to all theme sounds" de="Alle Themensounds anhören" en="Listen to all theme sounds" es="Escucha todos los sonidos del tema" fr="Écouter tous les sons du thème" it="Ascolta tutti i suoni del tema" ja="すべてのテーマサウンドを試聴" pt="Ouvir todos os sons do tema" ru="Прослушать все звуки темы" zh="试听所有主题声音"/>
@@ -2899,17 +2904,10 @@
   <translation tag="humid" en="humid" it="umida"/>
   <translation tag="idle" de="Leerlauf" en="idle" es="inactivo" fr="inactif" it="inattivo" ja="アイドル" pt="ocioso" ru="простой" zh="空闲"/>
   <translation tag="in use" en="in use" it="in uso"/>
-  <translation tag="k2oh_dry" en="dry" it="asciutta"/>
-  <translation tag="k2oh_humid" en="humid" it="umida"/>
-  <translation tag="k2oh_humidity_ok" en="ok" it="normale"/>
-  <translation tag="k2oh_in_head" en="IN HEAD" it="IN TESTA"/>
-  <translation tag="k2oh_nav_settings" en="Settings" it="Impost."/>
   <translation tag="last" en="last" it="ultima"/>
   <translation tag="layer" en="layer" it="strato"/>
   <translation tag="layers" de="Schichten" en="layers" es="capas" fr="couches" it="layer" ja="レイヤー" pt="camadas" ru="слои" zh="层"/>
   <translation tag="left" de="übrig" en="left" es="restante" fr="restant" it="rimanente" ja="残り" pt="restante" ru="осталось" zh="剩余"/>
-  <translation tag="light_lit" en="on" it="Accesa"/>
-  <translation tag="light_unlit" en="off" it="Spenta"/>
   <translation tag="lowest remaining first" en="lowest remaining first" it="prima la più scarica"/>
   <translation tag="manual order" en="manual order" it="ordine manuale"/>
   <translation tag="mm before clog" de="mm vor Verstopfung" en="mm before clog" es="mm antes de obstrucción" fr="mm avant bouchon" it="mm prima dell&apos;intasamento" ja="詰まりまでの距離 (mm)" pt="mm antes da obstrução" ru="мм до засора" zh="毫米后堵料"/>
@@ -2921,6 +2919,7 @@
   <translation tag="nozzle" de="Düse" en="nozzle" es="boquilla" fr="buse" it="ugello" ja="ノズル" pt="bico" ru="сопло" zh="喷嘴"/>
   <translation tag="of" de="von" en="of" es="de" fr="de" it="di" ja="の" pt="de" ru="из" zh="的"/>
   <translation tag="off" de="aus" en="off" es="apagado" fr="éteint" it="spento" ja="オフ" pt="desligado" ru="выкл" zh="关闭"/>
+  <translation tag="ok" en="ok" it="normale"/>
   <translation tag="or type a macro name" de="oder Makronamen eingeben" en="or type a macro name" es="o escriba un nombre de macro" fr="ou saisissez un nom de macro" it="oppure digita un nome di macro" ja="またはマクロ名を入力" pt="ou digite um nome de macro" ru="или введите название макроса" zh="或输入宏名称"/>
   <translation tag="printer default" de="Druckerstandard" en="printer default" es="valor por defecto de la impresora" fr="par défaut de l’imprimante" it="predefinito stampante" ja="プリンター既定" pt="padrão da impressora" ru="по умолчанию для принтера" zh="打印机默认"/>
   <translation tag="prints" de="Drucke" en="prints" es="impresiones" fr="impressions" it="stampe" ja="印刷" pt="impressões" ru="печатей" zh="打印次数"/>
@@ -2934,7 +2933,6 @@
   <translation tag="steppers" de="Schrittmotoren" en="steppers" es="motores paso a paso" fr="moteurs pas à pas" it="motori passo-passo" ja="ステッパー" pt="motores de passo" ru="шаговые двигатели" zh="步进电机"/>
   <translation tag="still" en="still" it="fermo"/>
   <translation tag="tall" de="hoch" en="tall" es="de alto" fr="de haut" it="di altezza" ja="高さ" pt="de altura" ru="высотой" zh="高"/>
-  <translation tag="th_ordinal" en="." it="ª"/>
   <translation tag="today" en="today" it="oggi"/>
   <translation tag="tool(s)" de="Werkzeug(e)" en="tool(s)" es="herramienta(s)" fr="outil(s)" it="utensile/i" ja="ツール" pt="ferramenta(s)" ru="инструмент(ы)" zh="工具"/>
   <translation tag="unknown tag" en="unknown tag" it="tag sconosciuto"/>

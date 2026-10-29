@@ -118,6 +118,12 @@ void K2ohHomeView::update_visibility() {
     lv_obj_set_pos(root_, 0, -kStatusHeight);
     // The floating e-stop moves into the status line instead of over the cards.
     if (lv_obj_t* estop = child(panel_, "estop_fab")) {
+        // Always at hand on the K2-OpenHost Home (stock shows it only while a job
+        // holds the machine); the press still goes through the E-Stop confirmation.
+        if (lv_subject_t* visible = lv_xml_get_subject(nullptr, "estop_visible")) {
+            lv_obj_remove_from_subject(estop, visible);
+        }
+        lv_obj_remove_flag(estop, LV_OBJ_FLAG_HIDDEN);
         lv_obj_set_size(estop, 34, 34);
         lv_obj_set_style_translate_x(estop, -10, LV_PART_MAIN);
         lv_obj_set_style_translate_y(estop, 3 - kStatusHeight, LV_PART_MAIN);
