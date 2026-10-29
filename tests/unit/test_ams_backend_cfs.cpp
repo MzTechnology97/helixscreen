@@ -5924,3 +5924,31 @@ TEST_CASE("CFS flat: frames that only move unread fields skip the parse (K2-Open
     CHECK(state_events > after_buffer);
     CHECK(backend.get_slot_info(1).material == "PETG");
 }
+
+TEST_CASE("CFS flat: the spool percent comes from Kalico's rfid_percent (K2-OpenHost)",
+          "[ams][cfs][flat][k2oh]") {
+    json box = make_flat_fork_box();
+    box["slots"][1]["rfid_percent"] = 85.0;
+    box["slots"][2]["rfid_percent"] = 22.14;
+    box["slots"][3]["rfid_percent"] = nullptr;
+    const auto info = AmsBackendCfs::parse_box_status(box);
+    CHECK(info.get_slot_global(1)->get_remaining_percent() == Catch::Approx(85.0f));
+    CHECK(info.get_slot_global(2)->get_remaining_percent() == Catch::Approx(22.14f));
+    // No percent published: still unknown.
+    CHECK(info.get_slot_global(3)->get_remaining_percent() == Catch::Approx(-1.0f));
+}
+
+TEST_CASE("CFS flat: api_version after a slots delta still enables Fork control (K2-OpenHost)",
+          "[ams][cfs][flat][k2oh]") {
+    CfsRemapHelper backend;
+    const json full = make_flat_fork_box();
+    // During a print a slots delta can come before the full answer.
+    json delta;
+    delta["slots"] = full["slots"];
+    CfsTestAccess::handle_status(backend, make_cfs_notification(delta));
+    REQUIRE(CfsTestAccess::macro_variant(backend) != CfsMacroVariant::Fork);
+
+    CfsTestAccess::handle_status(backend, make_cfs_notification(full));
+    CHECK(CfsTestAccess::macro_variant(backend) == CfsMacroVariant::Fork);
+    CHECK(backend.supports_gate_check());
+}

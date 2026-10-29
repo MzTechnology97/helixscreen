@@ -930,9 +930,12 @@ struct SlotInfo {
      * @return 0-100 or -1 if unknown
      */
     [[nodiscard]] float get_remaining_percent() const {
-        if (remaining_weight_g < 0 || total_weight_g <= 0)
-            return -1;
-        return (remaining_weight_g / total_weight_g) * 100.0f;
+        if (remaining_weight_g >= 0 && total_weight_g > 0)
+            return (remaining_weight_g / total_weight_g) * 100.0f;
+        // K2-OpenHost (CFS): the share left without a weight.
+        if (remaining_fraction >= 0.0f)
+            return remaining_fraction * 100.0f;
+        return -1;
     }
 
     /**

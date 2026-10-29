@@ -1815,16 +1815,22 @@ void AmsBackendCfs::handle_status_update(const nlohmann::json& notification) {
             is_full_update = false;
         }
 
-        if (is_flat && schema_ != CfsSchema::Flat) {
+        const bool flat_entered = is_flat && schema_ != CfsSchema::Flat;
+        if (flat_entered) {
             schema_ = CfsSchema::Flat;
-            // Select the command dialect from the explicit API version, not by
-            // assuming every `slots[]` payload implements the same commands.
+        }
+        // Select the command dialect from the explicit API version, not by
+        // assuming every `slots[]` payload implements the same commands.
+        // K2-OpenHost: during a print a slots delta can arrive before the full
+        // answer that carries api_version, so a later api_version still counts.
+        if (is_flat && macro_variant_ != CfsMacroVariant::Fork &&
+            (flat_entered || box.contains("api_version"))) {
             if (detect_fork_dialect(state)) {
                 macro_variant_ = CfsMacroVariant::Fork;
                 spdlog::info("[AMS CFS] Flat box schema + fork dialect detected "
                              "(community box.py, API v{}) — Fork control enabled",
                              helix::json_util::safe_int(state, "api_version", 0));
-            } else {
+            } else if (flat_entered) {
                 spdlog::warn("[AMS CFS] Flat box schema without a supported API version — "
                              "slot display active, control paths disabled (no verified "
                              "command dialect)");
@@ -1835,6 +1841,7 @@ void AmsBackendCfs::handle_status_update(const nlohmann::json& notification) {
         // the parse never reads (encoder position and clog counters in
         // load_path, filament checks, Orca presets...). Each was a full parse
         // and a UI refresh; now they only update the merged state above.
+        bool flat_noise = false; // nothing on screen moves: no parse, no refresh
         if (is_flat && is_full_update) {
             const std::string view = flat_load_path_view(state);
             bool noise = true;
@@ -1842,13 +1849,14 @@ void AmsBackendCfs::handle_status_update(const nlohmann::json& notification) {
                 if (key == "load_path") {
                     noise = noise && view == flat_load_path_view_;
                 } else if (std::none_of(std::begin(kFlatNoiseFields), std::end(kFlatNoiseFields),
-                                        [&key](const char* f) { return key == f; })) {
+                                        [&k = key](const char* f) { return k == f; })) {
                     noise = false;
                 }
             }
             flat_load_path_view_ = view;
             if (noise) {
                 is_full_update = false;
+                flat_noise = true;
             }
         }
 
@@ -2203,7 +2211,7 @@ void AmsBackendCfs::handle_status_update(const nlohmann::json& notification) {
             }
         }
         // Partial updates (measuring_wheel, etc.): skip — don't touch state
-        changed = true;
+        changed = changed || !flat_noise;
     }
 
     // Probe-on-insert. Firmware reports occupancy the moment a spool goes in but

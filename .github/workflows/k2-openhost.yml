@@ -171,4 +171,9 @@ jobs:
           echo "$tag already released; bump VERSION-k2oh.txt to publish a new build"
           exit 0
         fi
-        gh release create "$tag" --target "$GITHUB_SHA" --title "HelixScreen $tag (K2-OpenHost)"           --notes "K2-OpenHost build of HelixScreen $(cat VERSION.txt). Changes: the commits since the previous release."           releases/helixscreen-k2-*.tar.gz releases/helixscreen-k2.zip
+        # install.sh is a separate asset: the K2-OpenHost installer helper
+        # downloads it next to the tar.gz, as it did from upstream's releases.
+        notes="K2-OpenHost build of HelixScreen $(cat VERSION.txt). Changes: the commits since the previous release."
+        gh release create "$tag" --target "$GITHUB_SHA" --title "HelixScreen $tag (K2-OpenHost)" \
+          --notes "$notes" \
+          releases/helixscreen-k2-*.tar.gz releases/helixscreen-k2.zip scripts/install.sh
