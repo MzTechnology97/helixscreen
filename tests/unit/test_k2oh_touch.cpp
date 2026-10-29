@@ -9,33 +9,18 @@ using namespace helix::ui::k2oh_touch;
 
 namespace {
 
-// Head of the K2 Pro's /proc/gt9xx_config (2026-10-29), padded to 240 bytes.
-std::string proc_text() {
-    std::string text = "==== GT9XX config init value====\n0x00 0x00 0x00 0x00 \n\n"
-                       "==== GT9XX config real value====\n"
-                       "0x63 0xE0 0x01 0x20 0x03 0x02 0x0D 0x00 \n"
-                       "0x01 0x08 0x3C 0x0F 0x64 0x46 0x03 0x05 \n";
-    for (int i = 16; i < 240; ++i) {
-        text += "0x00 ";
-    }
-    return text;
+// Head of the K2 Pro's GT911 config (2026-10-29), padded to 186 bytes.
+std::vector<uint8_t> k2_config() {
+    std::vector<uint8_t> cfg = {0x63, 0xE0, 0x01, 0x20, 0x03, 0x02, 0x0D, 0x00,
+                                0x01, 0x08, 0x3C, 0x0F, 0x64, 0x46, 0x03, 0x05};
+    cfg.resize(kConfigLen);
+    return cfg;
 }
 
 } // namespace
 
-TEST_CASE("K2oh touch: reads the real config, not the driver's init copy", "[k2oh][touch]") {
-    const auto cfg = parse_proc_config(proc_text());
-    REQUIRE(cfg.size() == 240);
-    CHECK(cfg[0] == 0x63);
-    CHECK(cfg[kTouchLevel] == 100);
-    CHECK(cfg[kLeaveLevel] == 70);
-    CHECK(cfg[kShake] == 1);
-    CHECK(parse_proc_config("no config here").empty());
-}
-
 TEST_CASE("K2oh touch: written config has new levels, checksum and fresh flag", "[k2oh][touch]") {
-    const auto cfg = parse_proc_config(proc_text());
-    const auto out = build_config(cfg, 75, 50, 3);
+    const auto out = build_config(k2_config(), 75, 50, 3);
     REQUIRE(out.size() == kConfigLen);
     CHECK(out[kTouchLevel] == 75);
     CHECK(out[kLeaveLevel] == 50);

@@ -916,8 +916,9 @@ void K2ohCfsView::on_button_clicked(lv_event_t* e) {
             } else {
                 on_bypass_changed(e); // the bypass switch's load, with its guards
             }
-        } else if ((std::strcmp(name, "btn_edit") == 0 || std::strcmp(name, "btn_more") == 0) &&
-                   self->actions_.external_menu) {
+        } else if (std::strcmp(name, "btn_edit") == 0 && self->actions_.edit) {
+            self->actions_.edit(kExternal); // the external spool's editor, as Spool Info opens it
+        } else if (std::strcmp(name, "btn_more") == 0 && self->actions_.external_menu) {
             self->actions_.external_menu(target);
         }
         return;
