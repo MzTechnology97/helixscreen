@@ -1464,6 +1464,18 @@ void AmsEditOverlay::update_ui() {
         remaining_pct = std::max(0, std::min(100, remaining_pct));
         snprintf(remaining_pct_buf_, sizeof(remaining_pct_buf_), "%.0f / %.0fg (%d%%)", rem,
                  working_info_.total_weight_g, remaining_pct);
+    } else if (working_info_.remaining_fraction >= 0.0f) {
+        // K2-OpenHost (CFS): Kalico publishes the share and the length left, no weight.
+        has_weight = true; // the bar below shows the share
+        remaining_pct = std::max(0, std::min(100, static_cast<int>(std::lround(
+                                                      100.0f * working_info_.remaining_fraction))));
+        const std::string length = working_info_.remaining_display();
+        if (length.empty()) {
+            snprintf(remaining_pct_buf_, sizeof(remaining_pct_buf_), "%d%%", remaining_pct);
+        } else {
+            snprintf(remaining_pct_buf_, sizeof(remaining_pct_buf_), "%s (%d%%)", length.c_str(),
+                     remaining_pct);
+        }
     } else {
         snprintf(remaining_pct_buf_, sizeof(remaining_pct_buf_), "\xE2\x80\x94"); // "—"
     }
