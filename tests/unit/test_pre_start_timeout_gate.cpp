@@ -15,6 +15,7 @@
  */
 
 #include "ui_print_preparation_manager.h"
+#include "macro_param_cache.h"
 #include "ui_update_queue.h"
 
 #include "lvgl_test_fixture.h"
@@ -96,6 +97,13 @@ class PreStartGateFixture : public LVGLTestFixture {
         : mock_client(MoonrakerClientMock::PrinterType::VORON_24), jobs(mock_client) {
         state.init_subjects(false);
         state.set_printer_type_sync("Creality K2 Plus");
+        // Stock K2: Creality's gcode_macro.cfg defines the mesh macro (requires_macro).
+        {
+            nlohmann::json config = nlohmann::json::object();
+            config["gcode_macro BED_MESH_CALIBRATE_START_PRINT"] = {{"gcode", "G28"}};
+            helix::MacroParamCache::instance().populate_from_configfile(
+                config, {"BED_MESH_CALIBRATE_START_PRINT"});
+        }
         mock_client.connect("ws://mock/websocket", []() {}, []() {});
         api = std::make_unique<PreStartGateAPI>(mock_client, state, jobs);
 
@@ -106,6 +114,7 @@ class PreStartGateFixture : public LVGLTestFixture {
 
     ~PreStartGateFixture() override {
         helix::ui::UpdateQueue::instance().drain();
+        helix::MacroParamCache::instance().clear();
     }
 
     void drain() {

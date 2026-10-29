@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "ui_k2oh_home_view.h"
 #include "ui_observer_guard.h"
 #include "ui_panel_base.h"
 
@@ -80,6 +81,8 @@ class HomePanel : public PanelBase {
     bool populating_widgets_ = false; // Reentrancy guard for populate_widgets()
     bool panel_active_ = false;       // Whether on_activate() has been called
     bool finalized_ = false;          // Whether finalize_setup() has run
+    /// K2-OpenHost Home, shown over the widget grid on a K2 with Kalico's CFS.
+    std::unique_ptr<helix::ui::K2ohHomeView> k2oh_home_;
 
     // Cached image path for skipping redundant refresh_printer_image() calls
     std::string last_printer_image_path_;

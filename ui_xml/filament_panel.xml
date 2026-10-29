@@ -5,7 +5,7 @@
   <!-- Styles for reactive extrude length button state binding (L040: no inline bg attrs) -->
   <styles>
     <style name="extrude_length_btn_selected" bg_color="#primary" bg_opa="255"/>
-    <style name="extrude_length_btn_unselected" bg_color="#primary" bg_opa="40"/>
+    <style name="extrude_length_btn_unselected" bg_color="#elevated_bg" bg_opa="255"/>
   </styles>
   <consts>
     <!-- Temperature card spacing -->
@@ -173,7 +173,7 @@
           <!-- AMS mini status (auto-binds to AmsState, fills width, stretches to row height) -->
           <ams_mini_status name="ams_mini_status" height="100%" flex_grow="1"/>
           <!-- Manage Button (shown when single-tool AMS, hidden when multi-tool) -->
-          <ui_button name="btn_manage_slots"
+          <ui_button name="btn_manage_slots" variant="secondary"
                      width="content" height="#button_height" text="Manage" translation_tag="Manage"
                      style_pad_left="#space_md" style_pad_right="#space_md">
             <event_cb trigger="clicked" callback="filament_manage_slots_cb"/>
@@ -243,7 +243,7 @@
           <lv_obj width="100%"
                   height="content" style_pad_all="0" scrollable="false" flex_flow="row"
                   style_flex_main_place="space_between" style_flex_cross_place="center" style_pad_gap="#space_md">
-            <ui_button name="preset_pla"
+            <ui_button name="preset_pla" variant="secondary" style_bg_color:checked="#primary"
                        height="content" flex_grow="1" layout="column" state_trickle="true" style_pad_ver="#space_sm"
                        style_pad_gap="#temp_preset_btn_spacing">
               <event_cb trigger="short_clicked" callback="on_filament_preset_pla"/>
@@ -253,7 +253,7 @@
                           style_text_align="center" style_text_color="#text_muted"
                           style_text_color:checked="#text"/>
             </ui_button>
-            <ui_button name="preset_petg"
+            <ui_button name="preset_petg" variant="secondary" style_bg_color:checked="#primary"
                        height="content" flex_grow="1" layout="column" state_trickle="true" style_pad_ver="#space_sm"
                        style_pad_gap="#temp_preset_btn_spacing">
               <event_cb trigger="short_clicked" callback="on_filament_preset_petg"/>
@@ -263,7 +263,7 @@
                           style_text_align="center" style_text_color="#text_muted"
                           style_text_color:checked="#text"/>
             </ui_button>
-            <ui_button name="preset_abs"
+            <ui_button name="preset_abs" variant="secondary" style_bg_color:checked="#primary"
                        height="content" flex_grow="1" layout="column" state_trickle="true" style_pad_ver="#space_sm"
                        style_pad_gap="#temp_preset_btn_spacing">
               <event_cb trigger="short_clicked" callback="on_filament_preset_abs"/>
@@ -278,7 +278,7 @@
           <lv_obj name="spool_preset_row"
                   width="100%" height="content" style_pad_all="0" scrollable="false" flex_flow="row"
                   style_flex_main_place="space_between" style_flex_cross_place="center" style_pad_gap="#space_md">
-            <ui_button name="preset_tpu"
+            <ui_button name="preset_tpu" variant="secondary" style_bg_color:checked="#primary"
                        height="content" flex_grow="1" layout="column" state_trickle="true" style_pad_ver="#space_sm"
                        style_pad_gap="#temp_preset_btn_spacing">
               <event_cb trigger="short_clicked" callback="on_filament_preset_tpu"/>
@@ -288,7 +288,7 @@
                           style_text_align="center" style_text_color="#text_muted"
                           style_text_color:checked="#text"/>
             </ui_button>
-            <ui_button name="preset_spool"
+            <ui_button name="preset_spool" variant="secondary" style_bg_color:checked="#primary"
                        height="content" flex_grow="1" layout="column" state_trickle="true" style_pad_ver="#space_sm"
                        style_pad_gap="#temp_preset_btn_spacing" hidden="true">
               <event_cb trigger="clicked" callback="on_filament_preset_spool"/>
@@ -301,7 +301,7 @@
         </lv_obj>
         <!-- Cooldown Button (visible when heating) -->
         <ui_button name="btn_cooldown"
-                   width="100%" height="#button_height" style_bg_color="#temp_gradient_cold" icon="cooldown"
+                   width="100%" height="#button_height" variant="secondary" icon="cooldown"
                    text="Cool Down" translation_tag="Cool Down">
           <bind_flag_if_eq subject="filament_nozzle_heating" flag="hidden" ref_value="0"/>
           <event_cb trigger="clicked" callback="on_filament_cooldown"/>
@@ -327,14 +327,14 @@
                            state="disabled"/>
             <event_cb trigger="clicked" callback="on_filament_load"/>
           </ui_button>
-          <ui_button name="btn_unload"
+          <ui_button name="btn_unload" variant="secondary"
                      height="#button_height" flex_grow="1" icon="arrow_up" text="Unload" translation_tag="Unload"
                      style_text_font="#font_small" bind_op_state="filament_op_unload_state">
             <bind_state_if cond="filament_safety_warning_visible eq 1 or filament_operation_in_progress eq 1 or filament_unload_disabled eq 1"
                            state="disabled"/>
             <event_cb trigger="clicked" callback="on_filament_unload"/>
           </ui_button>
-          <ui_button name="btn_purge"
+          <ui_button name="btn_purge" variant="secondary"
                      height="#button_height" flex_grow="1" icon="trash_can_outline" text="Purge" translation_tag="Purge"
                      style_text_font="#font_small" bind_op_state="filament_op_purge_state">
             <bind_state_if cond="filament_safety_warning_visible eq 1 or filament_operation_in_progress eq 1 or filament_unload_disabled eq 1"
@@ -370,14 +370,14 @@
         <lv_obj width="100%"
                 height="#button_height" style_pad_all="0" scrollable="false" flex_flow="row"
                 style_flex_main_place="space_between" style_flex_cross_place="center" style_pad_gap="#space_sm">
-          <ui_button name="btn_extrude"
+          <ui_button name="btn_extrude" variant="secondary"
                      height="#button_height" flex_grow="1" icon="arrow_down" text="Extrude" translation_tag="Extrude"
                      style_text_font="#font_small" bind_op_state="filament_op_extrude_state">
             <bind_state_if cond="filament_safety_warning_visible eq 1 or filament_operation_in_progress eq 1"
                            state="disabled"/>
             <event_cb trigger="clicked" callback="on_filament_extrude"/>
           </ui_button>
-          <ui_button name="btn_retract"
+          <ui_button name="btn_retract" variant="secondary"
                      height="#button_height" flex_grow="1" icon="arrow_up" text="Retract" translation_tag="Retract"
                      style_text_font="#font_small" bind_op_state="filament_op_retract_state">
             <bind_state_if cond="filament_safety_warning_visible eq 1 or filament_operation_in_progress eq 1"

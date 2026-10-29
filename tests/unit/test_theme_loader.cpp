@@ -137,17 +137,17 @@ TEST_CASE("parse_theme_json parses valid dual-palette theme", "[theme]") {
 TEST_CASE("get_builtin_fallback_theme returns valid theme", "[theme]") {
     auto theme = helix::get_builtin_fallback_theme();
 
-    REQUIRE(theme.name == "HelixScreen");
+    REQUIRE(theme.name == "K2-OpenHost");
     REQUIRE(theme.filename == helix::DEFAULT_THEME);
     REQUIRE(theme.is_valid());
-    REQUIRE(theme.dark.screen_bg == "#19191C");
+    REQUIRE(theme.dark.screen_bg == "#18181B");
     REQUIRE(theme.light.screen_bg == "#F0F0F4");
 }
 
 TEST_CASE("parse_theme_json returns the built-in theme on invalid JSON", "[theme]") {
     auto theme = helix::parse_theme_json("{ invalid json", "bad.json");
 
-    REQUIRE(theme.name == "HelixScreen");
+    REQUIRE(theme.name == "K2-OpenHost");
     REQUIRE(theme.is_valid());
 }
 
@@ -160,7 +160,7 @@ TEST_CASE("parse_theme_json returns the built-in theme when missing palettes", "
 
     auto theme = helix::parse_theme_json(json, "missing_palettes.json");
 
-    REQUIRE(theme.name == "HelixScreen");
+    REQUIRE(theme.name == "K2-OpenHost");
     REQUIRE(theme.is_valid());
 }
 

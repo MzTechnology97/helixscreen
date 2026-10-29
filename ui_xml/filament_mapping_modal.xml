@@ -17,8 +17,8 @@
       <!-- Rows populated dynamically in C++ -->
     </lv_obj>
 
-    <modal_button_row secondary_text="Cancel"
-                      secondary_callback="on_modal_cancel_clicked" primary_text="Done"
+    <modal_button_row secondary_text="Cancel" secondary_tag="Cancel"
+                      secondary_callback="on_modal_cancel_clicked" primary_text="Done" primary_tag="Done"
                       primary_callback="on_modal_ok_clicked"/>
   </view>
 </component>

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include "ui_k2oh_home_view.h"
 #include "ui_widget_catalog_overlay.h"
 
 #include "ui_effects.h"
@@ -102,7 +103,10 @@ void on_catalog_reset(lv_event_t* /*e*/) {
             config.reset_to_defaults();
             config.save();
             close_catalog();
-            PanelWidgetManager::instance().notify_config_changed("home");
+            // K2-OpenHost: the default Home of a K2 on Kalico is its own layout.
+            if (!ui::k2oh_apply_home_layout()) {
+                PanelWidgetManager::instance().notify_config_changed("home");
+            }
         });
 }
 
@@ -202,7 +206,7 @@ lv_obj_t* WidgetCatalogOverlay::create_row(lv_obj_t* parent, const char* name, c
     lv_obj_set_style_pad_right(badge, pad_xs, 0);
     lv_obj_set_style_pad_top(badge, badge_pad_ver, 0);
     lv_obj_set_style_pad_bottom(badge, badge_pad_ver, 0);
-    lv_obj_set_style_bg_color(badge, theme_manager_get_color("secondary"), 0);
+    lv_obj_set_style_bg_color(badge, theme_manager_get_color("elevated_bg"), 0);
     lv_obj_set_style_bg_opa(badge, LV_OPA_COVER, 0);
     lv_obj_set_style_radius(badge, 4, 0);
     lv_obj_set_style_border_width(badge, 0, 0);

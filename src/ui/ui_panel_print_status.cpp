@@ -15,6 +15,9 @@
 #include "ui_gcode_viewer.h"
 #include "ui_modal.h"
 #include "ui_nav_manager.h"
+#include "ui_panel_ams.h"
+
+#include "data_root_resolver.h"
 #include "ui_overlay_temp_graph.h"
 #include "ui_panel_common.h"
 #include "ui_panel_print_select.h"
@@ -966,8 +969,33 @@ lv_obj_t* PrintStatusPanel::create(lv_obj_t* parent) {
         return nullptr;
     }
 
+    // K2-OpenHost print status: covers the stock content on Kalico's CFS. The
+    // stock widgets below are still built and driven, only hidden.
+    lv_xml_register_component_from_file(
+        helix::asset_component_uri("ui_xml/k2oh_print_view.xml").c_str());
+    k2oh_print_ = std::make_unique<helix::ui::K2ohPrintView>(
+        printer_state_,
+        helix::ui::K2ohPrintView::Actions{
+            [this]() { handle_tune_button(); },
+            []() {
+                auto& ams_panel = get_global_ams_panel();
+                if (!ams_panel.are_subjects_initialized()) {
+                    ams_panel.init_subjects();
+                }
+                if (lv_obj_t* panel_obj = ams_panel.get_panel()) {
+                    NavigationManager::instance().register_overlay_instance(panel_obj, &ams_panel);
+                    NavigationManager::instance().push_overlay(panel_obj);
+                }
+            }});
+
     // Find thumbnail section for nested widgets
     lv_obj_t* thumbnail_section = lv_obj_find_by_name(overlay_content, "thumbnail_section");
+    // K2-OpenHost: the stock preview is hidden under the K2 view. The bed map covers
+    // the whole view and is the exclude UI by itself: tap an outline, no side list.
+    lv_obj_t* k2oh_parent = k2oh_print_ ? k2oh_print_->map_parent() : nullptr;
+    if (k2oh_parent) {
+        thumbnail_section = k2oh_parent;
+    }
     if (!thumbnail_section) {
         spdlog::error("[{}] thumbnail_section not found!", get_name());
         return nullptr;
@@ -1180,11 +1208,19 @@ lv_obj_t* PrintStatusPanel::create(lv_obj_t* parent) {
     // it here is futile because overlay_root_ is HIDDEN until activation, and a
     // hidden subtree has 0-width layout in LVGL (so measurement returns 0).
 
+    // Last child, so it sits over the stock content it covers.
+    if (k2oh_print_) {
+        k2oh_print_->create(overlay_content);
+    }
+
     spdlog::debug("[{}] Setup complete!", get_name());
     return overlay_root_;
 }
 
 void PrintStatusPanel::on_activate() {
+    if (k2oh_print_) {
+        k2oh_print_->update_visibility();
+    }
     // Cluster:pstat-async-delete (#906) — fine-grained crumbs through every
     // step of on_activate so the next production crash names which step left
     // the corruption rolling. Pair with the larger breadcrumb ring so these
@@ -1691,11 +1727,17 @@ void PrintStatusPanel::show_exclude_map_view() {
         return;
     }
     lv_obj_t* thumbnail_section = lv_obj_find_by_name(overlay_content, "thumbnail_section");
+    // K2-OpenHost: the stock preview is hidden under the K2 view. The bed map covers
+    // the whole view and is the exclude UI by itself: tap an outline, no side list.
+    lv_obj_t* k2oh_parent = k2oh_print_ ? k2oh_print_->map_parent() : nullptr;
+    if (k2oh_parent) {
+        thumbnail_section = k2oh_parent;
+    }
 
     int viewer_mode = lv_subject_get_int(&gcode_viewer_mode_subject_);
     bool thumbnail_mode = (viewer_mode == 0);
 
-    if (thumbnail_mode && thumbnail_section) {
+    if ((thumbnail_mode || k2oh_parent) && thumbnail_section) {
         // Bed dimensions for the overhead map view (thumbnail mode only).
         float bed_w = 235.0f, bed_h = 235.0f;
         if (api_) {
@@ -1729,6 +1771,10 @@ void PrintStatusPanel::show_exclude_map_view() {
         map_view_->create(thumbnail_section, printer_state_.get_excluded_objects_state(), bed_w,
                           bed_h, exclude_manager_.get(), parsed);
 
+        if (k2oh_parent) {
+            spdlog::debug("[{}] Showed K2-OpenHost exclude map", get_name());
+            return;
+        }
         // The side list's X already closes the whole panel — hide the map's
         // duplicate close button so users have one obvious dismiss control.
         if (auto* map_root = map_view_->root()) {
@@ -2231,7 +2277,7 @@ void PrintStatusPanel::on_objects_clicked(lv_event_t* e) {
 
     // Toggle the unified exclude panel (map+side-list in thumbnail mode,
     // shrunk-viewer + side-list in 3D/2D mode).
-    if (panel.side_list_ && panel.side_list_->is_active()) {
+    if ((panel.side_list_ && panel.side_list_->is_active()) || panel.map_view_) {
         panel.hide_exclude_map_view();
     } else {
         panel.show_exclude_map_view();

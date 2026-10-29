@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- K2-OpenHost Home widget: the light. A tap switches it on or off; a drag up
+     or down sets the brightness, shown as the tile filling from the bottom. -->
+<component>
+  <view name="panel_widget_k2oh_light"
+        extends="lv_obj" height="100%" flex_grow="1" style_bg_color="#card_bg" style_bg_opa="255" style_radius="#border_radius" style_border_width="0" style_pad_all="#space_sm" style_pad_gap="#space_xxs"
+        flex_flow="column" style_flex_main_place="center" style_flex_cross_place="center" scrollable="false"
+        clickable="true">
+    <bind_state_if_eq subject="led_command_in_flight" state="disabled" ref_value="1"/>
+    <!-- Brightness, as a fill from the bottom of the tile (K2ohHomeWidget sizes it). -->
+    <lv_obj name="light_fill" width="100%" height="0" align="bottom_mid" floating="true" style_radius="#border_radius"
+            style_bg_color="#warning" style_bg_opa="110" style_border_width="0" scrollable="false" clickable="false"
+            event_bubble="true"/>
+    <icon name="light_icon" src="lightbulb_outline" size="lg" variant="secondary" clickable="false"
+          event_bubble="true"/>
+    <text_body text="Light" translation_tag="Light" clickable="false" event_bubble="true"/>
+    <text_muted name="light_state" text="" clickable="false" event_bubble="true"/>
+  </view>
+</component>

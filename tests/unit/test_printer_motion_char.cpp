@@ -198,6 +198,20 @@ TEST_CASE("Motion characterization: speed_factor updates from JSON",
     }
 }
 
+TEST_CASE("Motion characterization: gcode speed is mm/min from Klipper, stored as mm/s",
+          "[characterization][motion][speed]") {
+    lv_init_safe();
+
+    PrinterState& state = get_printer_state();
+    PrinterStateTestAccess::reset(state);
+    state.init_subjects(false);
+
+    json status = {{"gcode_move", {{"speed", 39000.0}}}}; // G1 F39000
+    state.update_from_status(status);
+
+    REQUIRE(lv_subject_get_int(state.get_gcode_speed_subject()) == 650);
+}
+
 TEST_CASE("Motion characterization: flow_factor updates from JSON",
           "[characterization][motion][flow]") {
     lv_init_safe();

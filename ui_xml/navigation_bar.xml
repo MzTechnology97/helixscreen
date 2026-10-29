@@ -2,6 +2,11 @@
 <!-- Copyright (C) 2025-2026 356C LLC -->
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <component>
+  <styles>
+    <!-- K2-OpenHost: the active entry is a tinted pill with an accent label. -->
+    <style name="nav_on" bg_color="#primary" bg_opa="45"/>
+    <style name="nav_label_on" text_color="#primary"/>
+  </styles>
   <consts>
     <!-- Nav bar width per breakpoint (selected by horizontal resolution in C++) -->
     <px name="nav_width_micro" value="42"/>
@@ -11,7 +16,7 @@
     <px name="nav_width_large" value="132"/>
   </consts>
   <view extends="lv_obj"
-        width="#nav_width" height="100%" style_pad_top="#space_xl" style_pad_bottom="#space_xl" style_pad_left="0"
+        width="#nav_width" height="100%" style_pad_top="#space_xs" style_pad_bottom="#space_xs" style_pad_left="0" style_pad_row="2"
         style_pad_right="0" flex_flow="column" style_flex_main_place="start" style_flex_track_place="center"
         style_flex_cross_place="center" style_border_width="0" style_radius="0" scrollable="false"
         style_bg_color="#card_bg" style_bg_opa="255">
@@ -37,24 +42,72 @@
     <!-- ================================================================== -->
     <!-- Home Button (Panel 0) -->
     <ui_button name="nav_btn_home"
-               width="100%" flex_grow="1" variant="ghost" flex_flow="column" style_flex_main_place="center"
+               width="88%" height="54" style_radius="12" style_pad_gap="1" variant="ghost" flex_flow="column" style_flex_main_place="center"
                style_flex_cross_place="center" style_flex_track_place="center" style_border_width="0">
+      <bind_style name="nav_on" subject="active_panel" ref_value="0"/>
       <!-- Disabled during grid edit mode -->
       <bind_state_if_eq subject="home_edit_mode" state="disabled" ref_value="1"/>
       <!-- Active icon (accent color) - shown when active_panel == 0 -->
-      <icon name="nav_icon_home_active" src="home" size="#icon_size" variant="primary" hidden="true">
+      <icon name="nav_icon_home_active" src="home" size="sm" variant="primary" hidden="true">
         <bind_flag_if_not_eq subject="active_panel" flag="hidden" ref_value="0"/>
       </icon>
       <!-- Inactive icon (gray) - shown when active_panel != 0 -->
-      <icon name="nav_icon_home_inactive" src="home" size="#icon_size" variant="secondary">
+      <icon name="nav_icon_home_inactive" src="home" size="sm" variant="muted">
         <bind_flag_if_eq subject="active_panel" flag="hidden" ref_value="0"/>
       </icon>
+      <text_tiny name="nav_label" text="Home" translation_tag="Home" style_text_color="#text_muted" style_text_align="center" clickable="false" event_bubble="true">
+        <bind_style name="nav_label_on" subject="active_panel" ref_value="0"/>
+      </text_tiny>
+    </ui_button>
+    <!-- K2-OpenHost: the file list (Print Select, panel 1), as in the approved mockup. -->
+    <ui_button name="nav_btn_print"
+               width="88%" height="54" style_radius="12" style_pad_gap="1" variant="ghost" flex_flow="column"
+               style_flex_main_place="center" style_flex_cross_place="center" style_flex_track_place="center"
+               style_border_width="0">
+      <!-- Hidden while the Home is edited: the rail must leave room for Add and Done. -->
+      <bind_flag_if_eq subject="home_edit_mode" flag="hidden" ref_value="1"/>
+      <bind_style name="nav_on" subject="active_panel" ref_value="1"/>
+      <bind_state_if_eq subject="home_edit_mode" state="disabled" ref_value="1"/>
+      <icon src="folder" size="sm" variant="muted" clickable="false" event_bubble="true"/>
+      <text_tiny name="nav_label" text="Print" translation_tag="Print" style_text_color="#text_muted" style_text_align="center"
+                 clickable="false" event_bubble="true">
+        <bind_style name="nav_label_on" subject="active_panel" ref_value="1"/>
+      </text_tiny>
+      <event_cb trigger="clicked" callback="k2oh_nav_print_clicked"/>
+    </ui_button>
+    <!-- K2-OpenHost: straight to the CFS page, shown when a multi-filament system is present. -->
+    <ui_button name="nav_btn_cfs"
+               width="88%" height="54" style_radius="12" style_pad_gap="1" variant="ghost" flex_flow="column" style_flex_main_place="center"
+               style_flex_cross_place="center" style_flex_track_place="center" style_border_width="0">
+      <!-- Hidden while the Home is edited: the rail must leave room for Add and Done. -->
+      <bind_flag_if_eq subject="home_edit_mode" flag="hidden" ref_value="1"/>
+      <bind_flag_if_eq subject="ams_slot_count" flag="hidden" ref_value="0"/>
+      <bind_state_if_not_eq subject="nav_buttons_enabled" state="disabled" ref_value="1"/>
+      <bind_state_if_eq subject="home_edit_mode" state="disabled" ref_value="1"/>
+      <icon name="nav_icon" src="album" size="sm" variant="muted" clickable="false" event_bubble="true"/>
+      <text_tiny name="nav_label" text="CFS" style_text_color="#text_muted" style_text_align="center" clickable="false" event_bubble="true"/>
+      <event_cb trigger="clicked" callback="k2oh_nav_cfs_clicked"/>
+    </ui_button>
+    <!-- K2-OpenHost: straight to the XYZ motion overlay (the one Controls opens). -->
+    <ui_button name="nav_btn_motion"
+               width="88%" height="54" style_radius="12" style_pad_gap="1" variant="ghost" flex_flow="column"
+               style_flex_main_place="center" style_flex_cross_place="center" style_flex_track_place="center"
+               style_border_width="0">
+      <!-- Hidden while the Home is edited: the rail must leave room for Add and Done. -->
+      <bind_flag_if_eq subject="home_edit_mode" flag="hidden" ref_value="1"/>
+      <bind_state_if_not_eq subject="nav_buttons_enabled" state="disabled" ref_value="1"/>
+      <bind_state_if_eq subject="home_edit_mode" state="disabled" ref_value="1"/>
+      <icon name="nav_icon" src="cursor_move" size="sm" variant="muted" clickable="false" event_bubble="true"/>
+      <text_tiny name="nav_label" text="Motion" translation_tag="Motion" style_text_color="#text_muted" style_text_align="center"
+                 clickable="false" event_bubble="true"/>
+      <event_cb trigger="clicked" callback="k2oh_nav_motion_clicked"/>
     </ui_button>
     <!-- Controls Button (Panel 2) - CONNECTION + KLIPPY READY REQUIRED -->
     <!-- Uses combined nav_buttons_enabled subject (1=enabled when connected AND klippy ready) -->
     <ui_button name="nav_btn_controls"
-               width="100%" flex_grow="1" variant="ghost" flex_flow="column" style_flex_main_place="center"
+               width="88%" height="54" style_radius="12" style_pad_gap="1" variant="ghost" flex_flow="column" style_flex_main_place="center"
                style_flex_cross_place="center" style_flex_track_place="center" style_border_width="0">
+      <bind_style name="nav_on" subject="active_panel" ref_value="2"/>
       <!-- Disabled clickability when not enabled (disconnected OR klippy not ready) -->
       <bind_state_if_not_eq subject="nav_buttons_enabled" state="disabled" ref_value="1"/>
       <!-- Disabled during grid edit mode -->
@@ -63,24 +116,28 @@
       <lv_obj name="nav_controls_icons" clickable="false" style_pad_all="0">
         <bind_flag_if_eq subject="nav_buttons_enabled" flag="hidden" ref_value="0"/>
         <!-- Active icon (accent) - shown when on controls panel -->
-        <icon name="nav_icon_controls_active" src="fine_tune" size="#icon_size" variant="primary" hidden="true">
+        <icon name="nav_icon_controls_active" src="heater" size="sm" variant="primary" hidden="true">
           <bind_flag_if_not_eq subject="active_panel" flag="hidden" ref_value="2"/>
         </icon>
         <!-- Inactive icon (secondary) - shown when not on controls panel -->
-        <icon name="nav_icon_controls_inactive" src="fine_tune" size="#icon_size" variant="secondary">
+        <icon name="nav_icon_controls_inactive" src="heater" size="sm" variant="muted">
           <bind_flag_if_eq subject="active_panel" flag="hidden" ref_value="2"/>
         </icon>
       </lv_obj>
       <!-- Disabled icon - visible only when disabled (disconnected OR klippy not ready) -->
-      <icon name="nav_icon_controls_disabled" src="fine_tune" size="#icon_size" variant="disabled">
+      <icon name="nav_icon_controls_disabled" src="heater" size="sm" variant="disabled">
         <bind_flag_if_eq subject="nav_buttons_enabled" flag="hidden" ref_value="1"/>
       </icon>
+      <text_tiny name="nav_label" text="Controls" translation_tag="Controls" style_text_color="#text_muted" style_text_align="center" clickable="false" event_bubble="true">
+        <bind_style name="nav_label_on" subject="active_panel" ref_value="2"/>
+      </text_tiny>
     </ui_button>
     <!-- Filament Button (Panel 3) - CONNECTION + KLIPPY READY REQUIRED -->
     <!-- Uses combined nav_buttons_enabled subject (1=enabled when connected AND klippy ready) -->
     <ui_button name="nav_btn_filament"
-               width="100%" flex_grow="1" variant="ghost" flex_flow="column" style_flex_main_place="center"
+               width="88%" height="54" style_radius="12" style_pad_gap="1" variant="ghost" flex_flow="column" style_flex_main_place="center"
                style_flex_cross_place="center" style_flex_track_place="center" style_border_width="0">
+      <bind_style name="nav_on" subject="active_panel" ref_value="3"/>
       <!-- Disabled clickability when not enabled (disconnected OR klippy not ready) -->
       <bind_state_if_not_eq subject="nav_buttons_enabled" state="disabled" ref_value="1"/>
       <!-- Disabled during grid edit mode -->
@@ -89,44 +146,58 @@
       <lv_obj name="nav_filament_icons" clickable="false" style_pad_all="0">
         <bind_flag_if_eq subject="nav_buttons_enabled" flag="hidden" ref_value="0"/>
         <!-- Active icon (accent) - shown when on filament panel -->
-        <icon name="nav_icon_filament_active" src="filament" size="#icon_size" variant="primary" hidden="true">
+        <icon name="nav_icon_filament_active" src="filament" size="sm" variant="primary" hidden="true">
           <bind_flag_if_not_eq subject="active_panel" flag="hidden" ref_value="3"/>
         </icon>
         <!-- Inactive icon (secondary) - shown when not on filament panel -->
-        <icon name="nav_icon_filament_inactive" src="filament" size="#icon_size" variant="secondary">
+        <icon name="nav_icon_filament_inactive" src="filament" size="sm" variant="muted">
           <bind_flag_if_eq subject="active_panel" flag="hidden" ref_value="3"/>
         </icon>
       </lv_obj>
       <!-- Disabled icon - visible only when disabled (disconnected OR klippy not ready) -->
-      <icon name="nav_icon_filament_disabled" src="filament" size="#icon_size" variant="disabled">
+      <icon name="nav_icon_filament_disabled" src="filament" size="sm" variant="disabled">
         <bind_flag_if_eq subject="nav_buttons_enabled" flag="hidden" ref_value="1"/>
       </icon>
+      <text_tiny name="nav_label" text="Filament" translation_tag="Filament" style_text_color="#text_muted" style_text_align="center" clickable="false" event_bubble="true">
+        <bind_style name="nav_label_on" subject="active_panel" ref_value="3"/>
+      </text_tiny>
     </ui_button>
+    <!-- K2-OpenHost: Settings and Advanced sit at the bottom of the rail. -->
+    <lv_obj width="1" flex_grow="1" style_bg_opa="0" style_border_width="0" style_pad_all="0" scrollable="false"
+            clickable="false"/>
     <!-- Settings Button (Panel 4) -->
     <ui_button name="nav_btn_settings"
-               width="100%" flex_grow="1" variant="ghost" flex_flow="column" style_flex_main_place="center"
+               width="88%" height="54" style_radius="12" style_pad_gap="1" variant="ghost" flex_flow="column" style_flex_main_place="center"
                style_flex_cross_place="center" style_flex_track_place="center" style_border_width="0">
+      <bind_style name="nav_on" subject="active_panel" ref_value="4"/>
       <!-- Disabled during grid edit mode -->
       <bind_state_if_eq subject="home_edit_mode" state="disabled" ref_value="1"/>
-      <icon name="nav_icon_settings_active" src="settings" size="#icon_size" variant="primary" hidden="true">
+      <icon name="nav_icon_settings_active" src="settings" size="sm" variant="primary" hidden="true">
         <bind_flag_if_not_eq subject="active_panel" flag="hidden" ref_value="4"/>
       </icon>
-      <icon name="nav_icon_settings_inactive" src="settings" size="#icon_size" variant="secondary">
+      <icon name="nav_icon_settings_inactive" src="settings" size="sm" variant="muted">
         <bind_flag_if_eq subject="active_panel" flag="hidden" ref_value="4"/>
       </icon>
+      <text_tiny name="nav_label" text="Config" translation_tag="Config" style_text_color="#text_muted" style_text_align="center" clickable="false" event_bubble="true">
+        <bind_style name="nav_label_on" subject="active_panel" ref_value="4"/>
+      </text_tiny>
     </ui_button>
     <!-- Advanced Button (Panel 5) -->
     <ui_button name="nav_btn_advanced"
-               width="100%" flex_grow="1" variant="ghost" flex_flow="column" style_flex_main_place="center"
+               width="88%" height="54" style_radius="12" style_pad_gap="1" variant="ghost" flex_flow="column" style_flex_main_place="center"
                style_flex_cross_place="center" style_flex_track_place="center" style_border_width="0">
+      <bind_style name="nav_on" subject="active_panel" ref_value="5"/>
       <!-- Disabled during grid edit mode -->
       <bind_state_if_eq subject="home_edit_mode" state="disabled" ref_value="1"/>
-      <icon name="nav_icon_advanced_active" src="dots_vertical" size="#icon_size" variant="primary" hidden="true">
+      <icon name="nav_icon_advanced_active" src="dots_vertical" size="sm" variant="primary" hidden="true">
         <bind_flag_if_not_eq subject="active_panel" flag="hidden" ref_value="5"/>
       </icon>
-      <icon name="nav_icon_advanced_inactive" src="dots_vertical" size="#icon_size" variant="secondary">
+      <icon name="nav_icon_advanced_inactive" src="dots_vertical" size="sm" variant="muted">
         <bind_flag_if_eq subject="active_panel" flag="hidden" ref_value="5"/>
       </icon>
+      <text_tiny name="nav_label" text="Advanced" translation_tag="Advanced" style_text_color="#text_muted" style_text_align="center" clickable="false" event_bubble="true">
+        <bind_style name="nav_label_on" subject="active_panel" ref_value="5"/>
+      </text_tiny>
     </ui_button>
     <!-- Printer switcher button — visible only when setting enabled -->
     <ui_button name="nav_printer_badge"

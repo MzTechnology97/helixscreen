@@ -269,6 +269,8 @@
         <bind_style_if name="estop_btn_stacked" cond="ui_is_portrait"/>
         <bind_style_if name="estop_btn_inline" cond="ui_is_portrait" invert="true"/>
         <event_cb trigger="clicked" callback="advanced_restart_klipper_clicked"/>
+        <!-- K2-OpenHost: a restart kills the print; off while one runs. -->
+        <bind_state_if_eq subject="print_active" state="disabled" ref_value="1"/>
       </ui_button>
       <ui_button name="advanced_firmware_restart_btn"
                  height="#button_height_sm" icon="update" text="Firmware Restart" translation_tag="Firmware Restart"
@@ -276,6 +278,7 @@
         <bind_style_if name="estop_btn_stacked" cond="ui_is_portrait"/>
         <bind_style_if name="estop_btn_inline" cond="ui_is_portrait" invert="true"/>
         <event_cb trigger="clicked" callback="advanced_firmware_restart_clicked"/>
+        <bind_state_if_eq subject="print_active" state="disabled" ref_value="1"/>
       </ui_button>
     </lv_obj>
   </view>

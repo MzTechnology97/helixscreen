@@ -960,7 +960,7 @@ void PrintSelectDetailView::show_delete_confirmation(const std::string& filename
     // Create message with current filename
     char msg_buf[256];
     snprintf(msg_buf, sizeof(msg_buf),
-             "Are you sure you want to delete '%s'? This action cannot be undone.",
+             lv_tr("Are you sure you want to delete '%s'? This action cannot be undone."),
              filename.c_str());
 
     // The modal closes itself on a button press and deletes itself after any
@@ -972,7 +972,7 @@ void PrintSelectDetailView::show_delete_confirmation(const std::string& filename
     opts.on_dismiss = drop_handle;
     opts.owner_token = lifetime_.token();
     confirmation_dialog_widget_ = helix::ui::modal_confirm(
-        lv_tr("Delete File?"), msg_buf, ModalSeverity::Warning, lv_tr("Delete"),
+        lv_tr("Delete File?"), msg_buf, ModalSeverity::Error, lv_tr("Delete"),
         [this, drop_handle] {
             drop_handle();
             if (on_delete_confirmed_) {

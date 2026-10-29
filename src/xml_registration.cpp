@@ -31,6 +31,7 @@
 #include "ui_split_button.h"
 #include "ui_spool_canvas.h"
 #include "ui_switch.h"
+#include "ui_k2oh_cfs_view.h"
 #include "ui_text.h"
 #include "ui_text_input.h"
 #include "ui_z_offset_indicator.h"
@@ -520,6 +521,14 @@ void register_xml_components() {
     register_xml("components/panel_widget_temp_carousel.xml");
     register_xml("components/panel_widget_preheat.xml");
     register_xml("components/panel_widget_led.xml");
+    register_xml("components/panel_widget_k2oh_job.xml");
+    register_xml("components/panel_widget_k2oh_temps.xml");
+    register_xml("components/panel_widget_k2oh_cfs.xml");
+    register_xml("components/panel_widget_k2oh_light.xml");
+    register_xml("components/panel_widget_k2oh_fans.xml");
+    register_xml("k2oh_slot_params.xml"); // K2-OpenHost slot editor card
+    register_xml("k2oh_touch_controller.xml"); // K2-OpenHost Touch & Input
+    register_xml("k2oh_touch_test.xml");
     register_xml("components/panel_widget_led_controls.xml");
     register_xml("components/panel_widget_humidity.xml");
     register_xml("components/panel_widget_width_sensor.xml");
@@ -575,6 +584,7 @@ void register_xml_components() {
     register_xml("macro_param_modal.xml");
 
     // Main navigation and panels
+    helix::ui::k2oh_register_nav_callbacks(); // K2-OpenHost CFS entry
     register_xml("navigation_bar.xml");
     register_xml("home_panel.xml");
     register_xml("controls_panel.xml");

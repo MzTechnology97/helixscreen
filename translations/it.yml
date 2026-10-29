@@ -6,6 +6,8 @@ translations:
   '"%s" failed to load': Caricamento di "%s" non riuscito
   '%.1f Hz difference': '%.1f Hz di differenza'
   '%d additional fan%s': '%d ventola%s aggiuntiva'
+  '%d additional fan': '%d ventola aggiuntiva'
+  '%d additional fans': '%d ventole aggiuntive'
   '%d disabled': '%d disabilitati'
   '%d failed to load - see details below': '%d non caricati - vedi i dettagli sotto'
   '%d more sensors': '%d altri sensori'
@@ -19,6 +21,110 @@ translations:
   '%zu changes': '%zu modifiche'
   '%zu events queued': '%zu eventi in coda'
   '%zu plugins failed to load': Caricamento di %zu plugin non riuscito
+  .: ª
+  'Are you sure you want to delete ''%s''? This action cannot be undone.': 'Eliminare ''%s''? L''operazione non si può annullare.'
+  'Arrange each group with the arrows, then save.': 'Ordina ogni gruppo con le frecce, poi salva.'
+  Auto-swap at spool end: Cambio automatico
+  CFS ready: CFS pronta
+  CFS settings: Impostazioni CFS
+  Change the touch settings when the printer is not printing: Cambia le impostazioni del touch a stampante ferma
+  Clog guard: Anti-intasamento
+  Config: Impost.
+  'Controller threshold: higher = lighter touch': 'Soglia del controller: più alta = tocco più leggero'
+  Debounce filter: Filtro antirimbalzo
+  Device operations: Operazioni dispositivo
+  Double: Doppi
+  Elapsed: Trascorso
+  Ends: Fine
+  Gloves: Guanti
+  High: Alta
+  'Home, recover, abort, bypass mode': 'Home, recupera, interrompi, modalità bypass'
+  IN HEAD: IN TESTA
+  IN USE: IN USO
+  Ignores ghost and double touches: Ignora tocchi fantasma e doppi tocchi
+  Left: Restano
+  Light off: Spenta
+  Light on: Accesa
+  Low: Bassa
+  Max volumetric flow: Flusso massimo
+  Mild: Leggero
+  More: Altro
+  No backup spool: Nessuna riserva
+  No profile: Nessun profilo
+  'No spool to swap to: it takes two identical spools (same material and colour).': 'Nessuna bobina di riserva: servono due bobine identiche (stesso materiale e colore).'
+  'No spool to swap to: it takes two identical spools (same material and colour).': 'Nessuna bobina di riserva: servono due bobine identiche (stesso materiale e colore).'
+  'No spool to swap to: it takes two identical spools (same material and colour).': 'Nessuna bobina di riserva: servono due bobine identiche (stesso materiale e colore).'
+  Not recognised: Non riconosciuta
+  Nozzle temperature: Temperatura ugello
+  Pause when the CFS stops feeding: Pausa quando la CFS smette di alimentare
+  'Pressure advance not saved: {}': 'Pressure advance non salvato: {}'
+  Pressure advance: Pressure advance
+  Print a file: Stampa un file
+  Print parameters: Parametri di stampa
+  Printhead sensor: Sensore testa
+  Profile: Profilo
+  Read RFID At Startup: Leggi RFID all'avvio
+  Read RFID On Insert: Leggi RFID all'inserimento
+  Read a spool's tag when it is inserted: Legge il tag di una bobina quando viene inserita
+  Read every spool's tag when Klipper starts: Legge il tag di ogni bobina all'avvio di Klipper
+  Reread RFID: Rileggi RFID
+  Restore original: Ripristina originale
+  'Runout order not saved: {}': 'Ordine del cambio non salvato: {}'
+  'Runout order not saved: {}': 'Ordine del cambio non salvato: {}'
+  'Runout order not saved: {}': 'Ordine del cambio non salvato: {}'
+  Runout swap: Cambio automatico
+  Save order: Salva ordine
+  Saved in the touch controller: Salvato nel controller del touch
+  Sensitivity: Sensibilità
+  Sent: Inviato
+  Strong: Forte
+  'Switch, automatic or manual sequence': 'Interruttore, sequenza automatica o manuale'
+  'The spool with the least left (RFID) goes first, then slot order.': 'Prima la bobina con meno filamento (RFID), poi in ordine di slot.'
+  The touch controller did not accept the change: Il controller del touch non ha accettato la modifica
+  'Touch controller not readable, nothing changed': 'Controller del touch non leggibile, nessuna modifica'
+  Touches: Tocchi
+  Try the touch: Prova il touch
+  Unload After Print: Scarica a fine stampa
+  Unload the filament into the CFS when a print ends: Riporta il filamento nella CFS a fine stampa
+  'When a spool runs out, the print goes on with an identical one (same material and colour).': 'Quando una bobina finisce, la stampa continua con una identica (stesso materiale e colore).'
+  active, no events: attivo, nessun evento
+  active: attivo
+  at rest: a riposo
+  back to the CFS: rientro nel CFS
+  cancelled: annullata
+  checking: verifica
+  clog detected: intasamento!
+  completed: completata
+  dry: asciutta
+  empty: vuoto
+  estimate: stima
+  events: eventi
+  failed: fallita
+  feeding: in spinta
+  filament present: filamento presente
+  humid: umida
+  in use: in uso
+  last: ultima
+  layer: strato
+  lowest remaining first: prima la più scarica
+  manual order: ordine manuale
+  moving: in movimento
+  no filament: nessun filamento
+  no identical spool: nessuna bobina identica
+  ok: normale
+  out of the head: uscita dalla testa
+  preparing: preparazione
+  profile: profilo
+  seating: innesto
+  sensor error: errore sensore
+  slot: slot
+  slot order: ordine degli slot
+  still: fermo
+  to the buffer: verso il buffer
+  to the head: verso la testa
+  today: oggi
+  unknown tag: tag sconosciuto
+  yesterday: ieri
   "'{}' already exists. Replace the stored mesh?": "'{}' esiste già. Sostituire la mesh salvata?"
   "'{}' and '{}' already exist. Replace the stored meshes?": "'{}' e '{}' esistono già. Sostituire le mesh salvate?"
   (different grade): (grado diverso)
@@ -352,6 +458,8 @@ translations:
   Button taps and navigation sounds: Suoni pulsanti e navigazione
   Buzz Servo: 'Fai vibrare il servo'
   Bypass: Bypass
+  External spool: Bobina esterna
+  not set: non impostata
   Bypass Is Active: Bypass attivo
   Bypass Mode: Modalità bypass
   Bypass active — this print runs on the external spool.: Bypass attivo — questa stampa usa la bobina esterna.
@@ -1483,7 +1591,7 @@ translations:
   Leveling Gantry...: Livellamento gantry...
   Library: Libreria
   Lifetime Print Stats: Statistiche stampe totali
-  Light: Chiaro
+  Light: Luce
   Light will switch when the current operation finishes: La luce si attiverà al termine
     dell'operazione in corso
   Line {} calls {}, which this printer treats as an emergency stop. Re-slice the file with a profile made for this printer.: 'La riga {} chiama {}, che questa stampante tratta come un arresto di emergenza. Sezionare di nuovo il file con un profilo creato per questa stampante.'
@@ -2235,7 +2343,7 @@ translations:
   Release the filament: Rilascia il filamento
   Remaining (g): Rimanente (g)
   Remaining Weight (g): Peso rimanente (g)
-  Remap Tool: Rimappa strumento
+  Remap Tool: Strumento
   ? Remapping rewrites the job file before printing it. This printer's Moonraker is too old for the HelixPrint plugin to restore the original filename afterwards, so the finished job is listed under the rewritten name. Remapping itself works normally.
   : La rimappatura riscrive il file di stampa prima di stamparlo. Il Moonraker di questa stampante è troppo vecchio perché il plugin HelixPrint ripristini in seguito il nome del file originale, quindi il lavoro completato viene elencato con il nome riscritto. La rimappatura stessa funziona normalmente.
   ? "Remapping rewrites the job file before printing it. Without the HelixPrint plugin the rewritten copy is what lands in your print history, so finished jobs are listed under names like modified_1730824_benchy.gcode instead of the file you picked.\n\nInstalling the plugin takes a moment and needs no restart."
