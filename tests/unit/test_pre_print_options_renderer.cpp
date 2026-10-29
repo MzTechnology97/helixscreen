@@ -609,7 +609,13 @@ TEST_CASE_METHOD(LVGLUITestFixture,
     // ai_detect toggle — it would be inert. populate_option_rows() now applies
     // filter_macro_gated_options() before handing the set to the renderer; this
     // test reproduces that pipeline against the live DB entry.
-    helix::MacroParamCache::instance().clear(); // Stock K2 Plus, no LOAD_AI_RUN.
+    // Stock K2 Plus: Creality's gcode_macro.cfg defines BED_MESH_CALIBRATE_START_PRINT,
+    // and there is no LOAD_AI_RUN.
+    helix::MacroParamCache::instance().clear();
+    nlohmann::json config = nlohmann::json::object();
+    config["gcode_macro BED_MESH_CALIBRATE_START_PRINT"] = {{"gcode", "G28"}};
+    helix::MacroParamCache::instance().populate_from_configfile(
+        config, {"BED_MESH_CALIBRATE_START_PRINT"});
 
     auto set = PrinterDetector::get_pre_print_option_set("Creality K2 Plus");
     REQUIRE_FALSE(set.empty());
@@ -620,7 +626,7 @@ TEST_CASE_METHOD(LVGLUITestFixture,
     lv_obj_t* container = lv_obj_create(test_screen());
     renderer.populate(container, filtered, nullptr, nullptr);
 
-    // bed_mesh still renders (no requires_macro).
+    // bed_mesh renders: its macro is there.
     REQUIRE(renderer.get_row("bed_mesh") != nullptr);
     // ai_detect must be filtered out — its required macro isn't registered.
     REQUIRE(renderer.get_row("ai_detect") == nullptr);
@@ -636,7 +642,9 @@ TEST_CASE_METHOD(LVGLUITestFixture,
     helix::MacroParamCache::instance().clear();
     nlohmann::json config = nlohmann::json::object();
     config["gcode_macro LOAD_AI_RUN"] = {{"gcode", "{action_respond_info('ai run')}"}};
-    helix::MacroParamCache::instance().populate_from_configfile(config, {"LOAD_AI_RUN"});
+    config["gcode_macro BED_MESH_CALIBRATE_START_PRINT"] = {{"gcode", "G28"}};
+    helix::MacroParamCache::instance().populate_from_configfile(
+        config, {"LOAD_AI_RUN", "BED_MESH_CALIBRATE_START_PRINT"});
 
     auto set = PrinterDetector::get_pre_print_option_set("Creality K2 Plus");
     PrePrintOptionSet filtered = filter_macro_gated_options(set);
@@ -648,6 +656,29 @@ TEST_CASE_METHOD(LVGLUITestFixture,
     REQUIRE(renderer.get_row("bed_mesh") != nullptr);
     REQUIRE(renderer.get_row("ai_detect") != nullptr);
     REQUIRE(renderer.row_count() == set.options.size());
+
+    helix::MacroParamCache::instance().clear();
+}
+
+TEST_CASE_METHOD(LVGLUITestFixture,
+                 "PrePrintOptionsRenderer: K2 on Kalico without the stock mesh macro has no bed_mesh row",
+                 "[print_file_detail][pre_print_options][requires_macro][db]") {
+    // K2-OpenHost (Kalico) has no BED_MESH_CALIBRATE_START_PRINT: the toggle would
+    // send an unknown command, and its START_PRINT meshes on its own.
+    helix::MacroParamCache::instance().clear();
+    nlohmann::json config = nlohmann::json::object();
+    config["gcode_macro START_PRINT"] = {{"gcode", "BED_MESH_CALIBRATE"}};
+    helix::MacroParamCache::instance().populate_from_configfile(config, {"START_PRINT"});
+
+    auto set = PrinterDetector::get_pre_print_option_set("Creality K2 Plus");
+    PrePrintOptionSet filtered = filter_macro_gated_options(set);
+
+    PrePrintOptionsRenderer renderer;
+    lv_obj_t* container = lv_obj_create(test_screen());
+    renderer.populate(container, filtered, nullptr, nullptr);
+
+    REQUIRE(renderer.get_row("bed_mesh") == nullptr);
+    REQUIRE(renderer.get_row("ai_detect") == nullptr);
 
     helix::MacroParamCache::instance().clear();
 }
