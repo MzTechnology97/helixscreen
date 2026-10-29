@@ -44,17 +44,42 @@
     <lv_obj name="job_idle"
             width="100%" height="100%" style_pad_all="0" style_pad_gap="#space_sm" style_bg_opa="0"
             style_border_width="0" flex_flow="column" scrollable="false" hidden="true">
-      <ui_button name="btn_print_file" width="100%" height="#button_height_lg" variant="primary" icon="folder"
-                 text="Print a file" translation_tag="Print a file"/>
-      <text_muted text="Preheat" translation_tag="Preheat"/>
-      <lv_obj width="100%" height="content" style_pad_all="0" style_pad_gap="#space_xs" style_bg_opa="0"
+      <lv_obj width="100%" height="content" style_pad_all="0" style_pad_gap="#space_sm" style_bg_opa="0"
               style_border_width="0" flex_flow="row" scrollable="false">
-        <ui_button name="preheat_0" flex_grow="1" height="#button_height" variant="secondary" text="-"/>
-        <ui_button name="preheat_1" flex_grow="1" height="#button_height" variant="secondary" text="-"/>
-        <ui_button name="preheat_2" flex_grow="1" height="#button_height" variant="secondary" text="-"/>
-        <ui_button name="btn_cooldown" width="#button_height" height="#button_height" variant="secondary"
-                   icon="power"/>
+        <ui_button name="btn_print_file" flex_grow="3" height="52" variant="primary" icon="folder"
+                   text="Print a file" translation_tag="Print a file"/>
+        <!-- The Moonraker job queue, only while it holds jobs (K2ohHomeWidget writes the count). -->
+        <ui_button name="btn_queue" flex_grow="2" height="52" variant="ghost" icon="list" text=""
+                   style_bg_color="#elevated_bg" style_bg_opa="255">
+          <bind_flag_if_eq subject="job_queue_count" flag="hidden" ref_value="0"/>
+        </ui_button>
       </lv_obj>
+      <!-- The last print whose file still exists, with Reprint. -->
+      <lv_obj name="last_row"
+              width="100%" height="content" style_radius="#border_radius" style_bg_color="#elevated_bg"
+              style_bg_opa="255" style_border_width="0" style_pad_all="#space_xs" style_pad_gap="#space_sm"
+              flex_flow="row" style_flex_cross_place="center" scrollable="false" hidden="true">
+        <lv_obj width="42" height="42" style_radius="#border_radius_small" style_bg_color="#card_bg"
+                style_bg_opa="255" style_border_width="0" style_pad_all="0" scrollable="false">
+          <lv_image name="last_thumb" width="100%" height="100%" inner_align="contain"/>
+        </lv_obj>
+        <lv_obj flex_grow="1" height="content" style_pad_all="0" style_pad_gap="0" style_bg_opa="0"
+                style_border_width="0" flex_flow="column" scrollable="false">
+          <text_small name="last_name" text="" width="100%" long_mode="dots"/>
+          <text_xs name="last_meta" text="" width="100%" long_mode="dots" style_text_color="#text_muted"/>
+        </lv_obj>
+        <ui_button name="btn_reprint" height="38" variant="ghost" icon="refresh" text="Reprint"
+                   style_bg_color="#border" style_bg_opa="255"
+                   translation_tag="Reprint"/>
+      </lv_obj>
+      <lv_obj width="100%" height="content" style_pad_all="0" style_pad_gap="#space_xs" style_bg_opa="0"
+              style_border_width="0" flex_flow="row" style_flex_cross_place="center" scrollable="false">
+        <icon src="fire" size="xs" variant="secondary"/>
+        <text_xs text="Preheat" translation_tag="Preheat" text_transform="uppercase" style_text_color="#text_muted"/>
+      </lv_obj>
+      <!-- Material chips and cool-down, built by K2ohHomeWidget. -->
+      <lv_obj name="preheat_row" width="100%" flex_grow="1" style_pad_all="0" style_pad_gap="#space_xs"
+              style_bg_opa="0" style_border_width="0" flex_flow="row" scrollable="false"/>
     </lv_obj>
   </view>
 </component>

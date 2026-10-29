@@ -1,10 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include "ui_job_queue_modal.h"
 #include "ui_observer_guard.h"
 
+#include "async_lifetime_guard.h"
 #include "panel_widget.h"
+#include "print_history_manager.h"
 
+#include <atomic>
 #include <lvgl.h>
 #include <string>
 #include <vector>
@@ -48,6 +52,8 @@ class K2ohHomeWidget : public PanelWidget {
         lv_obj_t* hole = nullptr;
         lv_obj_t* material = nullptr;
         lv_obj_t* percent = nullptr;
+        lv_obj_t* tag = nullptr;      ///< "IN HEAD" on the loaded spool
+        lv_obj_t* unknown = nullptr;  ///< "?" in an empty or unread spool
     };
 
     void refresh();
@@ -57,6 +63,9 @@ class K2ohHomeWidget : public PanelWidget {
     void refresh_light();
     void refresh_fans();
     void build_spools(int count);
+    void build_preheat();
+    /// Idle job card: the newest print whose file still exists, with its thumbnail.
+    void refresh_last_print();
     void release();
 
     static void on_click(lv_event_t* e);
@@ -79,6 +88,13 @@ class K2ohHomeWidget : public PanelWidget {
     bool dragging_ = false;
     bool dragged_ = false;
     std::vector<ObserverGuard> observers_;
+    // Last print (idle job card): history observer and thumbnail load.
+    HistoryChangedCallback history_cb_;
+    bool history_observed_ = false;
+    std::string last_thumb_key_;
+    std::atomic<uint32_t> thumb_generation_{0};
+    JobQueueModal queue_modal_;
+    AsyncLifetimeGuard lifetime_;
 };
 
 void register_k2oh_home_widgets();

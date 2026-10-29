@@ -6,30 +6,36 @@
   <view name="panel_widget_k2oh_fans"
         extends="lv_obj" height="100%" flex_grow="1" style_bg_color="#card_bg" style_bg_opa="255" style_radius="#border_radius" style_border_width="0" style_pad_all="#space_sm" style_pad_gap="0"
         flex_flow="column" scrollable="false" clickable="true">
-    <text_muted text="Fans" translation_tag="Fans" clickable="false" event_bubble="true"/>
+    <lv_obj width="100%" height="content" style_pad_all="0" style_pad_gap="#space_xs" style_bg_opa="0"
+            style_border_width="0" flex_flow="row" style_flex_cross_place="center" scrollable="false"
+            clickable="false" event_bubble="true">
+      <icon src="fan" size="xs" variant="muted" clickable="false" event_bubble="true"/>
+      <text_xs text="Fans" translation_tag="Fans" text_transform="uppercase" flex_grow="1"
+               style_text_color="#text_muted" clickable="false" event_bubble="true"/>
+    </lv_obj>
     <lv_obj name="fan_part_row" width="100%" flex_grow="1" style_pad_all="0" style_pad_gap="#space_xs"
             style_bg_opa="0" style_border_width="0" flex_flow="row" style_flex_cross_place="center"
             scrollable="false" clickable="false" event_bubble="true">
-      <icon name="fan_part_icon" src="fan" size="sm" variant="secondary" clickable="false" event_bubble="true"/>
+      <icon name="fan_part_icon" src="fan" size="xs" variant="muted" clickable="false" event_bubble="true"/>
       <text_small name="fan_part_name" text="" flex_grow="1" long_mode="clip" style_text_color="#text_muted"
                   clickable="false" event_bubble="true"/>
-      <text_body name="fan_part_value" text="" clickable="false" event_bubble="true"/>
+      <text_small name="fan_part_value" text="" clickable="false" event_bubble="true"/>
     </lv_obj>
     <lv_obj name="fan_hotend_row" width="100%" flex_grow="1" style_pad_all="0" style_pad_gap="#space_xs"
             style_bg_opa="0" style_border_width="0" flex_flow="row" style_flex_cross_place="center"
             scrollable="false" clickable="false" event_bubble="true">
-      <icon name="fan_hotend_icon" src="fan" size="sm" variant="secondary" clickable="false" event_bubble="true"/>
+      <icon name="fan_hotend_icon" src="fan" size="xs" variant="muted" clickable="false" event_bubble="true"/>
       <text_small name="fan_hotend_name" text="" flex_grow="1" long_mode="clip" style_text_color="#text_muted"
                   clickable="false" event_bubble="true"/>
-      <text_body name="fan_hotend_value" text="" clickable="false" event_bubble="true"/>
+      <text_small name="fan_hotend_value" text="" clickable="false" event_bubble="true"/>
     </lv_obj>
     <lv_obj name="fan_aux_row" width="100%" flex_grow="1" style_pad_all="0" style_pad_gap="#space_xs"
             style_bg_opa="0" style_border_width="0" flex_flow="row" style_flex_cross_place="center"
             scrollable="false" clickable="false" event_bubble="true">
-      <icon name="fan_aux_icon" src="fan" size="sm" variant="secondary" clickable="false" event_bubble="true"/>
+      <icon name="fan_aux_icon" src="fan" size="xs" variant="muted" clickable="false" event_bubble="true"/>
       <text_small name="fan_aux_name" text="" flex_grow="1" long_mode="clip" style_text_color="#text_muted"
                   clickable="false" event_bubble="true"/>
-      <text_body name="fan_aux_value" text="" clickable="false" event_bubble="true"/>
+      <text_small name="fan_aux_value" text="" clickable="false" event_bubble="true"/>
     </lv_obj>
   </view>
 </component>

@@ -56,15 +56,24 @@ translations:
   active, no events: attivo, nessun evento
   active: attivo
   at rest: a riposo
+  cancelled: annullata
   clog detected: intasamento!
+  completed: completata
   dry: asciutta
   empty: vuoto
   estimate: stima
   events: eventi
+  failed: fallita
   feeding: in spinta
   filament present: filamento presente
   humid: umida
   in use: in uso
+  k2oh_dry: asciutta
+  k2oh_humid: umida
+  k2oh_humidity_ok: normale
+  k2oh_in_head: IN TESTA
+  k2oh_nav_settings: Impost.
+  last: ultima
   layer: strato
   lowest remaining first: prima la più scarica
   manual order: ordine manuale
@@ -74,7 +83,9 @@ translations:
   slot order: ordine degli slot
   still: fermo
   th_ordinal: ª
+  today: oggi
   unknown tag: tag sconosciuto
+  yesterday: ieri
   "'{}' already exists. Replace the stored mesh?": "'{}' esiste già. Sostituire la mesh salvata?"
   "'{}' and '{}' already exist. Replace the stored meshes?": "'{}' e '{}' esistono già. Sostituire le mesh salvate?"
   (different grade): (grado diverso)

@@ -2867,9 +2867,11 @@
   <translation tag="at rest" it="a riposo"/>
   <translation tag="bed" it="piano"/>
   <translation tag="by Preston Brown" it="di Preston Brown"/>
+  <translation tag="cancelled" it="annullata"/>
   <translation tag="chamber heater" it="riscaldatore camera"/>
   <translation tag="clog detected" it="intasamento!"/>
   <translation tag="complete" it="completato"/>
+  <translation tag="completed" it="completata"/>
   <translation tag="cores" it="core"/>
   <translation tag="disable" it="disabilita"/>
   <translation tag="disabled" it="disabilitato"/>
@@ -2889,6 +2891,7 @@
   <translation tag="extruder" it="estrusore"/>
   <translation tag="extruder(s)" it="estrusore/i"/>
   <translation tag="extruders" it="estrusori"/>
+  <translation tag="failed" it="fallita"/>
   <translation tag="fans" it="ventole"/>
   <translation tag="feeding" it="in spinta"/>
   <translation tag="filament present" it="filamento presente"/>
@@ -2896,6 +2899,12 @@
   <translation tag="humid" it="umida"/>
   <translation tag="idle" it="inattivo"/>
   <translation tag="in use" it="in uso"/>
+  <translation tag="k2oh_dry" it="asciutta"/>
+  <translation tag="k2oh_humid" it="umida"/>
+  <translation tag="k2oh_humidity_ok" it="normale"/>
+  <translation tag="k2oh_in_head" it="IN TESTA"/>
+  <translation tag="k2oh_nav_settings" it="Impost."/>
+  <translation tag="last" it="ultima"/>
   <translation tag="layer" it="strato"/>
   <translation tag="layers" it="layer"/>
   <translation tag="left" it="rimanente"/>
@@ -2926,12 +2935,14 @@
   <translation tag="still" it="fermo"/>
   <translation tag="tall" it="di altezza"/>
   <translation tag="th_ordinal" it="ª"/>
+  <translation tag="today" it="oggi"/>
   <translation tag="tool(s)" it="utensile/i"/>
   <translation tag="unknown tag" it="tag sconosciuto"/>
   <translation tag="used" it="usato"/>
   <translation tag="v%s available" it="v%s disponibile"/>
   <translation tag="v{} installed! Restarting..." it="v{} installata! Riavvio in corso..."/>
   <translation tag="v{} is available. Tap to update." it="v{} disponibile. Tocca per aggiornare."/>
+  <translation tag="yesterday" it="ieri"/>
   <translation tag="you have" it="hai"/>
   <translation tag="{} LED strips available" it="{} strisce LED disponibili"/>
   <translation tag="{} axis homed" it="Asse {} in posizione"/>

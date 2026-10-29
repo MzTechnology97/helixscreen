@@ -2867,9 +2867,11 @@
   <translation tag="at rest" en="at rest" it="a riposo"/>
   <translation tag="bed" de="Bett" en="bed" es="cama" fr="plateau" it="piano" ja="ベッド" pt="mesa" ru="стол" zh="热床"/>
   <translation tag="by Preston Brown" de="von Preston Brown" en="by Preston Brown" es="por Preston Brown" fr="par Preston Brown" it="di Preston Brown" ja="by Preston Brown" pt="por Preston Brown" ru="от Preston Brown" zh="by Preston Brown"/>
+  <translation tag="cancelled" en="cancelled" it="annullata"/>
   <translation tag="chamber heater" de="Kammerheizung" en="chamber heater" es="calentador de cámara" fr="chauffage du caisson" it="riscaldatore camera" ja="チャンバーヒーター" pt="aquecedor da câmara" ru="нагреватель камеры" zh="腔体加热器"/>
   <translation tag="clog detected" en="clog detected" it="intasamento!"/>
   <translation tag="complete" de="abgeschlossen" en="complete" es="completo" fr="terminé" it="completato" ja="完了" pt="concluído" ru="завершено" zh="完成"/>
+  <translation tag="completed" en="completed" it="completata"/>
   <translation tag="cores" de="Kerne" en="cores" es="núcleos" fr="cœurs" it="core" ja="コア" pt="núcleos" ru="ядер" zh="核心"/>
   <translation tag="disable" de="deaktivieren" en="disable" es="deshabilitar" fr="désactiver" it="disabilita" ja="無効化" pt="desabilitar" ru="отключить" zh="禁用"/>
   <translation tag="disabled" de="deaktiviert" en="disabled" es="desactivado" fr="désactivé" it="disabilitato" ja="無効" pt="desabilitado" ru="отключено" zh="已禁用"/>
@@ -2889,6 +2891,7 @@
   <translation tag="extruder" de="Extruder" en="extruder" es="extrusor" fr="extrudeur" it="estrusore" ja="エクストルーダー" pt="extrusor" ru="экструдер" zh="挤出机"/>
   <translation tag="extruder(s)" de="Extruder" en="extruder(s)" es="extrusor(es)" fr="extrudeur(s)" it="estrusore/i" ja="エクストルーダー" pt="extrusor(es)" ru="экструдер(ы)" zh="挤出机"/>
   <translation tag="extruders" de="Extruder" en="extruders" es="extrusores" fr="extrudeurs" it="estrusori" ja="エクストルーダー" pt="extrusores" ru="экструдеры" zh="挤出机"/>
+  <translation tag="failed" en="failed" it="fallita"/>
   <translation tag="fans" de="Lüfter" en="fans" es="ventiladores" fr="ventilateurs" it="ventole" ja="ファン" pt="ventoinhas" ru="вентиляторы" zh="风扇"/>
   <translation tag="feeding" en="feeding" it="in spinta"/>
   <translation tag="filament present" en="filament present" it="filamento presente"/>
@@ -2896,6 +2899,12 @@
   <translation tag="humid" en="humid" it="umida"/>
   <translation tag="idle" de="Leerlauf" en="idle" es="inactivo" fr="inactif" it="inattivo" ja="アイドル" pt="ocioso" ru="простой" zh="空闲"/>
   <translation tag="in use" en="in use" it="in uso"/>
+  <translation tag="k2oh_dry" en="dry" it="asciutta"/>
+  <translation tag="k2oh_humid" en="humid" it="umida"/>
+  <translation tag="k2oh_humidity_ok" en="ok" it="normale"/>
+  <translation tag="k2oh_in_head" en="IN HEAD" it="IN TESTA"/>
+  <translation tag="k2oh_nav_settings" en="Settings" it="Impost."/>
+  <translation tag="last" en="last" it="ultima"/>
   <translation tag="layer" en="layer" it="strato"/>
   <translation tag="layers" de="Schichten" en="layers" es="capas" fr="couches" it="layer" ja="レイヤー" pt="camadas" ru="слои" zh="层"/>
   <translation tag="left" de="übrig" en="left" es="restante" fr="restant" it="rimanente" ja="残り" pt="restante" ru="осталось" zh="剩余"/>
@@ -2926,12 +2935,14 @@
   <translation tag="still" en="still" it="fermo"/>
   <translation tag="tall" de="hoch" en="tall" es="de alto" fr="de haut" it="di altezza" ja="高さ" pt="de altura" ru="высотой" zh="高"/>
   <translation tag="th_ordinal" en="." it="ª"/>
+  <translation tag="today" en="today" it="oggi"/>
   <translation tag="tool(s)" de="Werkzeug(e)" en="tool(s)" es="herramienta(s)" fr="outil(s)" it="utensile/i" ja="ツール" pt="ferramenta(s)" ru="инструмент(ы)" zh="工具"/>
   <translation tag="unknown tag" en="unknown tag" it="tag sconosciuto"/>
   <translation tag="used" de="verbraucht" en="used" es="usado" fr="utilisé" it="usato" ja="使用" pt="usado" ru="использ." zh="已使用"/>
   <translation tag="v%s available" de="v%s verfügbar" en="v%s available" es="v%s disponible" fr="v%s disponible" it="v%s disponibile" ja="v%s が利用可能です" pt="v%s disponível" ru="Доступна v%s" zh="v%s 可用"/>
   <translation tag="v{} installed! Restarting..." de="v{} installiert! Neustart..." en="v{} installed! Restarting..." es="¡v{} instalado! Reiniciando..." fr="v{} installée ! Redémarrage..." it="v{} installata! Riavvio in corso..." ja="v{} をインストールしました！再起動中..." pt="v{} instalado! Reiniciando..." ru="v{} установлена! Перезапуск..." zh="已安装 v{}！正在重启..."/>
   <translation tag="v{} is available. Tap to update." de="v{} ist verfügbar. Tippen zum Aktualisieren." en="v{} is available. Tap to update." es="v{} disponible. Toque para actualizar." fr="v{} est disponible. Appuyez pour mettre à jour." it="v{} disponibile. Tocca per aggiornare." ja="v{} が利用可能です。タップして更新してください。" pt="v{} disponível. Toque para atualizar." ru="v{} доступна. Нажмите для обновления." zh="v{} 可用。点击以更新。"/>
+  <translation tag="yesterday" en="yesterday" it="ieri"/>
   <translation tag="you have" de="Sie haben" en="you have" es="tienes" fr="vous avez" it="hai" ja="現在は" pt="você tem" ru="у вас" zh="您有"/>
   <translation tag="{} LED strips available" de="{} LED-Streifen verfügbar" en="{} LED strips available" es="{} tiras LED disponibles" fr="{} bandeaux LED disponibles" it="{} strisce LED disponibili" ja="{} 個の LED ストリップが利用可能です" pt="{} fitas de LED disponíveis" ru="Доступно светодиодных лент: {}" zh="{} 条 LED 灯带可用"/>
   <translation tag="{} axis homed" de="{}-Achse referenziert" en="{} axis homed" es="Eje {} en origen" fr="Axe {} référencé" it="Asse {} in posizione" ja="{} 軸がホーミング済み" pt="Eixo {} referenciado" ru="Ось {} запаркована" zh="{} 轴已归位"/>

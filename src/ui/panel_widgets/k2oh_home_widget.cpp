@@ -5,11 +5,14 @@
 
 #include "ui_button.h"
 #include "ui_fan_control_overlay.h"
+#include "ui_fonts.h"
 #include "ui_format_utils.h"
 #include "ui_icon.h"
+#include "ui_icon_codepoints.h"
 #include "ui_k2oh_cfs_view.h"
 #include "ui_nav_manager.h"
 #include "ui_panel_ams.h"
+#include "ui_panel_print_select.h"
 #include "ui_panel_print_status.h"
 #include "ui_print_tune_overlay.h"
 
@@ -27,6 +30,9 @@
 #include "system_settings_manager.h"
 #include "temperature_controller.h"
 #include "theme_manager.h"
+#include "thumbnail_cache.h"
+#include "thumbnail_load_context.h"
+#include "thumbnail_processor.h"
 
 #include <spdlog/spdlog.h>
 
@@ -40,12 +46,15 @@ namespace helix {
 
 namespace {
 
-constexpr int kRingSize = 58;
-constexpr int kRingWidth = 5;
+constexpr int kRingSize = 60;
+constexpr int kRingWidth = 6;
 constexpr int kLowPercent = 15;
 constexpr int kPreheatButtons = 3;
 // Fan speeds and the end clock have no subject per tick; a slow timer is enough.
 constexpr uint32_t kTickMs = 2000;
+// Box humidity bands for the CFS chip.
+constexpr int kDryHumidity = 35;
+constexpr int kHumidHumidity = 55;
 
 lv_obj_t* child(lv_obj_t* parent, const char* name) {
     return parent ? lv_obj_find_by_name(parent, name) : nullptr;
@@ -80,6 +89,38 @@ std::string job_title(const char* display) {
     }
     std::replace(name.begin(), name.end(), '_', ' ');
     return name;
+}
+
+/// "today 14:30" / "yesterday" / "27/10", for the last-print line.
+std::string when(double unix_time) {
+    if (unix_time <= 0) {
+        return {};
+    }
+    const std::time_t t = static_cast<std::time_t>(unix_time);
+    const std::time_t now = std::time(nullptr);
+    std::tm then_tm{};
+    std::tm now_tm{};
+    localtime_r(&t, &then_tm);
+    localtime_r(&now, &now_tm);
+    const int days = (now_tm.tm_year - then_tm.tm_year) * 366 + now_tm.tm_yday - then_tm.tm_yday;
+    if (days == 0) {
+        return std::string(lv_tr("today")) + " " + ui::format_time(&then_tm);
+    }
+    if (days == 1) {
+        return lv_tr("yesterday");
+    }
+    char buf[16];
+    std::strftime(buf, sizeof(buf), "%d/%m", &then_tm);
+    return buf;
+}
+
+lv_obj_t* make_label(lv_obj_t* parent, const lv_font_t* font, const char* color) {
+    lv_obj_t* label = lv_label_create(parent);
+    lv_obj_set_style_text_font(label, font, LV_PART_MAIN);
+    lv_obj_set_style_text_color(label, theme_manager_get_color(color), LV_PART_MAIN);
+    lv_obj_add_flag(label, LV_OBJ_FLAG_EVENT_BUBBLE);
+    lv_obj_remove_flag(label, LV_OBJ_FLAG_CLICKABLE);
+    return label;
 }
 
 void open_fan_control(lv_obj_t* parent_screen) {
@@ -138,8 +179,7 @@ void K2ohHomeWidget::attach(lv_obj_t* widget_obj, lv_obj_t* parent_screen) {
                               LV_FLEX_ALIGN_CENTER);
     }
 
-    for (const char* name : {"thumb_box", "btn_tune", "btn_print_file", "btn_cooldown", "preheat_0",
-                             "preheat_1", "preheat_2"}) {
+    for (const char* name : {"thumb_box", "btn_tune", "btn_print_file", "btn_queue", "btn_reprint"}) {
         if (lv_obj_t* obj = child(root_, name)) {
             lv_obj_add_event_cb(obj, on_click, LV_EVENT_CLICKED, this);
         }
@@ -165,22 +205,19 @@ void K2ohHomeWidget::attach(lv_obj_t* widget_obj, lv_obj_t* parent_screen) {
         subjects = {ps.get_print_state_enum_subject(), ps.get_print_progress_subject(),
                     ps.get_print_layer_current_subject(), ps.get_print_layer_total_subject(),
                     ps.get_print_time_left_subject()};
-        for (int i = 0; i < kPreheatButtons; ++i) {
-            const std::string name = "preheat_" + std::to_string(i);
-            lv_obj_t* btn = child(root_, name.c_str());
-            if (!btn) {
-                continue;
-            }
-            if (i >= presets::PRESET_COUNT) {
-                set_hidden(btn, true);
-                continue;
-            }
-            std::string label = presets::name(i);
-            if (const auto mat = filament::find_material(label)) {
-                label += "  " + std::to_string(mat->nozzle_recommended()) + "/" +
-                         std::to_string(mat->bed_temp);
-            }
-            ui_button_set_text(btn, label.c_str());
+        if (lv_subject_t* queue = lv_xml_get_subject(nullptr, "job_queue_count")) {
+            subjects.push_back(queue);
+        }
+        build_preheat();
+        // The idle card's last print follows the Moonraker history.
+        if (auto* history = get_print_history_manager()) {
+            auto token = lifetime_.token();
+            history_cb_ = [this, token]() {
+                token.defer("K2ohHomeWidget::history", [this]() { refresh_last_print(); });
+            };
+            history->add_observer(&history_cb_);
+            history_observed_ = true;
+            history->ensure_loaded();
         }
         break;
     case Kind::Temps:
@@ -214,6 +251,14 @@ void K2ohHomeWidget::attach(lv_obj_t* widget_obj, lv_obj_t* parent_screen) {
 
 void K2ohHomeWidget::release() {
     observers_.clear();
+    if (history_observed_) {
+        if (auto* history = get_print_history_manager()) {
+            history->remove_observer(&history_cb_);
+        }
+        history_observed_ = false;
+    }
+    lifetime_.invalidate();
+    last_thumb_key_.clear();
     if (timer_) {
         lv_timer_delete(timer_);
         timer_ = nullptr;
@@ -261,6 +306,14 @@ void K2ohHomeWidget::refresh_job() {
     set_hidden(child(root_, "job_active"), !active);
     set_hidden(child(root_, "job_idle"), active);
     if (!active) {
+        if (lv_subject_t* queue = lv_xml_get_subject(nullptr, "job_queue_count")) {
+            if (lv_obj_t* btn = child(root_, "btn_queue")) {
+                const std::string text = std::string(lv_tr("Queue")) + " (" +
+                                         std::to_string(lv_subject_get_int(queue)) + ")";
+                ui_button_set_text(btn, text.c_str());
+            }
+        }
+        refresh_last_print();
         return;
     }
     const int progress =
@@ -301,34 +354,148 @@ void K2ohHomeWidget::refresh_job() {
     }
 }
 
+void K2ohHomeWidget::build_preheat() {
+    lv_obj_t* row = child(root_, "preheat_row");
+    if (!row) {
+        return;
+    }
+    lv_obj_clean(row);
+    auto make_chip = [this, row](const char* name) {
+        lv_obj_t* chip = lv_obj_create(row);
+        lv_obj_remove_style_all(chip);
+        lv_obj_set_name(chip, name);
+        lv_obj_set_height(chip, LV_PCT(100));
+        lv_obj_set_style_radius(chip, lv_obj_get_style_radius(root_, LV_PART_MAIN), LV_PART_MAIN);
+        lv_obj_set_style_bg_opa(chip, LV_OPA_COVER, LV_PART_MAIN);
+        lv_obj_set_style_bg_color(chip, theme_manager_get_color("elevated_bg"), LV_PART_MAIN);
+        lv_obj_set_style_bg_color(chip, theme_manager_get_color("primary"), LV_STATE_PRESSED);
+        lv_obj_set_style_pad_hor(chip, 4, LV_PART_MAIN);
+        lv_obj_set_style_pad_gap(chip, 5, LV_PART_MAIN);
+        lv_obj_set_flex_flow(chip, LV_FLEX_FLOW_ROW);
+        lv_obj_set_flex_align(chip, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+        lv_obj_add_flag(chip, LV_OBJ_FLAG_CLICKABLE);
+        lv_obj_add_event_cb(chip, on_click, LV_EVENT_CLICKED, this);
+        return chip;
+    };
+    for (int i = 0; i < kPreheatButtons && i < presets::PRESET_COUNT; ++i) {
+        const std::string name = "preheat_" + std::to_string(i);
+        lv_obj_t* chip = make_chip(name.c_str());
+        lv_obj_set_flex_grow(chip, 1);
+        lv_label_set_text(make_label(chip, &noto_sans_bold_14, "text"), presets::name(i).c_str());
+        if (const auto mat = filament::find_material(presets::name(i))) {
+            const std::string temps =
+                std::to_string(mat->nozzle_recommended()) + "/" + std::to_string(mat->bed_temp);
+            lv_label_set_text(make_label(chip, theme_manager_get_font("font_xs"), "text_muted"),
+                              temps.c_str());
+        }
+    }
+    lv_obj_t* cool = make_chip("btn_cooldown");
+    lv_obj_set_width(cool, 46);
+    lv_label_set_text(make_label(cool, &mdi_icons_24, "text"), ui_icon::lookup_codepoint("power"));
+}
+
+void K2ohHomeWidget::refresh_last_print() {
+    lv_obj_t* row = child(root_, "last_row");
+    auto* history = get_print_history_manager();
+    const PrintHistoryJob* job =
+        history && history->is_loaded() ? history->get_newest_existing_job() : nullptr;
+    set_hidden(row, !job);
+    if (!job) {
+        return;
+    }
+    std::string name = job->filename;
+    if (const auto slash = name.rfind('/'); slash != std::string::npos) {
+        name.erase(0, slash + 1);
+    }
+    set_text(root_, "last_name", job_title(name.c_str()));
+    std::string meta = lv_tr("last");
+    const char* outcome = job->status == PrintJobStatus::COMPLETED   ? "completed"
+                          : job->status == PrintJobStatus::CANCELLED ? "cancelled"
+                          : job->status == PrintJobStatus::ERROR     ? "failed"
+                                                                     : nullptr;
+    if (outcome) {
+        meta += std::string(" · ") + lv_tr(outcome);
+    }
+    if (const std::string at = when(job->end_time > 0 ? job->end_time : job->start_time);
+        !at.empty()) {
+        meta += " " + at;
+    }
+    if (job->print_duration > 0) {
+        meta += " · " + ui::format_print_time(static_cast<int>(job->print_duration / 60));
+    }
+    set_text(root_, "last_meta", meta);
+
+    // Thumbnail through the shared cache, as the stock idle print card does.
+    lv_obj_t* img = child(root_, "last_thumb");
+    if (!img || job->thumbnail_path.empty() || job->thumbnail_path == last_thumb_key_) {
+        return;
+    }
+    last_thumb_key_ = job->thumbnail_path;
+    ThumbnailRequest req;
+    req.key = job->thumbnail_path;
+    req.target = ThumbnailProcessor::get_target_for_resolution(42, 42, ThumbnailSize::Card);
+    req.source_modified = static_cast<time_t>(job->modified);
+    if (const std::string cached = get_thumbnail_cache().get_if_cached(req); !cached.empty()) {
+        lv_image_set_src(img, cached.c_str());
+        return;
+    }
+    auto* api = get_moonraker_api();
+    if (!api) {
+        return;
+    }
+    req.api = api;
+    auto ctx = ThumbnailLoadContext::create(lifetime_, &thumb_generation_);
+    auto token = lifetime_.token();
+    get_thumbnail_cache().fetch(
+        req, ctx,
+        [this, token, ctx](const std::string& path, bool /*degraded*/) {
+            token.defer("K2ohHomeWidget::last_thumb", [this, ctx, path]() {
+                if (!ctx.is_valid() || !root_) {
+                    return;
+                }
+                if (lv_obj_t* thumb = child(root_, "last_thumb")) {
+                    lv_image_set_src(thumb, path.c_str());
+                }
+            });
+        },
+        [](const std::string& error) {
+            spdlog::debug("[K2ohHomeWidget] last thumbnail: {}", error);
+        });
+}
+
 void K2ohHomeWidget::refresh_temps() {
     struct Row {
         const char* value;
         const char* target;
+        const char* icon;
         lv_subject_t* temp;
         lv_subject_t* goal;
     };
     const Row rows[] = {
-        {"nozzle_value", "nozzle_target", printer_state_.get_active_extruder_temp_subject(),
+        {"nozzle_value", "nozzle_target", "nozzle_icon",
+         printer_state_.get_active_extruder_temp_subject(),
          printer_state_.get_active_extruder_target_subject()},
-        {"bed_value", "bed_target", printer_state_.get_bed_temp_subject(),
+        {"bed_value", "bed_target", "bed_icon", printer_state_.get_bed_temp_subject(),
          printer_state_.get_bed_target_subject()},
-        {"chamber_value", nullptr, printer_state_.get_chamber_temp_subject(), nullptr},
+        {"chamber_value", nullptr, "chamber_icon", printer_state_.get_chamber_temp_subject(),
+         nullptr},
     };
     for (const Row& row : rows) {
         const int temp = lv_subject_get_int(row.temp);
         const int goal = row.goal ? lv_subject_get_int(row.goal) : 0;
-        set_text(root_, row.value, degrees(temp) + "°");
+        set_text(root_, row.value, degrees(temp));
+        // Blue while cold, amber while heating, green within 2 °C of the target.
+        const bool at_target = goal > 0 && std::abs(temp - goal) <= 20;
+        const char* state = goal <= 0 ? "primary" : at_target ? "success" : "warning";
         if (lv_obj_t* label = child(root_, row.value)) {
-            // Green once a heater is on and within 2 °C of its target.
-            const bool at_target = goal > 0 && std::abs(temp - goal) <= 20;
-            lv_obj_set_style_text_color(
-                label,
-                theme_manager_get_color(goal <= 0 ? "text" : at_target ? "success" : "warning"),
-                LV_PART_MAIN);
+            lv_obj_set_style_text_color(label, theme_manager_get_color(goal <= 0 ? "text" : state),
+                                        LV_PART_MAIN);
+        }
+        if (lv_obj_t* icon = child(root_, row.icon)) {
+            ui_icon_set_variant(icon, state);
         }
         if (row.target) {
-            set_text(root_, row.target, goal > 0 ? "/ " + degrees(goal) + "°" : "");
+            set_text(root_, row.target, goal > 0 ? "/ " + degrees(goal) + "°" : "°C");
         }
     }
 }
@@ -350,10 +517,12 @@ void K2ohHomeWidget::build_spools(int count) {
         lv_obj_set_flex_flow(s.root, LV_FLEX_FLOW_COLUMN);
         lv_obj_set_flex_align(s.root, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER,
                               LV_FLEX_ALIGN_CENTER);
-        lv_obj_set_style_radius(s.root, 10, LV_PART_MAIN);
+        lv_obj_set_style_radius(s.root, 12, LV_PART_MAIN);
         lv_obj_set_style_border_width(s.root, 2, LV_PART_MAIN);
         lv_obj_set_style_border_color(s.root, theme_manager_get_color("primary"), LV_PART_MAIN);
-        lv_obj_set_style_pad_gap(s.root, 2, LV_PART_MAIN);
+        lv_obj_set_style_bg_color(s.root, theme_manager_get_color("primary"), LV_PART_MAIN);
+        lv_obj_set_style_pad_gap(s.root, 1, LV_PART_MAIN);
+        lv_obj_set_style_pad_top(s.root, 6, LV_PART_MAIN);
         lv_obj_add_flag(s.root, LV_OBJ_FLAG_EVENT_BUBBLE);
         lv_obj_remove_flag(s.root, LV_OBJ_FLAG_CLICKABLE);
 
@@ -384,6 +553,23 @@ void K2ohHomeWidget::build_spools(int count) {
         lv_obj_set_style_bg_opa(s.core, LV_OPA_COVER, LV_PART_MAIN);
         lv_obj_add_flag(s.core, LV_OBJ_FLAG_EVENT_BUBBLE);
 
+        s.unknown = make_label(s.core, &mdi_icons_24, "text_muted");
+        lv_label_set_text(s.unknown, ui_icon::lookup_codepoint("help"));
+        lv_obj_center(s.unknown);
+
+        // Slot number badge on the ring, as on the CFS page.
+        lv_obj_t* badge = lv_obj_create(box);
+        lv_obj_remove_style_all(badge);
+        lv_obj_set_size(badge, 18, 18);
+        lv_obj_align(badge, LV_ALIGN_TOP_LEFT, -2, -2);
+        lv_obj_set_style_radius(badge, LV_RADIUS_CIRCLE, LV_PART_MAIN);
+        lv_obj_set_style_bg_opa(badge, LV_OPA_COVER, LV_PART_MAIN);
+        lv_obj_set_style_bg_color(badge, theme_manager_get_color("border"), LV_PART_MAIN);
+        lv_obj_add_flag(badge, LV_OBJ_FLAG_EVENT_BUBBLE);
+        lv_obj_t* num = make_label(badge, theme_manager_get_font("font_xs"), "text");
+        lv_label_set_text(num, std::to_string(i + 1).c_str());
+        lv_obj_center(num);
+
         s.hole = lv_obj_create(s.core);
         lv_obj_remove_style_all(s.hole);
         lv_obj_set_size(s.hole, 12, 12);
@@ -393,10 +579,23 @@ void K2ohHomeWidget::build_spools(int count) {
         lv_obj_set_style_bg_color(s.hole, theme_manager_get_color("card_bg"), LV_PART_MAIN);
         lv_obj_add_flag(s.hole, LV_OBJ_FLAG_EVENT_BUBBLE);
 
-        s.material = lv_label_create(s.root);
-        lv_obj_set_style_text_color(s.material, theme_manager_get_color("text"), LV_PART_MAIN);
-        s.percent = lv_label_create(s.root);
-        lv_obj_set_style_text_color(s.percent, theme_manager_get_color("text_muted"), LV_PART_MAIN);
+        s.material = make_label(s.root, &noto_sans_bold_14, "text");
+        s.percent = make_label(s.root, theme_manager_get_font("font_xs"), "text_muted");
+
+        // "IN HEAD" tag over the loaded spool's top edge.
+        s.tag = lv_obj_create(s.root);
+        lv_obj_remove_style_all(s.tag);
+        lv_obj_add_flag(s.tag, LV_OBJ_FLAG_FLOATING);
+        lv_obj_set_size(s.tag, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+        lv_obj_align(s.tag, LV_ALIGN_TOP_RIGHT, 0, -9);
+        lv_obj_set_style_radius(s.tag, 8, LV_PART_MAIN);
+        lv_obj_set_style_bg_opa(s.tag, LV_OPA_COVER, LV_PART_MAIN);
+        lv_obj_set_style_bg_color(s.tag, lv_color_hex(0x3A6A47), LV_PART_MAIN);
+        lv_obj_set_style_pad_hor(s.tag, 6, LV_PART_MAIN);
+        lv_obj_set_style_pad_ver(s.tag, 1, LV_PART_MAIN);
+        lv_obj_add_flag(s.tag, LV_OBJ_FLAG_EVENT_BUBBLE);
+        lv_label_set_text(make_label(s.tag, theme_manager_get_font("font_xs"), "text"),
+                          lv_tr("k2oh_in_head"));
         spools_.push_back(s);
     }
 }
@@ -426,8 +625,11 @@ void K2ohHomeWidget::refresh_cfs() {
         const bool low = pct >= 0 && pct <= kLowPercent;
         const lv_color_t filament = lv_color_hex(slot.color_rgb);
 
-        lv_obj_set_style_border_opa(
-            s.root, slot.status == SlotStatus::LOADED ? LV_OPA_COVER : LV_OPA_TRANSP, LV_PART_MAIN);
+        const bool loaded = slot.status == SlotStatus::LOADED;
+        lv_obj_set_style_border_opa(s.root, loaded ? LV_OPA_COVER : LV_OPA_TRANSP, LV_PART_MAIN);
+        lv_obj_set_style_bg_opa(s.root, loaded ? LV_OPA_20 : LV_OPA_TRANSP, LV_PART_MAIN);
+        set_hidden(s.tag, !loaded);
+        set_hidden(s.unknown, !(empty || unknown));
         lv_arc_set_value(s.ring, std::max(pct, 0));
         lv_obj_set_style_arc_color(s.ring, low ? theme_manager_get_color("warning") : filament,
                                    LV_PART_INDICATOR);
@@ -436,25 +638,35 @@ void K2ohHomeWidget::refresh_cfs() {
             LV_PART_MAIN);
         set_hidden(s.hole, empty || unknown);
 
-        std::string label = std::to_string(slot.global_index + 1) + " ";
-        label += empty ? lv_tr("Empty") : unknown ? "?" : slot.material;
-        lv_label_set_text(s.material, label.c_str());
+        lv_label_set_text(s.material, empty ? lv_tr("Empty") : unknown ? "?" : slot.material.c_str());
+        lv_obj_set_style_text_color(s.material, theme_manager_get_color(empty ? "text_muted" : "text"),
+                                    LV_PART_MAIN);
         lv_label_set_text(s.percent, pct >= 0 ? (std::to_string(pct) + "%").c_str() : "");
         lv_obj_set_style_text_color(
             s.percent, theme_manager_get_color(low ? "warning" : "text_muted"), LV_PART_MAIN);
     }
 
-    std::string env;
+    // Humidity chip: green while dry, amber when humid.
+    int humidity = -1;
     for (const auto& unit : info.units) {
         if (unit.environment && unit.environment->has_humidity) {
-            env = std::to_string(static_cast<int>(std::lround(unit.environment->temperature_c))) +
-                  "°C · " +
-                  std::to_string(static_cast<int>(std::lround(unit.environment->humidity_pct))) +
-                  "%";
+            humidity = static_cast<int>(std::lround(unit.environment->humidity_pct));
             break;
         }
     }
-    set_text(root_, "cfs_env", env);
+    lv_obj_t* chip = child(root_, "env_chip");
+    set_hidden(chip, humidity < 0);
+    if (humidity >= 0 && chip) {
+        const bool dry = humidity <= kDryHumidity;
+        const bool ok = humidity <= kHumidHumidity;
+        const char* band = dry ? "k2oh_dry" : ok ? "k2oh_humidity_ok" : "k2oh_humid";
+        const char* color = dry ? "success" : ok ? "info" : "warning";
+        set_text(root_, "cfs_env", std::to_string(humidity) + "% · " + lv_tr(band));
+        lv_obj_set_style_bg_color(chip, theme_manager_get_color(color), LV_PART_MAIN);
+        if (lv_obj_t* icon = child(root_, "env_icon")) {
+            ui_icon_set_variant(icon, color);
+        }
+    }
 }
 
 void K2ohHomeWidget::refresh_light() {
@@ -571,7 +783,7 @@ void K2ohHomeWidget::refresh_fans() {
         if (lv_obj_t* icon = child(root_, (base + "_icon").c_str())) {
             const bool spinning = found->speed_percent > 0;
             ui_icon_set_source(icon, spinning ? "fan" : "fan_off");
-            ui_icon_set_variant(icon, spinning ? "primary" : "secondary");
+            ui_icon_set_variant(icon, spinning ? "primary" : "muted");
         }
     }
 }
@@ -630,6 +842,24 @@ void K2ohHomeWidget::on_click(lv_event_t* e) {
                                           self->printer_state_);
     } else if (std::strcmp(name, "btn_print_file") == 0) {
         NavigationManager::instance().set_active(PanelId::PrintSelect);
+    } else if (std::strcmp(name, "btn_queue") == 0) {
+        if (self->parent_screen_) {
+            self->queue_modal_.show(self->parent_screen_);
+        }
+    } else if (std::strcmp(name, "btn_reprint") == 0) {
+        // As the stock idle card's "Print last": select the file and come back Home.
+        auto* history = get_print_history_manager();
+        const PrintHistoryJob* job = history ? history->get_newest_existing_job() : nullptr;
+        if (!job) {
+            return;
+        }
+        NavigationManager::instance().set_active(PanelId::PrintSelect);
+        if (auto* panel = get_print_select_panel(self->printer_state_, get_moonraker_api())) {
+            panel->set_return_to_home_on_close();
+            if (!panel->select_file_by_name(job->filename)) {
+                panel->set_pending_file_selection(job->filename);
+            }
+        }
     } else if (std::strcmp(name, "btn_cooldown") == 0) {
         if (auto* c = get_temperature_controller()) {
             c->set_target(HeaterType::Nozzle, 0.0, {.toast = true});

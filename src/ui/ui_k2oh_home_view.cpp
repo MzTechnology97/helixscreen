@@ -5,6 +5,7 @@
 
 #include "ui_format_utils.h"
 #include "ui_icon.h"
+#include "theme_manager.h"
 #include "ui_k2oh_cfs_view.h"
 
 #include "ams_state.h"
@@ -189,6 +190,10 @@ void K2ohHomeView::refresh_state() {
     if (lv_obj_t* obj = child(root_, "state_icon")) {
         ui_icon_set_source(obj, icon);
         ui_icon_set_variant(obj, variant);
+    }
+    // The chip is tinted with the state colour (the XML sets the tint's opacity).
+    if (lv_obj_t* obj = child(root_, "state_chip")) {
+        lv_obj_set_style_bg_color(obj, theme_manager_get_color(variant), LV_PART_MAIN);
     }
 }
 
