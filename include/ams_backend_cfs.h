@@ -622,6 +622,9 @@ class AmsBackendCfs : public AmsSubscriptionBackend {
     /// AmsSystemInfo::endless_spool_enabled holds the firmware's answer rather
     /// than its constructed default. Guarded by mutex_.
     bool endless_spool_enable_reported_ = false;
+    /// K2-OpenHost (Kalico): box switches by field name (clog_detection_enabled,
+    /// ...), as last published; a switch is offered once its field arrived.
+    std::unordered_map<std::string, bool> fork_switches_;
 
     /// Records a toggle_auto_refill send Klipper completed as the current state
     /// and announces it. Takes mutex_ itself; main thread.

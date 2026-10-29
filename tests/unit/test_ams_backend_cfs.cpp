@@ -5852,3 +5852,34 @@ TEST_CASE("CFS Fork: Check slot rereads the slot's RFID tag (K2-OpenHost)",
     REQUIRE(fork.captured.size() == 1);
     CHECK(fork.captured[0] == "_BOX_RFID_READ_SLOT SLOT=2");
 }
+
+TEST_CASE("CFS Fork: Kalico's box switches are device actions (K2-OpenHost)",
+          "[ams][cfs][flat][k2oh]") {
+    CfsRemapHelper backend;
+    auto has = [&](const std::string& id) {
+        for (const auto& a : backend.get_device_actions()) {
+            if (a.id == id) {
+                return true;
+            }
+        }
+        return false;
+    };
+    // Not offered before Kalico has published them.
+    CfsTestAccess::set_flat_fork(backend, 4);
+    CHECK_FALSE(has("clog_detection_enabled"));
+
+    json box = make_flat_fork_box();
+    box["clog_detection_enabled"] = true;
+    box["unload_after_print_enabled"] = false;
+    CfsTestAccess::handle_status(backend, make_cfs_notification(box));
+    CHECK(has("clog_detection_enabled"));
+    CHECK(has("unload_after_print_enabled"));
+    CHECK_FALSE(has("rfid_startup_reading_enabled"));
+
+    backend.captured.clear();
+    CHECK(backend.execute_device_action("clog_detection_enabled", false).success());
+    CHECK(backend.execute_device_action("unload_after_print_enabled").success());
+    REQUIRE(backend.captured.size() == 2);
+    CHECK(backend.captured[0] == "_BOX_SET_CLOG_DETECTION ENABLE=0");
+    CHECK(backend.captured[1] == "_BOX_SET_UNLOAD_AFTER_PRINT ENABLE=1");
+}
