@@ -5,7 +5,9 @@
   <translation tag=" left" it=" rimanente"/>
   <translation tag="&quot;%s&quot; failed to load" it="Caricamento di &quot;%s&quot; non riuscito"/>
   <translation tag="%.1f Hz difference" it="%.1f Hz di differenza"/>
+  <translation tag="%d additional fan" it="%d ventola aggiuntiva"/>
   <translation tag="%d additional fan%s" it="%d ventola%s aggiuntiva"/>
+  <translation tag="%d additional fans" it="%d ventole aggiuntive"/>
   <translation tag="%d disabled" it="%d disabilitati"/>
   <translation tag="%d failed to load - see details below" it="%d non caricati - vedi i dettagli sotto"/>
   <translation tag="%d more sensors" it="%d altri sensori"/>
@@ -1453,6 +1455,7 @@
   <translation tag="Max Z Accel" it="Accel. Z massima"/>
   <translation tag="Max Z Velocity" it="Velocità Z massima"/>
   <translation tag="Max speed through corners (mm/s)" it="Velocità massima in curva (mm/s)"/>
+  <translation tag="Max volumetric flow" it="Flusso massimo"/>
   <translation tag="Maximum" it="Massimo"/>
   <translation tag="Maximum acceleration (mm/s²)" it="Accelerazione massima (mm/s²)"/>
   <translation tag="Maximum toolhead speed (mm/s)" it="Velocità massima testina (mm/s)"/>
@@ -1668,6 +1671,7 @@
   <translation tag="Nozzle min cannot exceed max" it="Il minimo dell’ugello non può superare il massimo"/>
   <translation tag="Nozzle target set to {}°C" it="Obiettivo ugello impostato a {}°C"/>
   <translation tag="Nozzle temp must be 100-500°C" it="La temperatura dell’ugello deve essere 100-500°C"/>
+  <translation tag="Nozzle temperature" it="Temperatura ugello"/>
   <translation tag="Nozzle, bed, and chamber temps stacked" it="Temperature di ugello, piano e camera impilate"/>
   <translation tag="Nozzle:" it="Ugello:"/>
   <translation tag="OD" it="OD"/>
@@ -1830,6 +1834,8 @@
   <translation tag="Presets" it="Preset"/>
   <translation tag="Press Abort to stop" it="Premi Interrompi per fermare"/>
   <translation tag="Press Scan to search" it="Premi Scansiona per cercare"/>
+  <translation tag="Pressure advance" it="Pressure advance"/>
+  <translation tag="Pressure advance not saved: {}" it="Pressure advance non salvato: {}"/>
   <translation tag="Pressure:" it="Pressione:"/>
   <translation tag="Preview Sounds" it="Anteprima suoni"/>
   <translation tag="Previous" it="Precedente"/>
@@ -1871,6 +1877,7 @@
   <translation tag="Print history statistics" it="Statistiche della cronologia di stampa"/>
   <translation tag="Print history will show the rewritten name" it="La cronologia di stampa mostrerà il nome riscritto"/>
   <translation tag="Print issue detected" it="Problema di stampa rilevato"/>
+  <translation tag="Print parameters" it="Parametri di stampa"/>
   <translation tag="Print preparation failed: {}" it="Preparazione stampa fallita: {}"/>
   <translation tag="Print progress and file selection" it="Avanzamento stampa e selezione file"/>
   <translation tag="Print server rejected the job — check printer status" it="Il server di stampa ha rifiutato il lavoro — controlla lo stato della stampante"/>
@@ -1943,6 +1950,7 @@
   <translation tag="Probing... ({} points)" it="Sondaggio in corso... ({} punti)"/>
   <translation tag="Proceed" it="Procedi"/>
   <translation tag="Processing..." it="Elaborazione in corso..."/>
+  <translation tag="Profile" it="Profilo"/>
   <translation tag="Profile deleted" it="Profilo eliminato"/>
   <translation tag="Profile name (e.g., default)" it="Nome profilo (es. default)"/>
   <translation tag="Profile names cannot contain &apos;;&apos;" it="I nomi dei profili non possono contenere &apos;;&apos;"/>
@@ -2160,6 +2168,7 @@
   <translation tag="Runout" it="Esaurimento"/>
   <translation tag="Runout Sensor" it="Sensore esaurimento"/>
   <translation tag="Runout order not saved: {}" it="Ordine del cambio non salvato: {}"/>
+  <translation tag="Runout swap" it="Cambio automatico"/>
   <translation tag="SAVE_CONFIG failed: {}. Z-offset was applied but not saved. Run SAVE_CONFIG manually or the offset will be lost on restart." it="SAVE_CONFIG non riuscito: {}. L&apos;offset Z è stato applicato ma non salvato. Esegui SAVE_CONFIG manualmente o l&apos;offset andrà perso al riavvio."/>
   <translation tag="SETTINGS" it="IMPOSTAZIONI"/>
   <translation tag="SHIPPED IMAGES" it="IMMAGINI INCLUSE"/>
@@ -2914,6 +2923,7 @@
   <translation tag="moving" it="in movimento"/>
   <translation tag="needs" it="richiede"/>
   <translation tag="no filament" it="nessun filamento"/>
+  <translation tag="no identical spool" it="nessuna bobina identica"/>
   <translation tag="not detected" it="non rilevato"/>
   <translation tag="not set" it="non impostata"/>
   <translation tag="nozzle" it="ugello"/>
@@ -2923,10 +2933,12 @@
   <translation tag="or type a macro name" it="oppure digita un nome di macro"/>
   <translation tag="printer default" it="predefinito stampante"/>
   <translation tag="prints" it="stampe"/>
+  <translation tag="profile" it="profilo"/>
   <translation tag="remaining" it="rimanente"/>
   <translation tag="remaining before clog detection triggers" it="rimanente prima che si attivi il rilevamento intasamento"/>
   <translation tag="rendering" it="rendering"/>
   <translation tag="sensor error" it="errore sensore"/>
+  <translation tag="slot" it="slot"/>
   <translation tag="slot order" it="ordine degli slot"/>
   <translation tag="slots)" it="slot)"/>
   <translation tag="started" it="avviato"/>

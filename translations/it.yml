@@ -6,6 +6,8 @@ translations:
   '"%s" failed to load': Caricamento di "%s" non riuscito
   '%.1f Hz difference': '%.1f Hz di differenza'
   '%d additional fan%s': '%d ventola%s aggiuntiva'
+  '%d additional fan': '%d ventola aggiuntiva'
+  '%d additional fans': '%d ventole aggiuntive'
   '%d disabled': '%d disabilitati'
   '%d failed to load - see details below': '%d non caricati - vedi i dettagli sotto'
   '%d more sensors': '%d altri sensori'
@@ -35,14 +37,20 @@ translations:
   Left: Restano
   Light off: Spenta
   Light on: Accesa
+  Max volumetric flow: Flusso massimo
   More: Altro
   'No spool to swap to: it takes two identical spools (same material and colour).': 'Nessuna bobina di riserva: servono due bobine identiche (stesso materiale e colore).'
   'No spool to swap to: it takes two identical spools (same material and colour).': 'Nessuna bobina di riserva: servono due bobine identiche (stesso materiale e colore).'
   'No spool to swap to: it takes two identical spools (same material and colour).': 'Nessuna bobina di riserva: servono due bobine identiche (stesso materiale e colore).'
   Not recognised: Non riconosciuta
+  Nozzle temperature: Temperatura ugello
   Pause when the CFS stops feeding: Pausa quando la CFS smette di alimentare
+  'Pressure advance not saved: {}': 'Pressure advance non salvato: {}'
+  Pressure advance: Pressure advance
   Print a file: Stampa un file
+  Print parameters: Parametri di stampa
   Printhead sensor: Sensore testa
+  Profile: Profilo
   Read RFID At Startup: Leggi RFID all'avvio
   Read RFID On Insert: Leggi RFID all'inserimento
   Read a spool's tag when it is inserted: Legge il tag di una bobina quando viene inserita
@@ -51,6 +59,7 @@ translations:
   'Runout order not saved: {}': 'Ordine del cambio non salvato: {}'
   'Runout order not saved: {}': 'Ordine del cambio non salvato: {}'
   'Runout order not saved: {}': 'Ordine del cambio non salvato: {}'
+  Runout swap: Cambio automatico
   Save order: Salva ordine
   Sent: Inviato
   'Switch, automatic or manual sequence': 'Interruttore, sequenza automatica o manuale'
@@ -79,8 +88,11 @@ translations:
   manual order: ordine manuale
   moving: in movimento
   no filament: nessun filamento
+  no identical spool: nessuna bobina identica
   ok: normale
+  profile: profilo
   sensor error: errore sensore
+  slot: slot
   slot order: ordine degli slot
   still: fermo
   today: oggi

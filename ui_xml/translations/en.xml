@@ -5,7 +5,9 @@
   <translation tag=" left" en=" left"/>
   <translation tag="&quot;%s&quot; failed to load" en="&quot;%s&quot; failed to load"/>
   <translation tag="%.1f Hz difference" en="%.1f Hz difference"/>
+  <translation tag="%d additional fan" en="%d additional fan"/>
   <translation tag="%d additional fan%s" en="%d additional fan%s"/>
+  <translation tag="%d additional fans" en="%d additional fans"/>
   <translation tag="%d disabled" en="%d disabled"/>
   <translation tag="%d failed to load - see details below" en="%d failed to load - see details below"/>
   <translation tag="%d more sensors" en="%d more sensors"/>
@@ -1453,6 +1455,7 @@
   <translation tag="Max Z Accel" en="Max Z Accel"/>
   <translation tag="Max Z Velocity" en="Max Z Velocity"/>
   <translation tag="Max speed through corners (mm/s)" en="Max speed through corners (mm/s)"/>
+  <translation tag="Max volumetric flow" en="Max volumetric flow"/>
   <translation tag="Maximum" en="Maximum"/>
   <translation tag="Maximum acceleration (mm/s²)" en="Maximum acceleration (mm/s²)"/>
   <translation tag="Maximum toolhead speed (mm/s)" en="Maximum toolhead speed (mm/s)"/>
@@ -1668,6 +1671,7 @@
   <translation tag="Nozzle min cannot exceed max" en="Nozzle min cannot exceed max"/>
   <translation tag="Nozzle target set to {}°C" en="Nozzle target set to {}°C"/>
   <translation tag="Nozzle temp must be 100-500°C" en="Nozzle temp must be 100-500°C"/>
+  <translation tag="Nozzle temperature" en="Nozzle temperature"/>
   <translation tag="Nozzle, bed, and chamber temps stacked" en="Nozzle, bed, and chamber temps stacked"/>
   <translation tag="Nozzle:" en="Nozzle:"/>
   <translation tag="OD" en="OD"/>
@@ -1830,6 +1834,8 @@
   <translation tag="Presets" en="Presets"/>
   <translation tag="Press Abort to stop" en="Press Abort to stop"/>
   <translation tag="Press Scan to search" en="Press Scan to search"/>
+  <translation tag="Pressure advance" en="Pressure advance"/>
+  <translation tag="Pressure advance not saved: {}" en="Pressure advance not saved: {}"/>
   <translation tag="Pressure:" en="Pressure:"/>
   <translation tag="Preview Sounds" en="Preview Sounds"/>
   <translation tag="Previous" en="Previous"/>
@@ -1871,6 +1877,7 @@
   <translation tag="Print history statistics" en="Print history statistics"/>
   <translation tag="Print history will show the rewritten name" en="Print history will show the rewritten name"/>
   <translation tag="Print issue detected" en="Print issue detected"/>
+  <translation tag="Print parameters" en="Print parameters"/>
   <translation tag="Print preparation failed: {}" en="Print preparation failed: {}"/>
   <translation tag="Print progress and file selection" en="Print progress and file selection"/>
   <translation tag="Print server rejected the job — check printer status" en="Print server rejected the job — check printer status"/>
@@ -1943,6 +1950,7 @@
   <translation tag="Probing... ({} points)" en="Probing... ({} points)"/>
   <translation tag="Proceed" en="Proceed"/>
   <translation tag="Processing..." en="Processing..."/>
+  <translation tag="Profile" en="Profile"/>
   <translation tag="Profile deleted" en="Profile deleted"/>
   <translation tag="Profile name (e.g., default)" en="Profile name (e.g., default)"/>
   <translation tag="Profile names cannot contain &apos;;&apos;" en="Profile names cannot contain &apos;;&apos;"/>
@@ -2160,6 +2168,7 @@
   <translation tag="Runout" en="Runout"/>
   <translation tag="Runout Sensor" en="Runout Sensor"/>
   <translation tag="Runout order not saved: {}" en="Runout order not saved: {}"/>
+  <translation tag="Runout swap" en="Runout swap"/>
   <translation tag="SAVE_CONFIG failed: {}. Z-offset was applied but not saved. Run SAVE_CONFIG manually or the offset will be lost on restart." en="SAVE_CONFIG failed: {}. Z-offset was applied but not saved. Run SAVE_CONFIG manually or the offset will be lost on restart."/>
   <translation tag="SETTINGS" en="SETTINGS"/>
   <translation tag="SHIPPED IMAGES" en="SHIPPED IMAGES"/>
@@ -2914,6 +2923,7 @@
   <translation tag="moving" en="moving"/>
   <translation tag="needs" en="needs"/>
   <translation tag="no filament" en="no filament"/>
+  <translation tag="no identical spool" en="no identical spool"/>
   <translation tag="not detected" en="not detected"/>
   <translation tag="not set" en="not set"/>
   <translation tag="nozzle" en="nozzle"/>
@@ -2923,10 +2933,12 @@
   <translation tag="or type a macro name" en="or type a macro name"/>
   <translation tag="printer default" en="printer default"/>
   <translation tag="prints" en="prints"/>
+  <translation tag="profile" en="profile"/>
   <translation tag="remaining" en="remaining"/>
   <translation tag="remaining before clog detection triggers" en="remaining before clog detection triggers"/>
   <translation tag="rendering" en="rendering"/>
   <translation tag="sensor error" en="sensor error"/>
+  <translation tag="slot" en="slot"/>
   <translation tag="slot order" en="slot order"/>
   <translation tag="slots)" en="slots)"/>
   <translation tag="started" en="started"/>

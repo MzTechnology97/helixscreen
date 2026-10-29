@@ -294,6 +294,7 @@ void K2ohCfsView::build_cards(int count) {
         if (!card.root) {
             continue;
         }
+        lv_obj_set_name(card.root, ("cfs_card_" + std::to_string(i + 1)).c_str());
         lv_obj_add_event_cb(card.root, on_card_clicked, LV_EVENT_CLICKED, this);
         // Ring and text centred in the card (the XML flex placement is not applied here).
         lv_obj_set_flex_align(card.root, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER,
