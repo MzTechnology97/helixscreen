@@ -80,6 +80,8 @@ void K2ohHomeView::create(lv_obj_t* panel) {
         return;
     }
     lv_obj_add_flag(root_, LV_OBJ_FLAG_FLOATING);
+    // Only its icons take touches: the line itself must not swallow the e-stop's.
+    lv_obj_remove_flag(root_, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_add_flag(root_, LV_OBJ_FLAG_HIDDEN);
     lv_obj_add_event_cb(root_, on_root_deleted, LV_EVENT_DELETE, this);
 
@@ -124,7 +126,10 @@ void K2ohHomeView::update_visibility() {
             lv_obj_remove_from_subject(estop, visible);
         }
         lv_obj_remove_flag(estop, LV_OBJ_FLAG_HIDDEN);
+        // Above the status line, which is created later and would take the press.
+        lv_obj_move_foreground(estop);
         lv_obj_set_size(estop, 34, 34);
+        lv_obj_set_ext_click_area(estop, 10); // a small button, an easy target
         lv_obj_set_style_translate_x(estop, -10, LV_PART_MAIN);
         lv_obj_set_style_translate_y(estop, 3 - kStatusHeight, LV_PART_MAIN);
     }
