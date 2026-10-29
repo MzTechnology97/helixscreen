@@ -45,6 +45,7 @@
 #endif
 #include "version.h"
 
+#include <cctype>
 #include <chrono>
 #include <climits>
 #include <csignal>
@@ -188,12 +189,14 @@ bool parse_github_release(const json& j, UpdateChecker::ReleaseInfo& info, std::
                      platform_key, platform_prefix, zip_name);
 
         std::string zip_url;
+        std::string zip_sha256;
         size_t zip_size = 0;
         for (const auto& asset : j["assets"]) {
             std::string name = asset.value("name", "");
             if (name.find(platform_prefix) == 0 && name.find(".tar.gz") != std::string::npos) {
                 info.download_url = asset.value("browser_download_url", "");
                 info.download_bytes = asset.value("size", static_cast<size_t>(0));
+                info.sha256 = sha256_from_github_digest(json_string_or_empty(asset, "digest"));
                 spdlog::info("[UpdateChecker] Selected asset: {} ({} bytes)", name,
                              info.download_bytes);
                 break;
@@ -201,11 +204,13 @@ bool parse_github_release(const json& j, UpdateChecker::ReleaseInfo& info, std::
             if (zip_url.empty() && name == zip_name) {
                 zip_url = asset.value("browser_download_url", "");
                 zip_size = asset.value("size", static_cast<size_t>(0));
+                zip_sha256 = sha256_from_github_digest(json_string_or_empty(asset, "digest"));
             }
         }
         if (info.download_url.empty() && !zip_url.empty()) {
             info.download_url = zip_url;
             info.download_bytes = zip_size;
+            info.sha256 = zip_sha256;
             spdlog::info("[UpdateChecker] Selected zip asset (no tar.gz present): {} ({} bytes)",
                          zip_name, info.download_bytes);
         }
@@ -712,6 +717,21 @@ std::string UpdateChecker::init_service_dest_dir() {
 // ============================================================================
 // Channel Version Comparison
 // ============================================================================
+
+std::string sha256_from_github_digest(const std::string& digest) {
+    const std::string prefix = "sha256:";
+    if (digest.rfind(prefix, 0) != 0 || digest.size() != prefix.size() + 64) {
+        return {};
+    }
+    std::string hex = digest.substr(prefix.size());
+    for (char& c : hex) {
+        if (!std::isxdigit(static_cast<unsigned char>(c))) {
+            return {};
+        }
+        c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+    }
+    return hex;
+}
 
 // Deliberately at global scope rather than in the anonymous namespace above:
 // it is declared in the header and exercised directly by
@@ -1724,7 +1744,7 @@ void UpdateChecker::do_download() {
         return;
     }
 
-    // Verify SHA256 hash if available (R2 manifest provides this; GitHub fallback does not)
+    // Verify SHA256 hash if available (R2 manifest; GitHub asset digest)
     {
         std::string expected_sha256;
         {
