@@ -50,6 +50,7 @@ translations:
   Mild: Leggero
   More: Altro
   No backup spool: Nessuna riserva
+  No profile: Nessun profilo
   'No spool to swap to: it takes two identical spools (same material and colour).': 'Nessuna bobina di riserva: servono due bobine identiche (stesso materiale e colore).'
   'No spool to swap to: it takes two identical spools (same material and colour).': 'Nessuna bobina di riserva: servono due bobine identiche (stesso materiale e colore).'
   'No spool to swap to: it takes two identical spools (same material and colour).': 'Nessuna bobina di riserva: servono due bobine identiche (stesso materiale e colore).'
@@ -2342,7 +2343,7 @@ translations:
   Release the filament: Rilascia il filamento
   Remaining (g): Rimanente (g)
   Remaining Weight (g): Peso rimanente (g)
-  Remap Tool: Rimappa strumento
+  Remap Tool: Strumento
   ? Remapping rewrites the job file before printing it. This printer's Moonraker is too old for the HelixPrint plugin to restore the original filename afterwards, so the finished job is listed under the rewritten name. Remapping itself works normally.
   : La rimappatura riscrive il file di stampa prima di stamparlo. Il Moonraker di questa stampante è troppo vecchio perché il plugin HelixPrint ripristini in seguito il nome del file originale, quindi il lavoro completato viene elencato con il nome riscritto. La rimappatura stessa funziona normalmente.
   ? "Remapping rewrites the job file before printing it. Without the HelixPrint plugin the rewritten copy is what lands in your print history, so finished jobs are listed under names like modified_1730824_benchy.gcode instead of the file you picked.\n\nInstalling the plugin takes a moment and needs no restart."

@@ -360,6 +360,19 @@ class AmsBackendCfs : public AmsSubscriptionBackend {
                                       uint32_t color_rgb, const std::string& brand,
                                       const std::string& name, int spoolman_id);
 
+    /// Fork dialect: the write for a slot (CFS or external) whose profile was
+    /// picked from the catalog. A K2-OpenHost catalog product ("k2oh-<id>", the
+    /// Kalico library synced by k2oh-helix-filaments) is assigned whole with
+    /// `_BOX_SLOT_ASSIGN` (temperature, PA, max flow, Orca id), keeping the
+    /// picked colour; anything else, or a Spoolman-bound slot, is slot_set_gcode().
+    static std::string slot_profile_gcode(int global_slot_index, const std::string& catalog_id,
+                                          const std::string& material, uint32_t color_rgb,
+                                          const std::string& brand, const std::string& name,
+                                          int spoolman_id);
+
+    /// The Kalico library id behind a K2-OpenHost catalog id, "" for other ids.
+    static std::string kalico_filament_id(const std::string& catalog_id);
+
     // GCode helpers (public for testing)
     static std::string load_gcode(int global_slot_index,
                                   CfsMacroVariant variant = CfsMacroVariant::K2);

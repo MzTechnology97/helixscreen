@@ -734,6 +734,23 @@ TEST_CASE("CFS Fork dialect: slot metadata write", "[ams][cfs][flat][fork]") {
     }
 }
 
+TEST_CASE("CFS fork: a K2-OpenHost library profile is assigned whole", "[cfs][k2oh]") {
+    SECTION("k2oh catalog product -> _BOX_SLOT_ASSIGN with the picked colour") {
+        REQUIRE(AmsBackendCfs::slot_profile_gcode(4, "k2oh-42175", "ABS", 0x112233, "Bambulab",
+                                                  "Bambulab ABS", 0) ==
+                "_BOX_SLOT_ASSIGN SLOT=4 FILAMENT_ID=\"42175\" COLOR=\"#112233\"");
+    }
+    SECTION("other catalog ids and Spoolman spools keep the metadata write") {
+        REQUIRE(AmsBackendCfs::slot_profile_gcode(1, "sunlu-pla-plus-2-0", "PLA", 0xFFFFFF, "", "",
+                                                  0)
+                    .rfind("_BOX_SLOT_SET SLOT=1 ", 0) == 0);
+        REQUIRE(AmsBackendCfs::slot_profile_gcode(1, "k2oh-42175", "ABS", 0xFFFFFF, "", "", 12)
+                    .rfind("_BOX_SLOT_SET SLOT=1 ", 0) == 0);
+        REQUIRE(AmsBackendCfs::slot_profile_gcode(1, "k2oh-", "ABS", 0xFFFFFF, "", "", 0)
+                    .rfind("_BOX_SLOT_SET SLOT=1 ", 0) == 0);
+    }
+}
+
 // --- Stock regression ------------------------------------------------------
 //
 // The two-axis split must not perturb the stock path. This is the guard that
