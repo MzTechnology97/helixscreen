@@ -34,6 +34,10 @@ class K2ohHomeView {
     void seed_layout_once();
     void refresh_state();
     void refresh_clock();
+    /// The external spool's profile lives in Kalico on the K2: mirror Kalico's
+    /// into the screen, and push a profile edited on the screen to Kalico.
+    void sync_external_from_kalico();
+    void push_external_to_kalico();
 
     static void on_timer(lv_timer_t* timer);
     static void on_root_deleted(lv_event_t* e);
@@ -43,6 +47,7 @@ class K2ohHomeView {
     lv_obj_t* root_ = nullptr;
     lv_timer_t* timer_ = nullptr;
     std::vector<ObserverGuard> observers_;
+    bool mirroring_external_ = false; ///< set while writing Kalico's profile in
 };
 
 } // namespace helix::ui

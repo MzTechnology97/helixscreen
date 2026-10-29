@@ -42,6 +42,8 @@ constexpr int kRingSize = 70;
 constexpr int kRingWidth = 7;
 // A spool at or under this share is shown in the warning colour.
 constexpr int kLowPercent = 15;
+// Selection value for the external spool (the bypass row), as the backend's bypass sentinel.
+constexpr int kExternal = -2;
 // shortcut: fixed humidity line while Kalico publishes no humidity_limit_pct;
 // read the box's limit once it does.
 constexpr float kHumidLimitPct = 50.0f;
@@ -353,8 +355,15 @@ void K2ohCfsView::refresh() {
         update_card(cards_[i], *slots[i], slots[i]->global_index == loaded_slot_, printing);
     }
 
-    if (selected_ < 0 || selected_ >= static_cast<int>(slots.size())) {
-        selected_ = loaded_slot_ >= 0 ? loaded_slot_ : 0;
+    const bool external_ok = info.supports_bypass;
+    if (selected_ == kExternal ? !external_ok
+                               : selected_ < 0 || selected_ >= static_cast<int>(slots.size())) {
+        selected_ = loaded_slot_ >= 0 || (loaded_slot_ == kExternal && external_ok) ? loaded_slot_ : 0;
+    }
+    // The bypass row is the external spool's card: outlined when selected.
+    if (lv_obj_t* row = child(root_, "bypass_row")) {
+        lv_obj_set_style_border_width(row, selected_ == kExternal ? 2 : 0, LV_PART_MAIN);
+        lv_obj_set_style_border_color(row, theme_manager_get_color("primary"), LV_PART_MAIN);
     }
     for (auto& card : cards_) {
         lv_obj_set_style_border_color(
@@ -484,14 +493,26 @@ void K2ohCfsView::update_header(const AmsSystemInfo& info) {
 
 void K2ohCfsView::update_actions() {
     AmsBackend* backend = AmsState::instance().get_backend();
-    if (!backend || selected_ < 0) {
+    if (!backend || (selected_ < 0 && selected_ != kExternal)) {
+        return;
+    }
+    const bool printing = print_running(printer_state_);
+    const bool busy = ams_action_holds_system(static_cast<AmsAction>(
+        lv_subject_get_int(AmsState::instance().get_ams_action_subject())));
+    if (selected_ == kExternal) {
+        // External spool: load = bypass on (T<external>), unload = the head's filament.
+        const bool unload = loaded_slot_ == kExternal;
+        if (lv_obj_t* btn = child(root_, "btn_load_unload")) {
+            ui_button_set_text(btn, (std::string(lv_tr(unload ? "Unload" : "Load")) + " E").c_str());
+            ui_button_set_icon(btn, unload ? "tray_arrow_up" : "arrow_down_bold");
+            set_enabled(btn, !printing && !busy);
+        }
+        set_enabled(child(root_, "btn_rfid"), false);
+        set_enabled(child(root_, "btn_edit"), true);
         return;
     }
     const SlotInfo slot = backend->get_slot_info(selected_);
     const bool empty = is_empty(slot);
-    const bool printing = print_running(printer_state_);
-    const bool busy = ams_action_holds_system(static_cast<AmsAction>(
-        lv_subject_get_int(AmsState::instance().get_ams_action_subject())));
     const std::string num = " " + std::to_string(selected_ + 1);
 
     if (lv_obj_t* btn = child(root_, "btn_load_unload")) {
@@ -731,7 +752,11 @@ void K2ohCfsView::on_button_clicked(lv_event_t* e) {
     if (!name) {
         return;
     }
-    if (std::strcmp(name, "ext_chip") == 0 || std::strcmp(name, "bypass_row") == 0) {
+    if (std::strcmp(name, "bypass_row") == 0) {
+        self->select(kExternal);
+        return;
+    }
+    if (std::strcmp(name, "ext_chip") == 0) {
         if (self->actions_.external_menu) {
             self->actions_.external_menu(target);
         }
@@ -760,6 +785,21 @@ void K2ohCfsView::on_button_clicked(lv_event_t* e) {
         return;
     }
     const int slot = self->selected_;
+    if (slot == kExternal) {
+        if (std::strcmp(name, "btn_load_unload") == 0) {
+            if (self->loaded_slot_ == kExternal) {
+                if (self->actions_.unload) {
+                    self->actions_.unload(-1); // the active filament: the external one
+                }
+            } else {
+                on_bypass_changed(e); // the bypass switch's load, with its guards
+            }
+        } else if ((std::strcmp(name, "btn_edit") == 0 || std::strcmp(name, "btn_more") == 0) &&
+                   self->actions_.external_menu) {
+            self->actions_.external_menu(target);
+        }
+        return;
+    }
     if (slot < 0) {
         return;
     }
