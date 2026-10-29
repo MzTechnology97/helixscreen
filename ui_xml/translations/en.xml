@@ -2867,9 +2867,11 @@
   <translation tag="at rest" en="at rest"/>
   <translation tag="bed" en="bed"/>
   <translation tag="by Preston Brown" en="by Preston Brown"/>
+  <translation tag="cancelled" en="cancelled"/>
   <translation tag="chamber heater" en="chamber heater"/>
   <translation tag="clog detected" en="clog detected"/>
   <translation tag="complete" en="complete"/>
+  <translation tag="completed" en="completed"/>
   <translation tag="cores" en="cores"/>
   <translation tag="disable" en="disable"/>
   <translation tag="disabled" en="disabled"/>
@@ -2889,6 +2891,7 @@
   <translation tag="extruder" en="extruder"/>
   <translation tag="extruder(s)" en="extruder(s)"/>
   <translation tag="extruders" en="extruders"/>
+  <translation tag="failed" en="failed"/>
   <translation tag="fans" en="fans"/>
   <translation tag="feeding" en="feeding"/>
   <translation tag="filament present" en="filament present"/>
@@ -2896,6 +2899,12 @@
   <translation tag="humid" en="humid"/>
   <translation tag="idle" en="idle"/>
   <translation tag="in use" en="in use"/>
+  <translation tag="k2oh_dry" en="dry"/>
+  <translation tag="k2oh_humid" en="humid"/>
+  <translation tag="k2oh_humidity_ok" en="ok"/>
+  <translation tag="k2oh_in_head" en="IN HEAD"/>
+  <translation tag="k2oh_nav_settings" en="Settings"/>
+  <translation tag="last" en="last"/>
   <translation tag="layer" en="layer"/>
   <translation tag="layers" en="layers"/>
   <translation tag="left" en="left"/>
@@ -2926,12 +2935,14 @@
   <translation tag="still" en="still"/>
   <translation tag="tall" en="tall"/>
   <translation tag="th_ordinal" en="."/>
+  <translation tag="today" en="today"/>
   <translation tag="tool(s)" en="tool(s)"/>
   <translation tag="unknown tag" en="unknown tag"/>
   <translation tag="used" en="used"/>
   <translation tag="v%s available" en="v%s available"/>
   <translation tag="v{} installed! Restarting..." en="v{} installed! Restarting..."/>
   <translation tag="v{} is available. Tap to update." en="v{} is available. Tap to update."/>
+  <translation tag="yesterday" en="yesterday"/>
   <translation tag="you have" en="you have"/>
   <translation tag="{} LED strips available" en="{} LED strips available"/>
   <translation tag="{} axis homed" en="{} axis homed"/>

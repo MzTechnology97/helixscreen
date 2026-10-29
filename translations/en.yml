@@ -56,15 +56,24 @@ translations:
   active, no events: active, no events
   active: active
   at rest: at rest
+  cancelled: cancelled
   clog detected: clog detected
+  completed: completed
   dry: dry
   empty: empty
   estimate: estimate
   events: events
+  failed: failed
   feeding: feeding
   filament present: filament present
   humid: humid
   in use: in use
+  k2oh_dry: dry
+  k2oh_humid: humid
+  k2oh_humidity_ok: ok
+  k2oh_in_head: IN HEAD
+  k2oh_nav_settings: Settings
+  last: last
   layer: layer
   lowest remaining first: lowest remaining first
   manual order: manual order
@@ -74,7 +83,9 @@ translations:
   slot order: slot order
   still: still
   th_ordinal: "."
+  today: today
   unknown tag: unknown tag
+  yesterday: yesterday
   "'{}' already exists. Replace the stored mesh?": "'{}' already exists. Replace the stored mesh?"
   "'{}' and '{}' already exist. Replace the stored meshes?": "'{}' and '{}' already exist. Replace the stored meshes?"
   (different grade): (different grade)

@@ -32,6 +32,7 @@ struct IconMapping {
 // Sorted alphabetically by name for efficient binary search
 static const IconMapping ICON_MAP[] = {
     // Alert/Status icons
+    {"album",              "\xF3\xB0\x80\xA5"},  // F0025 album (K2-OpenHost CFS spool)
     {"alert",              "\xF3\xB0\x80\xA6"},  // F0026 alert/triangle-exclamation
     {"alert_circle",       "\xF3\xB0\x80\xA8"},  // F0028 alert-circle
     {"alert_octagon",      "\xF3\xB0\x80\xA9"},  // F0029 alert-octagon

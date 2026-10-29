@@ -1,38 +1,46 @@
 <?xml version="1.0"?>
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
-<!-- K2-OpenHost Home widget: nozzle, bed and chamber, large and coloured by state. -->
+<!-- K2-OpenHost Home widget: nozzle, bed and chamber, coloured by state. -->
 <component>
   <view name="panel_widget_k2oh_temps"
         extends="lv_obj" height="100%" flex_grow="1" style_bg_color="#card_bg" style_bg_opa="255" style_radius="#border_radius" style_border_width="0" style_pad_all="#space_sm" style_pad_gap="#space_xs"
         flex_flow="column" scrollable="false" clickable="true">
+    <lv_obj width="100%" height="content" style_pad_all="0" style_pad_gap="#space_xs" style_bg_opa="0"
+            style_border_width="0" flex_flow="row" style_flex_cross_place="center" scrollable="false"
+            clickable="false" event_bubble="true">
+      <icon src="thermometer" size="xs" variant="muted" clickable="false" event_bubble="true"/>
+      <text_xs text="Temperatures" translation_tag="Temperatures" text_transform="uppercase" flex_grow="1"
+               style_text_color="#text_muted" clickable="false" event_bubble="true"/>
+    </lv_obj>
     <lv_obj name="nozzle_row" width="100%" flex_grow="1" style_radius="#border_radius_small"
             style_bg_color="#elevated_bg" style_bg_opa="255" style_border_width="0" style_pad_left="#space_sm"
             style_pad_right="#space_sm" style_pad_gap="#space_sm" flex_flow="row" style_flex_cross_place="center"
             scrollable="false" clickable="false" event_bubble="true">
-      <icon src="thermometer" size="sm" variant="secondary" clickable="false" event_bubble="true"/>
-      <text_muted text="Nozzle" translation_tag="Nozzle" flex_grow="1" long_mode="clip" clickable="false"
-                  event_bubble="true"/>
+      <icon name="nozzle_icon" src="heater" size="sm" variant="primary" clickable="false" event_bubble="true"/>
+      <text_small text="Nozzle" translation_tag="Nozzle" flex_grow="1" long_mode="clip" clickable="false"
+                  event_bubble="true" style_text_color="#text_muted"/>
       <text_heading name="nozzle_value" text="" clickable="false" event_bubble="true"/>
-      <text_muted name="nozzle_target" text="" clickable="false" event_bubble="true"/>
+      <text_xs name="nozzle_target" text="" clickable="false" event_bubble="true" style_text_color="#text_muted"/>
     </lv_obj>
     <lv_obj name="bed_row" width="100%" flex_grow="1" style_radius="#border_radius_small"
             style_bg_color="#elevated_bg" style_bg_opa="255" style_border_width="0" style_pad_left="#space_sm"
             style_pad_right="#space_sm" style_pad_gap="#space_sm" flex_flow="row" style_flex_cross_place="center"
             scrollable="false" clickable="false" event_bubble="true">
-      <icon src="radiator" size="sm" variant="secondary" clickable="false" event_bubble="true"/>
-      <text_muted text="Bed" translation_tag="Bed" flex_grow="1" long_mode="clip" clickable="false"
-                  event_bubble="true"/>
+      <icon name="bed_icon" src="radiator" size="sm" variant="primary" clickable="false" event_bubble="true"/>
+      <text_small text="Bed" translation_tag="Bed" flex_grow="1" long_mode="clip" clickable="false"
+                  event_bubble="true" style_text_color="#text_muted"/>
       <text_heading name="bed_value" text="" clickable="false" event_bubble="true"/>
-      <text_muted name="bed_target" text="" clickable="false" event_bubble="true"/>
+      <text_xs name="bed_target" text="" clickable="false" event_bubble="true" style_text_color="#text_muted"/>
     </lv_obj>
     <lv_obj name="chamber_row" width="100%" flex_grow="1" style_radius="#border_radius_small"
             style_bg_color="#elevated_bg" style_bg_opa="255" style_border_width="0" style_pad_left="#space_sm"
             style_pad_right="#space_sm" style_pad_gap="#space_sm" flex_flow="row" style_flex_cross_place="center"
             scrollable="false" clickable="false" event_bubble="true">
-      <icon src="home_thermometer" size="sm" variant="secondary" clickable="false" event_bubble="true"/>
-      <text_muted text="Chamber" translation_tag="Chamber" flex_grow="1" long_mode="clip" clickable="false"
-                  event_bubble="true"/>
+      <icon name="chamber_icon" src="home_thermometer" size="sm" variant="primary" clickable="false" event_bubble="true"/>
+      <text_small text="Chamber" translation_tag="Chamber" flex_grow="1" long_mode="clip" clickable="false"
+                  event_bubble="true" style_text_color="#text_muted"/>
       <text_heading name="chamber_value" text="" clickable="false" event_bubble="true"/>
+      <text_xs text="°C" clickable="false" event_bubble="true" style_text_color="#text_muted"/>
     </lv_obj>
   </view>
 </component>

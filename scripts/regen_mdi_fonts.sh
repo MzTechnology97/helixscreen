@@ -51,7 +51,8 @@ fi
 # All icons needed for the font-based icon system
 # =============================================================================
 
-MDI_ICONS="0xF0026"      # alert (triangle-exclamation)
+MDI_ICONS="0xF0025"      # album (K2-OpenHost CFS spool)
+MDI_ICONS+=",0xF0026"    # alert (triangle-exclamation)
 MDI_ICONS+=",0xF0028"    # alert-circle
 MDI_ICONS+=",0xF0029"    # alert-octagon (emergency)
 MDI_ICONS+=",0xF05D8"    # animation (stacked rectangles - for settings)
