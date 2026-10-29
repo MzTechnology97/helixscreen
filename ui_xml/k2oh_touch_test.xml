@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- K2-OpenHost Touch & Input: live test pad. Green dot = touch, orange =
+     a repeat right after a lift (double/ghost touch), blue = drag trail. -->
+<component>
+  <view extends="lv_obj"
+        width="42%" height="100%" style_bg_color="#card_bg" style_bg_opa="255" style_radius="#border_radius"
+        style_border_width="0" style_pad_all="#space_sm" style_pad_gap="#space_xs" style_margin_right="#space_md"
+        flex_flow="column" scrollable="false">
+    <text_xs text="Try the touch" translation_tag="Try the touch" text_transform="uppercase"
+             style_text_color="#text_muted"/>
+    <lv_obj name="touch_pad" width="100%" flex_grow="1" style_bg_color="#screen_bg" style_bg_opa="255"
+            style_radius="#border_radius" style_border_width="0" style_pad_all="0" style_clip_corner="true"
+            clickable="true" scrollable="false"/>
+    <lv_obj width="100%" height="content" style_pad_all="0" style_bg_opa="0" style_border_width="0" flex_flow="row"
+            style_flex_cross_place="center" scrollable="false">
+      <text_small name="touch_stats" text="" flex_grow="1"/>
+      <ui_button name="btn_touch_clear" height="34" variant="ghost" text="Clear" translation_tag="Clear"/>
+    </lv_obj>
+  </view>
+</component>

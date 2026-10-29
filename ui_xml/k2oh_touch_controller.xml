@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- K2-OpenHost Touch & Input: touch controller sensitivity and debounce
+     (GT911). The preset the chip reports is painted primary from C++. -->
+<component>
+  <view extends="lv_obj"
+        width="100%" height="content" style_bg_color="#card_bg" style_bg_opa="255" style_radius="#border_radius"
+        style_border_width="0" style_pad_all="#space_md" style_pad_gap="#space_xs" style_margin_left="#space_md"
+        style_margin_right="#space_md" style_margin_bottom="#space_sm" flex_flow="column" scrollable="false">
+    <text_body text="Sensitivity" translation_tag="Sensitivity"/>
+    <text_xs text="Controller threshold: higher = lighter touch" translation_tag="Controller threshold: higher = lighter touch"
+             style_text_color="#text_muted"/>
+    <lv_obj width="100%" height="44" style_pad_all="4" style_pad_gap="4" style_bg_color="#elevated_bg"
+            style_bg_opa="255" style_radius="#border_radius" style_border_width="0" flex_flow="row" scrollable="false">
+      <ui_button name="sens_0" width="0" height="100%" flex_grow="1" variant="secondary" text="Low" translation_tag="Low"
+                />
+      <ui_button name="sens_1" width="0" height="100%" flex_grow="1" variant="secondary" text="Normal"
+                 translation_tag="Normal"/>
+      <ui_button name="sens_2" width="0" height="100%" flex_grow="1" variant="secondary" text="High" translation_tag="High"
+                />
+      <ui_button name="sens_3" width="0" height="100%" flex_grow="1" variant="secondary" text="Gloves"
+                 translation_tag="Gloves"/>
+    </lv_obj>
+    <text_body text="Debounce filter" translation_tag="Debounce filter" style_margin_top="#space_sm"/>
+    <text_xs text="Ignores ghost and double touches" translation_tag="Ignores ghost and double touches"
+             style_text_color="#text_muted"/>
+    <lv_obj width="100%" height="44" style_pad_all="4" style_pad_gap="4" style_bg_color="#elevated_bg"
+            style_bg_opa="255" style_radius="#border_radius" style_border_width="0" flex_flow="row" scrollable="false">
+      <ui_button name="deb_0" width="0" height="100%" flex_grow="1" variant="secondary" text="Off" translation_tag="Off"
+                />
+      <ui_button name="deb_1" width="0" height="100%" flex_grow="1" variant="secondary" text="Mild" translation_tag="Mild"
+                />
+      <ui_button name="deb_2" width="0" height="100%" flex_grow="1" variant="secondary" text="Strong"
+                 translation_tag="Strong"/>
+    </lv_obj>
+    <lv_obj width="100%" height="content" style_pad_all="0" style_bg_opa="0" style_border_width="0" flex_flow="row"
+            style_flex_cross_place="center" scrollable="false">
+      <text_xs name="touch_ctl_status" text="" flex_grow="1" style_text_color="#text_subtle"/>
+      <ui_button name="btn_touch_restore" height="34" variant="ghost" text="Restore original"
+                 translation_tag="Restore original" hidden="true"/>
+    </lv_obj>
+  </view>
+</component>
