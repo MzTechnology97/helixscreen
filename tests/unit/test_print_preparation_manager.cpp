@@ -2928,6 +2928,16 @@ TEST_CASE_METHOD(HelixTestFixture,
     PrinterStateTestAccess::reset(printer_state);
     printer_state.init_subjects(false);
     printer_state.set_printer_type_sync("Creality K2 Plus");
+    // Stock K2: Creality's gcode_macro.cfg defines the mesh macro (requires_macro).
+    {
+        nlohmann::json config = nlohmann::json::object();
+        config["gcode_macro BED_MESH_CALIBRATE_START_PRINT"] = {{"gcode", "G28"}};
+        helix::MacroParamCache::instance().populate_from_configfile(
+            config, {"BED_MESH_CALIBRATE_START_PRINT"});
+    }
+    struct ClearMacros {
+        ~ClearMacros() { helix::MacroParamCache::instance().clear(); }
+    } clear_macros;
 
     PrintPreparationManager manager;
     manager.set_dependencies(nullptr, &printer_state);
