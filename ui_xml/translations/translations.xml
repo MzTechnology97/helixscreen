@@ -2897,10 +2897,12 @@
   <translation tag="active" en="active" it="attivo"/>
   <translation tag="active, no events" en="active, no events" it="attivo, nessun evento"/>
   <translation tag="at rest" en="at rest" it="a riposo"/>
+  <translation tag="back to the CFS" en="back to the CFS" it="rientro nel CFS"/>
   <translation tag="bed" de="Bett" en="bed" es="cama" fr="plateau" it="piano" ja="ベッド" pt="mesa" ru="стол" zh="热床"/>
   <translation tag="by Preston Brown" de="von Preston Brown" en="by Preston Brown" es="por Preston Brown" fr="par Preston Brown" it="di Preston Brown" ja="by Preston Brown" pt="por Preston Brown" ru="от Preston Brown" zh="by Preston Brown"/>
   <translation tag="cancelled" en="cancelled" it="annullata"/>
   <translation tag="chamber heater" de="Kammerheizung" en="chamber heater" es="calentador de cámara" fr="chauffage du caisson" it="riscaldatore camera" ja="チャンバーヒーター" pt="aquecedor da câmara" ru="нагреватель камеры" zh="腔体加热器"/>
+  <translation tag="checking" en="checking" it="verifica"/>
   <translation tag="clog detected" en="clog detected" it="intasamento!"/>
   <translation tag="complete" de="abgeschlossen" en="complete" es="completo" fr="terminé" it="completato" ja="完了" pt="concluído" ru="завершено" zh="完成"/>
   <translation tag="completed" en="completed" it="completata"/>
@@ -2949,12 +2951,15 @@
   <translation tag="off" de="aus" en="off" es="apagado" fr="éteint" it="spento" ja="オフ" pt="desligado" ru="выкл" zh="关闭"/>
   <translation tag="ok" en="ok" it="normale"/>
   <translation tag="or type a macro name" de="oder Makronamen eingeben" en="or type a macro name" es="o escriba un nombre de macro" fr="ou saisissez un nom de macro" it="oppure digita un nome di macro" ja="またはマクロ名を入力" pt="ou digite um nome de macro" ru="или введите название макроса" zh="或输入宏名称"/>
+  <translation tag="out of the head" en="out of the head" it="uscita dalla testa"/>
+  <translation tag="preparing" en="preparing" it="preparazione"/>
   <translation tag="printer default" de="Druckerstandard" en="printer default" es="valor por defecto de la impresora" fr="par défaut de l’imprimante" it="predefinito stampante" ja="プリンター既定" pt="padrão da impressora" ru="по умолчанию для принтера" zh="打印机默认"/>
   <translation tag="prints" de="Drucke" en="prints" es="impresiones" fr="impressions" it="stampe" ja="印刷" pt="impressões" ru="печатей" zh="打印次数"/>
   <translation tag="profile" en="profile" it="profilo"/>
   <translation tag="remaining" de="verbleibend" en="remaining" es="restante" fr="restant" it="rimanente" ja="残り" pt="restante" ru="осталось" zh="剩余"/>
   <translation tag="remaining before clog detection triggers" de="verbleibend bis Verstopfungserkennung auslöst" en="remaining before clog detection triggers" es="restante antes de que se active la detección de obstrucción" fr="restant avant le déclenchement de la détection de bouchon" it="rimanente prima che si attivi il rilevamento intasamento" ja="残りで詰まり検出が作動します" pt="restante antes da detecção de obstrução ser acionada" ru="осталось до срабатывания обнаружения засора" zh="剩余即触发堵料检测"/>
   <translation tag="rendering" de="wird gerendert" en="rendering" es="renderizando" fr="rendu en cours" it="rendering" ja="レンダリング中" pt="renderizando" ru="рендеринг" zh="渲染中"/>
+  <translation tag="seating" en="seating" it="innesto"/>
   <translation tag="sensor error" en="sensor error" it="errore sensore"/>
   <translation tag="slot" en="slot" it="slot"/>
   <translation tag="slot order" en="slot order" it="ordine degli slot"/>
@@ -2963,6 +2968,8 @@
   <translation tag="steppers" de="Schrittmotoren" en="steppers" es="motores paso a paso" fr="moteurs pas à pas" it="motori passo-passo" ja="ステッパー" pt="motores de passo" ru="шаговые двигатели" zh="步进电机"/>
   <translation tag="still" en="still" it="fermo"/>
   <translation tag="tall" de="hoch" en="tall" es="de alto" fr="de haut" it="di altezza" ja="高さ" pt="de altura" ru="высотой" zh="高"/>
+  <translation tag="to the buffer" en="to the buffer" it="verso il buffer"/>
+  <translation tag="to the head" en="to the head" it="verso la testa"/>
   <translation tag="today" en="today" it="oggi"/>
   <translation tag="tool(s)" de="Werkzeug(e)" en="tool(s)" es="herramienta(s)" fr="outil(s)" it="utensile/i" ja="ツール" pt="ferramenta(s)" ru="инструмент(ы)" zh="工具"/>
   <translation tag="unknown tag" en="unknown tag" it="tag sconosciuto"/>

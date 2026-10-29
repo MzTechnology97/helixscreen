@@ -24,7 +24,7 @@
               style_pad_bottom="#space_xxs" style_pad_gap="#space_xs" flex_flow="row" style_flex_cross_place="center"
               scrollable="false" clickable="false">
         <icon name="state_icon" src="check_circle" size="xs" variant="success" clickable="false"/>
-        <text_small name="state_label" text="" clickable="false"/>
+        <text_small name="state_label" text="" long_mode="dots" style_max_width="230" clickable="false"/>
       </lv_obj>
       <lv_obj name="env_chip"
               width="content" height="content" style_radius="14" style_bg_color="#elevated_bg" style_bg_opa="255"

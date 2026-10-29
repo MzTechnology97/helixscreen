@@ -88,7 +88,9 @@ translations:
   active, no events: active, no events
   active: active
   at rest: at rest
+  back to the CFS: back to the CFS
   cancelled: cancelled
+  checking: checking
   clog detected: clog detected
   completed: completed
   dry: dry
@@ -108,11 +110,16 @@ translations:
   no filament: no filament
   no identical spool: no identical spool
   ok: ok
+  out of the head: out of the head
+  preparing: preparing
   profile: profile
+  seating: seating
   sensor error: sensor error
   slot: slot
   slot order: slot order
   still: still
+  to the buffer: to the buffer
+  to the head: to the head
   today: today
   unknown tag: unknown tag
   yesterday: yesterday

@@ -55,7 +55,7 @@
       <icon name="nav_icon_home_inactive" src="home" size="sm" variant="muted">
         <bind_flag_if_eq subject="active_panel" flag="hidden" ref_value="0"/>
       </icon>
-      <text_tiny text="Home" translation_tag="Home" style_text_color="#text_muted" style_text_align="center" clickable="false" event_bubble="true">
+      <text_tiny name="nav_label" text="Home" translation_tag="Home" style_text_color="#text_muted" style_text_align="center" clickable="false" event_bubble="true">
         <bind_style name="nav_label_on" subject="active_panel" ref_value="0"/>
       </text_tiny>
     </ui_button>
@@ -69,7 +69,7 @@
       <bind_style name="nav_on" subject="active_panel" ref_value="1"/>
       <bind_state_if_eq subject="home_edit_mode" state="disabled" ref_value="1"/>
       <icon src="folder" size="sm" variant="muted" clickable="false" event_bubble="true"/>
-      <text_tiny text="Print" translation_tag="Print" style_text_color="#text_muted" style_text_align="center"
+      <text_tiny name="nav_label" text="Print" translation_tag="Print" style_text_color="#text_muted" style_text_align="center"
                  clickable="false" event_bubble="true">
         <bind_style name="nav_label_on" subject="active_panel" ref_value="1"/>
       </text_tiny>
@@ -84,8 +84,8 @@
       <bind_flag_if_eq subject="ams_slot_count" flag="hidden" ref_value="0"/>
       <bind_state_if_not_eq subject="nav_buttons_enabled" state="disabled" ref_value="1"/>
       <bind_state_if_eq subject="home_edit_mode" state="disabled" ref_value="1"/>
-      <icon src="album" size="sm" variant="muted" clickable="false" event_bubble="true"/>
-      <text_tiny text="CFS" style_text_color="#text_muted" style_text_align="center" clickable="false" event_bubble="true"/>
+      <icon name="nav_icon" src="album" size="sm" variant="muted" clickable="false" event_bubble="true"/>
+      <text_tiny name="nav_label" text="CFS" style_text_color="#text_muted" style_text_align="center" clickable="false" event_bubble="true"/>
       <event_cb trigger="clicked" callback="k2oh_nav_cfs_clicked"/>
     </ui_button>
     <!-- K2-OpenHost: straight to the XYZ motion overlay (the one Controls opens). -->
@@ -97,8 +97,8 @@
       <bind_flag_if_eq subject="home_edit_mode" flag="hidden" ref_value="1"/>
       <bind_state_if_not_eq subject="nav_buttons_enabled" state="disabled" ref_value="1"/>
       <bind_state_if_eq subject="home_edit_mode" state="disabled" ref_value="1"/>
-      <icon src="cursor_move" size="sm" variant="muted" clickable="false" event_bubble="true"/>
-      <text_tiny text="Motion" translation_tag="Motion" style_text_color="#text_muted" style_text_align="center"
+      <icon name="nav_icon" src="cursor_move" size="sm" variant="muted" clickable="false" event_bubble="true"/>
+      <text_tiny name="nav_label" text="Motion" translation_tag="Motion" style_text_color="#text_muted" style_text_align="center"
                  clickable="false" event_bubble="true"/>
       <event_cb trigger="clicked" callback="k2oh_nav_motion_clicked"/>
     </ui_button>
@@ -128,7 +128,7 @@
       <icon name="nav_icon_controls_disabled" src="heater" size="sm" variant="disabled">
         <bind_flag_if_eq subject="nav_buttons_enabled" flag="hidden" ref_value="1"/>
       </icon>
-      <text_tiny text="Controls" translation_tag="Controls" style_text_color="#text_muted" style_text_align="center" clickable="false" event_bubble="true">
+      <text_tiny name="nav_label" text="Controls" translation_tag="Controls" style_text_color="#text_muted" style_text_align="center" clickable="false" event_bubble="true">
         <bind_style name="nav_label_on" subject="active_panel" ref_value="2"/>
       </text_tiny>
     </ui_button>
@@ -158,7 +158,7 @@
       <icon name="nav_icon_filament_disabled" src="filament" size="sm" variant="disabled">
         <bind_flag_if_eq subject="nav_buttons_enabled" flag="hidden" ref_value="1"/>
       </icon>
-      <text_tiny text="Filament" translation_tag="Filament" style_text_color="#text_muted" style_text_align="center" clickable="false" event_bubble="true">
+      <text_tiny name="nav_label" text="Filament" translation_tag="Filament" style_text_color="#text_muted" style_text_align="center" clickable="false" event_bubble="true">
         <bind_style name="nav_label_on" subject="active_panel" ref_value="3"/>
       </text_tiny>
     </ui_button>
@@ -178,7 +178,7 @@
       <icon name="nav_icon_settings_inactive" src="settings" size="sm" variant="muted">
         <bind_flag_if_eq subject="active_panel" flag="hidden" ref_value="4"/>
       </icon>
-      <text_tiny text="Config" translation_tag="Config" style_text_color="#text_muted" style_text_align="center" clickable="false" event_bubble="true">
+      <text_tiny name="nav_label" text="Config" translation_tag="Config" style_text_color="#text_muted" style_text_align="center" clickable="false" event_bubble="true">
         <bind_style name="nav_label_on" subject="active_panel" ref_value="4"/>
       </text_tiny>
     </ui_button>
@@ -195,7 +195,7 @@
       <icon name="nav_icon_advanced_inactive" src="dots_vertical" size="sm" variant="muted">
         <bind_flag_if_eq subject="active_panel" flag="hidden" ref_value="5"/>
       </icon>
-      <text_tiny text="Advanced" translation_tag="Advanced" style_text_color="#text_muted" style_text_align="center" clickable="false" event_bubble="true">
+      <text_tiny name="nav_label" text="Advanced" translation_tag="Advanced" style_text_color="#text_muted" style_text_align="center" clickable="false" event_bubble="true">
         <bind_style name="nav_label_on" subject="active_panel" ref_value="5"/>
       </text_tiny>
     </ui_button>

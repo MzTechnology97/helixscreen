@@ -88,7 +88,9 @@ translations:
   active, no events: attivo, nessun evento
   active: attivo
   at rest: a riposo
+  back to the CFS: rientro nel CFS
   cancelled: annullata
+  checking: verifica
   clog detected: intasamento!
   completed: completata
   dry: asciutta
@@ -108,11 +110,16 @@ translations:
   no filament: nessun filamento
   no identical spool: nessuna bobina identica
   ok: normale
+  out of the head: uscita dalla testa
+  preparing: preparazione
   profile: profilo
+  seating: innesto
   sensor error: errore sensore
   slot: slot
   slot order: ordine degli slot
   still: fermo
+  to the buffer: verso il buffer
+  to the head: verso la testa
   today: oggi
   unknown tag: tag sconosciuto
   yesterday: ieri
