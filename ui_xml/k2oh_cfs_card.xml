@@ -12,7 +12,7 @@
             style_bg_opa="255" style_radius="8" style_pad_left="#space_xs" style_pad_right="#space_xs" style_pad_top="1"
             style_pad_bottom="1" style_border_width="0" scrollable="false" clickable="false" event_bubble="true"
             hidden="true">
-      <text_xs name="in_use_label" text="IN USE" style_text_color="#text" clickable="false" event_bubble="true"/>
+      <text_xs name="in_use_label" text="IN HEAD" translation_tag="IN HEAD" style_text_color="#text" clickable="false" event_bubble="true"/>
     </lv_obj>
     <lv_obj name="ring_box"
             width="70" height="70" style_pad_all="0" style_bg_opa="0" style_border_width="0" scrollable="false"

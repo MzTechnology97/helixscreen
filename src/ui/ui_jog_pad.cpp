@@ -106,10 +106,12 @@ static void jog_pad_recompute_zones(jog_pad_state_t* st, int32_t radius) {
 // Helper: Load colors from semantic theme tokens
 static void load_colors(jog_pad_state_t* state, const char* /*component_scope_name*/) {
     // Use semantic theme tokens — these adapt to any theme automatically
-    state->jog_color_outer_ring = theme_manager_get_color("secondary");
-    state->jog_color_inner_circle = theme_manager_get_color("primary");
-    state->jog_color_home_bg = theme_manager_get_color("elevated_bg");
-    state->jog_color_home_border = theme_manager_get_color("secondary");
+    // K2-OpenHost look: a dark raised pad, the fine ring a muted accent.
+    state->jog_color_outer_ring = theme_manager_get_color("elevated_bg");
+    state->jog_color_inner_circle = lv_color_mix(theme_manager_get_color("primary"),
+                                                 theme_manager_get_color("elevated_bg"), LV_OPA_50);
+    state->jog_color_home_bg = theme_manager_get_color("card_bg");
+    state->jog_color_home_border = theme_manager_get_color("primary");
     state->jog_color_home_text = theme_manager_get_color("text");
 
     // Not-homed variants: tint the ring + icon amber to signal homing is required.

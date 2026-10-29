@@ -1786,7 +1786,7 @@ void AmsBackendCfs::handle_status_update(const nlohmann::json& notification) {
                         fork_switches_[sw.field] = it->get<bool>();
                     }
                 }
-                for (const char* key : {"load_path", "runout", "runout_groups", "runout_order"}) {
+                for (const char* key : {"load_path", "runout", "runout_groups", "runout_order", "slots"}) {
                     if (auto it = box.find(key); it != box.end()) {
                         k2oh_fields_[key] = *it;
                     }

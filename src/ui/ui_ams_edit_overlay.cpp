@@ -29,6 +29,7 @@
 #include "label_printer_utils.h"
 #endif
 #include "ui_breakpoint.h"
+#include "ui_k2oh_slot_params.h"
 #include "ui_overlay_qr_scanner.h"
 #include "ui_toast_manager.h"
 
@@ -155,6 +156,9 @@ bool AmsEditOverlay::show_for_slot(lv_obj_t* parent, int slot_index, const SlotI
     // It has to be ONE combined callback: NavigationManager keeps a single close
     // callback per widget, so a separate destroy_on_close registration would
     // just overwrite this one (or be overwritten by it).
+    // K2-OpenHost: Kalico's print parameters for the slot below the spool card.
+    k2oh_add_slot_params(find_widget("form_view"), slot_index);
+
     NavigationManager::instance().register_overlay_close_callback(cached_overlay_widget_, []() {
         auto& overlay = get_ams_edit_overlay();
         overlay.fire_completion(false);

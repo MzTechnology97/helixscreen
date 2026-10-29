@@ -145,7 +145,9 @@ void configure_button_primary(lv_style_t* s, const ThemePalette& p) {
 }
 
 void configure_button_secondary(lv_style_t* s, const ThemePalette& p) {
-    lv_style_set_bg_color(s, p.secondary);
+    // K2-OpenHost: secondary buttons are the dark raised surface of the K2-OpenHost
+    // look (primary stays the accent); the secondary colour still tints icons.
+    lv_style_set_bg_color(s, p.elevated_bg);
     lv_style_set_bg_opa(s, LV_OPA_COVER);
 }
 

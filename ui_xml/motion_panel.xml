@@ -140,24 +140,24 @@
         <lv_obj name="z_controls"
                 width="100%" flex_grow="1" style_pad_all="0" style_border_opa="0" scrollable="false" flex_flow="column"
                 style_flex_main_place="space_evenly" style_flex_cross_place="center" style_pad_gap="#space_sm">
-          <ui_button name="z_up_large"
+          <ui_button name="z_up_large" variant="secondary"
                      width="100%" flex_grow="1" style_max_height="#button_height_lg" icon="arrow_up"
                      bind_icon="motion_z_up_icon" bind_text="motion_z_large_label">
             <event_cb trigger="clicked" callback="on_motion_z_button" user_data="z_up_large"/>
           </ui_button>
-          <ui_button name="z_up_small"
+          <ui_button name="z_up_small" variant="secondary"
                      width="100%" flex_grow="1" style_max_height="#button_height_lg" icon="arrow_up"
                      bind_icon="motion_z_up_icon" bind_text="motion_z_small_label">
             <event_cb trigger="clicked" callback="on_motion_z_button" user_data="z_up_small"/>
           </ui_button>
           <!-- Z-Axis label - shows "Bed" or "Print Head" based on kinematics -->
           <text_body name="z_axis_label" width="100%" bind_text="motion_z_axis_label" style_text_align="center"/>
-          <ui_button name="z_down_small"
+          <ui_button name="z_down_small" variant="secondary"
                      width="100%" flex_grow="1" style_max_height="#button_height_lg" icon="arrow_down"
                      bind_icon="motion_z_down_icon" bind_text="motion_z_small_label">
             <event_cb trigger="clicked" callback="on_motion_z_button" user_data="z_down_small"/>
           </ui_button>
-          <ui_button name="z_down_large"
+          <ui_button name="z_down_large" variant="secondary"
                      width="100%" flex_grow="1" style_max_height="#button_height_lg" icon="arrow_down"
                      bind_icon="motion_z_down_icon" bind_text="motion_z_large_label">
             <event_cb trigger="clicked" callback="on_motion_z_button" user_data="z_down_large"/>

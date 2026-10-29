@@ -6,6 +6,8 @@ translations:
   '"%s" failed to load': '"%s" failed to load'
   '%.1f Hz difference': '%.1f Hz difference'
   '%d additional fan%s': '%d additional fan%s'
+  '%d additional fan': '%d additional fan'
+  '%d additional fans': '%d additional fans'
   '%d disabled': '%d disabled'
   '%d failed to load - see details below': '%d failed to load - see details below'
   '%d more sensors': '%d more sensors'
@@ -35,14 +37,20 @@ translations:
   Left: Left
   Light off: Light off
   Light on: Light on
+  Max volumetric flow: Max volumetric flow
   More: More
   'No spool to swap to: it takes two identical spools (same material and colour).': 'No spool to swap to: it takes two identical spools (same material and colour).'
   'No spool to swap to: it takes two identical spools (same material and colour).': 'No spool to swap to: it takes two identical spools (same material and colour).'
   'No spool to swap to: it takes two identical spools (same material and colour).': 'No spool to swap to: it takes two identical spools (same material and colour).'
   Not recognised: Not recognised
+  Nozzle temperature: Nozzle temperature
   Pause when the CFS stops feeding: Pause when the CFS stops feeding
+  'Pressure advance not saved: {}': 'Pressure advance not saved: {}'
+  Pressure advance: Pressure advance
   Print a file: Print a file
+  Print parameters: Print parameters
   Printhead sensor: Printhead sensor
+  Profile: Profile
   Read RFID At Startup: Read RFID At Startup
   Read RFID On Insert: Read RFID On Insert
   Read a spool's tag when it is inserted: Read a spool's tag when it is inserted
@@ -51,6 +59,7 @@ translations:
   'Runout order not saved: {}': 'Runout order not saved: {}'
   'Runout order not saved: {}': 'Runout order not saved: {}'
   'Runout order not saved: {}': 'Runout order not saved: {}'
+  Runout swap: Runout swap
   Save order: Save order
   Sent: Sent
   'Switch, automatic or manual sequence': 'Switch, automatic or manual sequence'
@@ -79,8 +88,11 @@ translations:
   manual order: manual order
   moving: moving
   no filament: no filament
+  no identical spool: no identical spool
   ok: ok
+  profile: profile
   sensor error: sensor error
+  slot: slot
   slot order: slot order
   still: still
   today: today
