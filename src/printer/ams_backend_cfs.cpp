@@ -1841,6 +1841,7 @@ void AmsBackendCfs::handle_status_update(const nlohmann::json& notification) {
         // the parse never reads (encoder position and clog counters in
         // load_path, filament checks, Orca presets...). Each was a full parse
         // and a UI refresh; now they only update the merged state above.
+        bool flat_noise = false; // nothing on screen moves: no parse, no refresh
         if (is_flat && is_full_update) {
             const std::string view = flat_load_path_view(state);
             bool noise = true;
@@ -1855,6 +1856,7 @@ void AmsBackendCfs::handle_status_update(const nlohmann::json& notification) {
             flat_load_path_view_ = view;
             if (noise) {
                 is_full_update = false;
+                flat_noise = true;
             }
         }
 
@@ -2209,7 +2211,7 @@ void AmsBackendCfs::handle_status_update(const nlohmann::json& notification) {
             }
         }
         // Partial updates (measuring_wheel, etc.): skip — don't touch state
-        changed = true;
+        changed = changed || !flat_noise;
     }
 
     // Probe-on-insert. Firmware reports occupancy the moment a spool goes in but
