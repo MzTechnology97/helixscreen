@@ -34,9 +34,6 @@ class K2ohHomeView {
     void seed_layout_once();
     void refresh_state();
     void refresh_clock();
-    /// Bypass just came on (filament loaded outside the CFS): ask for the
-    /// external spool's profile when it has none.
-    void on_bypass_changed(int active);
 
     static void on_timer(lv_timer_t* timer);
     static void on_root_deleted(lv_event_t* e);
@@ -46,7 +43,6 @@ class K2ohHomeView {
     lv_obj_t* root_ = nullptr;
     lv_timer_t* timer_ = nullptr;
     std::vector<ObserverGuard> observers_;
-    int last_bypass_ = -1; ///< -1 until the first value, which is not a change
 };
 
 } // namespace helix::ui

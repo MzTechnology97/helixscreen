@@ -6,12 +6,9 @@
 #include "ui_format_utils.h"
 #include "ui_icon.h"
 #include "theme_manager.h"
-#include "ui_ams_edit_overlay.h"
 #include "ui_k2oh_cfs_view.h"
-#include "ui_error_reporting.h"
 
 #include "ams_state.h"
-#include "app_globals.h"
 #include "config.h"
 #include "lvgl/src/others/translation/lv_translation.h"
 #include "observer_factory.h"
@@ -97,44 +94,8 @@ void K2ohHomeView::create(lv_obj_t* panel) {
         observers_.push_back(
             observe_int_sync<K2ohHomeView>(s, this, k2oh, ams.get_subjects_lifetime()));
     }
-    observers_.push_back(observe_int_sync<K2ohHomeView>(
-        ams.get_bypass_active_subject(), this,
-        [](K2ohHomeView* self, int active) { self->on_bypass_changed(active); },
-        ams.get_subjects_lifetime()));
     timer_ = lv_timer_create(on_timer, kTickMs, this);
     update_visibility();
-}
-
-void K2ohHomeView::on_bypass_changed(int active) {
-    const int previous = last_bypass_;
-    last_bypass_ = active;
-    // Only a switch to bypass seen live: not the state found at startup.
-    if (previous != 0 || active != 1 || !K2ohCfsView::applies()) {
-        return;
-    }
-    // Kalico reports the external spool as loaded when the head sensor sees
-    // filament and no CFS slot holds it; a print in progress is left alone.
-    const auto state =
-        static_cast<PrintJobState>(lv_subject_get_int(printer_state_.get_print_state_enum_subject()));
-    if (printer_has_job(state)) {
-        return;
-    }
-    auto ext = AmsState::instance().get_external_spool_info();
-    if (ext && !ext->material.empty()) {
-        return;
-    }
-    SlotInfo initial = ext.value_or(SlotInfo{});
-    initial.slot_index = -2;
-    initial.global_index = -2;
-    spdlog::info("[K2oh Home] external filament loaded without a profile: asking for it");
-    get_ams_edit_overlay().show_for_slot(
-        lv_screen_active(), -2, initial, get_moonraker_api(),
-        [](const AmsEditOverlay::EditResult& result) {
-            if (result.saved) {
-                AmsState::instance().commit_external_spool_edit(result.slot_info);
-                NOTIFY_INFO(lv_tr("External spool updated"));
-            }
-        });
 }
 
 void K2ohHomeView::update_visibility() {
