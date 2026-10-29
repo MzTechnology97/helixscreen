@@ -173,7 +173,7 @@
           <!-- AMS mini status (auto-binds to AmsState, fills width, stretches to row height) -->
           <ams_mini_status name="ams_mini_status" height="100%" flex_grow="1"/>
           <!-- Manage Button (shown when single-tool AMS, hidden when multi-tool) -->
-          <ui_button name="btn_manage_slots"
+          <ui_button name="btn_manage_slots" variant="secondary"
                      width="content" height="#button_height" text="Manage" translation_tag="Manage"
                      style_pad_left="#space_md" style_pad_right="#space_md">
             <event_cb trigger="clicked" callback="filament_manage_slots_cb"/>
@@ -301,7 +301,7 @@
         </lv_obj>
         <!-- Cooldown Button (visible when heating) -->
         <ui_button name="btn_cooldown"
-                   width="100%" height="#button_height" style_bg_color="#temp_gradient_cold" icon="cooldown"
+                   width="100%" height="#button_height" variant="secondary" icon="cooldown"
                    text="Cool Down" translation_tag="Cool Down">
           <bind_flag_if_eq subject="filament_nozzle_heating" flag="hidden" ref_value="0"/>
           <event_cb trigger="clicked" callback="on_filament_cooldown"/>
