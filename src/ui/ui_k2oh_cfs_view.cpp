@@ -3,6 +3,9 @@
 
 #include "ui_k2oh_cfs_view.h"
 
+#include "ui/ui_lazy_panel_helper.h"
+#include "ui_panel_motion.h"
+
 #include "ui_ams_environment_overlay.h"
 #include "ui_button.h"
 #include "ui_icon.h"
@@ -155,6 +158,12 @@ void k2oh_open_cfs_page() {
 void k2oh_register_nav_callbacks() {
     lv_xml_register_event_cb(nullptr, "k2oh_nav_cfs_clicked",
                              [](lv_event_t* /*e*/) { k2oh_open_cfs_page(); });
+    lv_xml_register_event_cb(nullptr, "k2oh_nav_motion_clicked", [](lv_event_t* /*e*/) {
+        // The same overlay as Controls > Motion, cached for the process.
+        static lv_obj_t* motion = nullptr;
+        helix::ui::lazy_create_and_push_overlay<MotionPanel>(get_global_motion_panel, motion,
+                                                             lv_screen_active(), "Motion", "K2ohNav");
+    });
 }
 
 std::string K2ohCfsView::runout_summary(const AmsSystemInfo& info, int loaded_slot) {

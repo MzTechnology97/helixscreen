@@ -780,8 +780,12 @@ void K2ohHomeWidget::refresh_fans() {
         }
         set_text(root_, (base + "_name").c_str(), lv_tr(row.name));
         set_text(root_, (base + "_value").c_str(), std::to_string(found->speed_percent) + "%");
+        const bool spinning = found->speed_percent > 0;
+        if (lv_obj_t* bar = child(root_, (base + "_bar").c_str())) {
+            lv_bar_set_value(bar, std::clamp(found->speed_percent, 0, 100), LV_ANIM_OFF);
+            lv_obj_set_style_bg_color(bar, theme_manager_get_color("primary"), LV_PART_INDICATOR);
+        }
         if (lv_obj_t* icon = child(root_, (base + "_icon").c_str())) {
-            const bool spinning = found->speed_percent > 0;
             ui_icon_set_source(icon, spinning ? "fan" : "fan_off");
             ui_icon_set_variant(icon, spinning ? "primary" : "muted");
         }
