@@ -206,6 +206,7 @@
   <translation tag="Archive" en="Archive"/>
   <translation tag="Archive Spool?" en="Archive Spool?"/>
   <translation tag="Are you sure you want to cancel this print? All progress will be lost." en="Are you sure you want to cancel this print? All progress will be lost."/>
+  <translation tag="Are you sure you want to delete &apos;%s&apos;? This action cannot be undone." en="Are you sure you want to delete &apos;%s&apos;? This action cannot be undone."/>
   <translation tag="Are you sure? This will power off or restart this device." en="Are you sure? This will power off or restart this device."/>
   <translation tag="Arrange each group with the arrows, then save." en="Arrange each group with the arrows, then save."/>
   <translation tag="Ask before switching to another tool" en="Ask before switching to another tool"/>
