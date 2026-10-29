@@ -19,17 +19,22 @@ translations:
   '%zu changes': '%zu changes'
   '%zu events queued': '%zu events queued'
   '%zu plugins failed to load': '%zu plugins failed to load'
+  .: .
   'Arrange each group with the arrows, then save.': 'Arrange each group with the arrows, then save.'
   Auto-swap at spool end: Auto-swap at spool end
   CFS ready: CFS ready
   CFS settings: CFS settings
   Clog guard: Clog guard
+  Config: Config
   Device operations: Device operations
   Elapsed: Elapsed
   Ends: Ends
   'Home, recover, abort, bypass mode': 'Home, recover, abort, bypass mode'
+  IN HEAD: IN HEAD
   IN USE: IN USE
   Left: Left
+  Light off: Light off
+  Light on: Light on
   More: More
   'No spool to swap to: it takes two identical spools (same material and colour).': 'No spool to swap to: it takes two identical spools (same material and colour).'
   'No spool to swap to: it takes two identical spools (same material and colour).': 'No spool to swap to: it takes two identical spools (same material and colour).'
@@ -68,21 +73,16 @@ translations:
   filament present: filament present
   humid: humid
   in use: in use
-  k2oh_dry: dry
-  k2oh_humid: humid
-  k2oh_humidity_ok: ok
-  k2oh_in_head: IN HEAD
-  k2oh_nav_settings: Settings
   last: last
   layer: layer
   lowest remaining first: lowest remaining first
   manual order: manual order
   moving: moving
   no filament: no filament
+  ok: ok
   sensor error: sensor error
   slot order: slot order
   still: still
-  th_ordinal: "."
   today: today
   unknown tag: unknown tag
   yesterday: yesterday
@@ -3304,5 +3304,3 @@ translations:
   ? '{} will switch to a slot whose filament type AND colour both match the active spool and whose own port sensor reads filament present.'
   : '{} will switch to a slot whose filament type AND colour both match the active spool and whose own port sensor reads filament present.'
   '{} — response timed out': '{} — response timed out'
-  light_lit: "on"
-  light_unlit: "off"

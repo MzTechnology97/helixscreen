@@ -40,6 +40,7 @@
   <translation tag="-- kWh" it="-- kWh"/>
   <translation tag="--°C" it="--°C"/>
   <translation tag="-0.5 Hz" it="-0,5 Hz"/>
+  <translation tag="." it="ª"/>
   <translation tag="..." it="..."/>
   <translation tag="0 = computed" it="0 = calcolato"/>
   <translation tag="0 events queued" it="0 eventi in coda"/>
@@ -509,6 +510,7 @@
   <translation tag="Completed {}h ago" it="Completato {} h fa"/>
   <translation tag="Completed {}m ago" it="Completato {} min fa"/>
   <translation tag="Computing calibration..." it="Calcolo calibrazione..."/>
+  <translation tag="Config" it="Impost."/>
   <translation tag="Config Dir" it="Dir configurazione"/>
   <translation tag="Config-defined (read-only)" it="Definito nella configurazione (sola lettura)"/>
   <translation tag="Configuration added successfully." it="Configurazione aggiunta con successo."/>
@@ -1193,6 +1195,7 @@
   <translation tag="Hyperlapse captures frames at fixed time intervals. Good for very long prints." it="Hyperlapse cattura i fotogrammi a intervalli di tempo fissi. Ideale per stampe molto lunghe."/>
   <translation tag="ID (optional)" it="ID (opzionale)"/>
   <translation tag="IMPORT FROM USB" it="IMPORTA DA USB"/>
+  <translation tag="IN HEAD" it="IN TESTA"/>
   <translation tag="IN USE" it="IN USO"/>
   <translation tag="IP Address / Hostname" it="Indirizzo IP / Hostname"/>
   <translation tag="IP:" it="IP:"/>
@@ -1333,6 +1336,8 @@
   <translation tag="Library" it="Libreria"/>
   <translation tag="Lifetime Print Stats" it="Statistiche stampe totali"/>
   <translation tag="Light" it="Luce"/>
+  <translation tag="Light off" it="Spenta"/>
+  <translation tag="Light on" it="Accesa"/>
   <translation tag="Light will switch when the current operation finishes" it="La luce si attiverà al termine dell&apos;operazione in corso"/>
   <translation tag="Line {} calls {}, which this printer treats as an emergency stop. Re-slice the file with a profile made for this printer." it="La riga {} chiama {}, che questa stampante tratta come un arresto di emergenza. Sezionare di nuovo il file con un profilo creato per questa stampante."/>
   <translation tag="Listen to all theme sounds" it="Ascolta tutti i suoni del tema"/>
@@ -2899,17 +2904,10 @@
   <translation tag="humid" it="umida"/>
   <translation tag="idle" it="inattivo"/>
   <translation tag="in use" it="in uso"/>
-  <translation tag="k2oh_dry" it="asciutta"/>
-  <translation tag="k2oh_humid" it="umida"/>
-  <translation tag="k2oh_humidity_ok" it="normale"/>
-  <translation tag="k2oh_in_head" it="IN TESTA"/>
-  <translation tag="k2oh_nav_settings" it="Impost."/>
   <translation tag="last" it="ultima"/>
   <translation tag="layer" it="strato"/>
   <translation tag="layers" it="layer"/>
   <translation tag="left" it="rimanente"/>
-  <translation tag="light_lit" it="Accesa"/>
-  <translation tag="light_unlit" it="Spenta"/>
   <translation tag="lowest remaining first" it="prima la più scarica"/>
   <translation tag="manual order" it="ordine manuale"/>
   <translation tag="mm before clog" it="mm prima dell&apos;intasamento"/>
@@ -2921,6 +2919,7 @@
   <translation tag="nozzle" it="ugello"/>
   <translation tag="of" it="di"/>
   <translation tag="off" it="spento"/>
+  <translation tag="ok" it="normale"/>
   <translation tag="or type a macro name" it="oppure digita un nome di macro"/>
   <translation tag="printer default" it="predefinito stampante"/>
   <translation tag="prints" it="stampe"/>
@@ -2934,7 +2933,6 @@
   <translation tag="steppers" it="motori passo-passo"/>
   <translation tag="still" it="fermo"/>
   <translation tag="tall" it="di altezza"/>
-  <translation tag="th_ordinal" it="ª"/>
   <translation tag="today" it="oggi"/>
   <translation tag="tool(s)" it="utensile/i"/>
   <translation tag="unknown tag" it="tag sconosciuto"/>

@@ -54,6 +54,7 @@ class K2ohHomeWidget : public PanelWidget {
         lv_obj_t* percent = nullptr;
         lv_obj_t* tag = nullptr;      ///< "IN HEAD" on the loaded spool
         lv_obj_t* unknown = nullptr;  ///< "?" in an empty or unread spool
+        lv_obj_t* number = nullptr;   ///< slot number badge ("E" for the external spool)
     };
 
     void refresh();

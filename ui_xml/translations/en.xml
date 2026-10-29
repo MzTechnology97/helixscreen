@@ -40,6 +40,7 @@
   <translation tag="-- kWh" en="-- kWh"/>
   <translation tag="--°C" en="--°C"/>
   <translation tag="-0.5 Hz" en="-0.5 Hz"/>
+  <translation tag="." en="."/>
   <translation tag="..." en="..."/>
   <translation tag="0 = computed" en="0 = computed"/>
   <translation tag="0 events queued" en="0 events queued"/>
@@ -509,6 +510,7 @@
   <translation tag="Completed {}h ago" en="Completed {}h ago"/>
   <translation tag="Completed {}m ago" en="Completed {}m ago"/>
   <translation tag="Computing calibration..." en="Computing calibration..."/>
+  <translation tag="Config" en="Config"/>
   <translation tag="Config Dir" en="Config Dir"/>
   <translation tag="Config-defined (read-only)" en="Config-defined (read-only)"/>
   <translation tag="Configuration added successfully." en="Configuration added successfully."/>
@@ -1193,6 +1195,7 @@
   <translation tag="Hyperlapse captures frames at fixed time intervals. Good for very long prints." en="Hyperlapse captures frames at fixed time intervals. Good for very long prints."/>
   <translation tag="ID (optional)" en="ID (optional)"/>
   <translation tag="IMPORT FROM USB" en="IMPORT FROM USB"/>
+  <translation tag="IN HEAD" en="IN HEAD"/>
   <translation tag="IN USE" en="IN USE"/>
   <translation tag="IP Address / Hostname" en="IP Address / Hostname"/>
   <translation tag="IP:" en="IP:"/>
@@ -1333,6 +1336,8 @@
   <translation tag="Library" en="Library"/>
   <translation tag="Lifetime Print Stats" en="Lifetime Print Stats"/>
   <translation tag="Light" en="Light"/>
+  <translation tag="Light off" en="Light off"/>
+  <translation tag="Light on" en="Light on"/>
   <translation tag="Light will switch when the current operation finishes" en="Light will switch when the current operation finishes"/>
   <translation tag="Line {} calls {}, which this printer treats as an emergency stop. Re-slice the file with a profile made for this printer." en="Line {} calls {}, which this printer treats as an emergency stop. Re-slice the file with a profile made for this printer."/>
   <translation tag="Listen to all theme sounds" en="Listen to all theme sounds"/>
@@ -2899,17 +2904,10 @@
   <translation tag="humid" en="humid"/>
   <translation tag="idle" en="idle"/>
   <translation tag="in use" en="in use"/>
-  <translation tag="k2oh_dry" en="dry"/>
-  <translation tag="k2oh_humid" en="humid"/>
-  <translation tag="k2oh_humidity_ok" en="ok"/>
-  <translation tag="k2oh_in_head" en="IN HEAD"/>
-  <translation tag="k2oh_nav_settings" en="Settings"/>
   <translation tag="last" en="last"/>
   <translation tag="layer" en="layer"/>
   <translation tag="layers" en="layers"/>
   <translation tag="left" en="left"/>
-  <translation tag="light_lit" en="on"/>
-  <translation tag="light_unlit" en="off"/>
   <translation tag="lowest remaining first" en="lowest remaining first"/>
   <translation tag="manual order" en="manual order"/>
   <translation tag="mm before clog" en="mm before clog"/>
@@ -2921,6 +2919,7 @@
   <translation tag="nozzle" en="nozzle"/>
   <translation tag="of" en="of"/>
   <translation tag="off" en="off"/>
+  <translation tag="ok" en="ok"/>
   <translation tag="or type a macro name" en="or type a macro name"/>
   <translation tag="printer default" en="printer default"/>
   <translation tag="prints" en="prints"/>
@@ -2934,7 +2933,6 @@
   <translation tag="steppers" en="steppers"/>
   <translation tag="still" en="still"/>
   <translation tag="tall" en="tall"/>
-  <translation tag="th_ordinal" en="."/>
   <translation tag="today" en="today"/>
   <translation tag="tool(s)" en="tool(s)"/>
   <translation tag="unknown tag" en="unknown tag"/>

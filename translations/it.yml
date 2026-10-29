@@ -19,17 +19,22 @@ translations:
   '%zu changes': '%zu modifiche'
   '%zu events queued': '%zu eventi in coda'
   '%zu plugins failed to load': Caricamento di %zu plugin non riuscito
+  .: ª
   'Arrange each group with the arrows, then save.': 'Ordina ogni gruppo con le frecce, poi salva.'
   Auto-swap at spool end: Cambio automatico
   CFS ready: CFS pronta
   CFS settings: Impostazioni CFS
   Clog guard: Anti-intasamento
+  Config: Impost.
   Device operations: Operazioni dispositivo
   Elapsed: Trascorso
   Ends: Fine
   'Home, recover, abort, bypass mode': 'Home, recupera, interrompi, modalità bypass'
+  IN HEAD: IN TESTA
   IN USE: IN USO
   Left: Restano
+  Light off: Spenta
+  Light on: Accesa
   More: Altro
   'No spool to swap to: it takes two identical spools (same material and colour).': 'Nessuna bobina di riserva: servono due bobine identiche (stesso materiale e colore).'
   'No spool to swap to: it takes two identical spools (same material and colour).': 'Nessuna bobina di riserva: servono due bobine identiche (stesso materiale e colore).'
@@ -68,21 +73,16 @@ translations:
   filament present: filamento presente
   humid: umida
   in use: in uso
-  k2oh_dry: asciutta
-  k2oh_humid: umida
-  k2oh_humidity_ok: normale
-  k2oh_in_head: IN TESTA
-  k2oh_nav_settings: Impost.
   last: ultima
   layer: strato
   lowest remaining first: prima la più scarica
   manual order: ordine manuale
   moving: in movimento
   no filament: nessun filamento
+  ok: normale
   sensor error: errore sensore
   slot order: ordine degli slot
   still: fermo
-  th_ordinal: ª
   today: oggi
   unknown tag: tag sconosciuto
   yesterday: ieri
@@ -3380,5 +3380,3 @@ translations:
   ? '{} will switch to a slot whose filament type AND colour both match the active spool and whose own port sensor reads filament present.'
   : '{} passerà a uno slot il cui tipo di filamento E colore corrispondono entrambi alla bobina attiva e il cui sensore di porta rileva filamento presente.'
   '{} — response timed out': '{} — tempo scaduto'
-  light_lit: Accesa
-  light_unlit: Spenta

@@ -304,7 +304,7 @@ void K2ohRunoutView::rebuild_groups() {
             // Position in the sequence ("1st", "2nd"...) or "IN USE".
             lv_obj_t* pos = lv_label_create(tile);
             lv_label_set_text(pos, in_use ? lv_tr("IN USE")
-                                          : (std::to_string(i + 1) + lv_tr("th_ordinal")).c_str());
+                                          : (std::to_string(i + 1) + lv_tr(".")).c_str());
             lv_obj_set_style_text_color(pos, in_use ? primary : muted, LV_PART_MAIN);
 
             lv_obj_t* box = plain(tile);
