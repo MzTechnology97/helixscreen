@@ -227,6 +227,7 @@ void K2ohHomeWidget::attach(lv_obj_t* widget_obj, lv_obj_t* parent_screen) {
                     ps.get_chamber_temp_subject()};
         break;
     case Kind::Cfs:
+        subjects = {ps.get_print_state_enum_subject()};
         for (lv_subject_t* s : {ams.get_slots_version_subject(), ams.get_current_slot_subject()}) {
             observers_.push_back(
                 ui::observe_int_sync<K2ohHomeWidget>(s, this, update, ams.get_subjects_lifetime()));
@@ -594,8 +595,8 @@ void K2ohHomeWidget::build_spools(int count) {
         lv_obj_set_style_pad_hor(s.tag, 6, LV_PART_MAIN);
         lv_obj_set_style_pad_ver(s.tag, 1, LV_PART_MAIN);
         lv_obj_add_flag(s.tag, LV_OBJ_FLAG_EVENT_BUBBLE);
-        lv_label_set_text(make_label(s.tag, theme_manager_get_font("font_xs"), "text"),
-                          lv_tr("IN HEAD"));
+        s.tag_label = make_label(s.tag, theme_manager_get_font("font_xs"), "text");
+        lv_label_set_text(s.tag_label, lv_tr("IN HEAD"));
         spools_.push_back(s);
     }
 }
@@ -630,6 +631,8 @@ void K2ohHomeWidget::refresh_cfs() {
     if (slots.size() != spools_.size()) {
         build_spools(static_cast<int>(slots.size()));
     }
+    const bool printing = printer_has_job(
+        static_cast<PrintJobState>(lv_subject_get_int(printer_state_.get_print_state_enum_subject())));
     for (size_t i = 0; i < slots.size() && i < spools_.size(); ++i) {
         const SlotInfo& slot = *slots[i];
         Spool& s = spools_[i];
@@ -646,6 +649,7 @@ void K2ohHomeWidget::refresh_cfs() {
         lv_obj_set_style_border_opa(s.root, loaded ? LV_OPA_COVER : LV_OPA_TRANSP, LV_PART_MAIN);
         lv_obj_set_style_bg_opa(s.root, loaded ? LV_OPA_20 : LV_OPA_TRANSP, LV_PART_MAIN);
         set_hidden(s.tag, !loaded);
+        lv_label_set_text(s.tag_label, lv_tr(printing ? "IN USE" : "IN HEAD"));
         set_hidden(s.unknown, !(empty || unknown));
         lv_arc_set_value(s.ring, std::max(pct, 0));
         lv_obj_set_style_arc_color(s.ring, low ? theme_manager_get_color("warning") : filament,
@@ -660,7 +664,14 @@ void K2ohHomeWidget::refresh_cfs() {
                                                 : slot.material.c_str());
         lv_obj_set_style_text_color(s.material, theme_manager_get_color(empty ? "text_muted" : "text"),
                                     LV_PART_MAIN);
-        lv_label_set_text(s.percent, pct >= 0 ? (std::to_string(pct) + "%").c_str() : "");
+        // While printing, the loaded spool also names the slot the runout swaps to.
+        std::string percent = pct >= 0 ? std::to_string(pct) + "%" : "";
+        if (loaded && printing && !is_external) {
+            if (const int next = ui::K2ohCfsView::runout_next_slot(info, slot.global_index); next >= 0) {
+                percent += " » " + std::to_string(next + 1);
+            }
+        }
+        lv_label_set_text(s.percent, percent.c_str());
         lv_obj_set_style_text_color(
             s.percent, theme_manager_get_color(low ? "warning" : "text_muted"), LV_PART_MAIN);
     }
