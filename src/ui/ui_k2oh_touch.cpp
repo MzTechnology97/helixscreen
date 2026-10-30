@@ -6,6 +6,7 @@
 #include "ui_error_reporting.h"
 
 #include "app_globals.h"
+#include "config.h"
 #include "data_root_resolver.h"
 #include "lvgl/src/others/translation/lv_translation.h"
 #include "printer_state.h"
@@ -60,6 +61,9 @@ namespace {
 using namespace k2oh_touch;
 
 constexpr const char* kDriverDir = "/sys/bus/i2c/drivers/gt9xxnew_ts";
+// Set when the chip ignored a write: the K2's GT911 (config version 0x63, fw 0x1060) keeps its
+// config registers fixed, even a 2-byte register write reads back unchanged.
+constexpr const char* kLockedFlag = "/k2oh/touch_config_locked";
 
 struct Level {
     uint8_t touch;
@@ -201,6 +205,22 @@ void show_selection(Controller* c, const std::vector<uint8_t>& cfg) {
     }
 }
 
+/// Leaves only the explanation: the presets cannot change a fixed controller config.
+void show_locked(Controller* c) {
+    const uint32_t count = lv_obj_get_child_count(c->card);
+    for (uint32_t i = 0; i < count; ++i) {
+        lv_obj_add_flag(lv_obj_get_child(c->card, static_cast<int32_t>(i)), LV_OBJ_FLAG_HIDDEN);
+    }
+    if (lv_obj_t* label = find(c->card, "touch_ctl_status")) {
+        lv_obj_remove_flag(lv_obj_get_parent(label), LV_OBJ_FLAG_HIDDEN);
+    }
+    if (lv_obj_t* restore = find(c->card, "btn_touch_restore")) {
+        lv_obj_add_flag(restore, LV_OBJ_FLAG_HIDDEN);
+    }
+    set_status(c, lv_tr("This screen's touch controller has a fixed configuration: sensitivity and "
+                        "debounce cannot be changed"));
+}
+
 void on_read_back(lv_timer_t* timer) {
     auto* c = static_cast<Controller*>(lv_timer_get_user_data(timer));
     const std::vector<uint8_t> now = read_controller();
@@ -212,13 +232,24 @@ void on_read_back(lv_timer_t* timer) {
                  now.size() > kLeaveLevel ? now[kTouchLevel] : -1,
                  now.size() > kLeaveLevel ? now[kLeaveLevel] : -1,
                  now.size() > kShake ? now[kShake] : -1, applied ? "applied" : "NOT applied");
+    if (!applied && now.size() > kLeaveLevel) {
+        if (Config* config = Config::get_instance()) {
+            config->set<bool>(kLockedFlag, true);
+            config->save();
+        }
+        show_locked(c);
+        return;
+    }
     set_status(c, applied ? lv_tr("Saved in the touch controller")
                           : lv_tr("The touch controller did not accept the change"));
     show_selection(c, now);
 }
 
 void write_and_check(Controller* c, const std::vector<uint8_t>& cfg) {
-    if (get_printer_state().is_print_in_progress()) {
+    // is_print_in_progress() covers only prints started from this screen.
+    PrinterState& ps = get_printer_state();
+    if (ps.is_print_in_progress() ||
+        printer_has_job(static_cast<PrintJobState>(lv_subject_get_int(ps.get_print_state_enum_subject())))) {
         NOTIFY_WARNING(lv_tr("Change the touch settings when the printer is not printing"));
         return;
     }
@@ -285,6 +316,9 @@ void add_controller_card(lv_obj_t* column) {
         }
     }
     show_selection(c, cfg);
+    if (Config* config = Config::get_instance(); config && config->get<bool>(kLockedFlag, false)) {
+        show_locked(c);
+    }
     spdlog::info("[K2oh Touch] controller: touch {} leave {} shake {}", cfg[kTouchLevel],
                  cfg[kLeaveLevel], cfg[kShake]);
 }
