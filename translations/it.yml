@@ -81,6 +81,7 @@ translations:
   'Switch, automatic or manual sequence': 'Interruttore, sequenza automatica o manuale'
   'The spool with the least left (RFID) goes first, then slot order.': 'Prima la bobina con meno filamento (RFID), poi in ordine di slot.'
   The touch controller did not accept the change: Il controller del touch non ha accettato la modifica
+  'This screen''s touch controller has a fixed configuration: sensitivity and debounce cannot be changed': 'Il controller touch di questo schermo ha una configurazione fissa: sensibilità e filtro antirimbalzo non si possono cambiare'
   'Touch controller not readable, nothing changed': 'Controller del touch non leggibile, nessuna modifica'
   Touches: Tocchi
   Try the touch: Prova il touch
