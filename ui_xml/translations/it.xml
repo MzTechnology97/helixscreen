@@ -1021,6 +1021,7 @@
   <translation tag="Filament is pulling tight" it="Il filamento è in tensione"/>
   <translation tag="Filament is still at the nozzle after unloading. The cut or retract may not have completed. Clear the toolhead before loading another spool." it="Dopo lo scaricamento il filamento è ancora all&apos;ugello. Il taglio o la retrazione potrebbe non essere completato. Libera la testina prima di caricare un&apos;altra bobina."/>
   <translation tag="Filament load failed: {}" it="Caricamento filamento fallito: {}"/>
+  <translation tag="Filament not saved: {}" it="Filamento non salvato: {}"/>
   <translation tag="Filament not set" it="Filamento non impostato"/>
   <translation tag="Filament operation failed" it="Operazione filamento fallita"/>
   <translation tag="Filament operation timed out" it="Operazione filamento — tempo scaduto"/>
@@ -1848,7 +1849,6 @@
   <translation tag="Press Scan to search" it="Premi Scansiona per cercare"/>
   <translation tag="Pressure advance" it="Pressure advance"/>
   <translation tag="Pressure advance not saved: {}" it="Pressure advance non salvato: {}"/>
-  <translation tag="Filament not saved: {}" it="Filamento non salvato: {}"/>
   <translation tag="Pressure:" it="Pressione:"/>
   <translation tag="Preview Sounds" it="Anteprima suoni"/>
   <translation tag="Previous" it="Precedente"/>
