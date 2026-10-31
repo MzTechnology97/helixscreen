@@ -81,6 +81,7 @@ translations:
   'Switch, automatic or manual sequence': 'Switch, automatic or manual sequence'
   'The spool with the least left (RFID) goes first, then slot order.': 'The spool with the least left (RFID) goes first, then slot order.'
   The touch controller did not accept the change: The touch controller did not accept the change
+  'This screen''s touch controller has a fixed configuration: sensitivity and debounce cannot be changed': 'This screen''s touch controller has a fixed configuration: sensitivity and debounce cannot be changed'
   'Touch controller not readable, nothing changed': 'Touch controller not readable, nothing changed'
   Touches: Touches
   Try the touch: Try the touch
