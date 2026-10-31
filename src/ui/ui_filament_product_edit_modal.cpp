@@ -6,7 +6,9 @@
 #include "ui_error_reporting.h"
 #include "ui_toast_manager.h"
 
+#if HELIX_HAS_CFS
 #include "ams_backend_cfs.h"
+#endif
 #include "app_globals.h"
 #include "filament_catalog.h"
 #include "filament_database.h"
@@ -20,7 +22,6 @@
 
 namespace helix::ui {
 
-using helix::printer::AmsBackendCfs;
 using helix::printer::EffectiveFilament;
 using helix::printer::FilamentCatalog;
 
@@ -34,19 +35,21 @@ bool id_in_builtin(const std::string& id) {
 
 /// K2-OpenHost: a product saved from the screen goes into Kalico's library,
 /// except edits of read-only system filaments, which stay a local override.
-/// Returns false when the save is not Kalico's to take.
-bool save_to_host_library(const nlohmann::json& product) {
+/// Returns the saved product's catalog id, "" when the save is not Kalico's to take.
+std::string save_to_host_library(const nlohmann::json& product) {
+#if HELIX_HAS_CFS
+    using helix::printer::AmsBackendCfs;
     const std::string id = product.value("id", "");
     const nlohmann::json host = FilamentCatalog::host_product_by_id(id);
     if (!FilamentCatalog::host_library_active() ||
         (host.is_object() && host.value("system", false))) {
-        return false;
+        return "";
     }
     IMoonrakerAPI* api = get_moonraker_api();
-    const std::string gcode =
-        AmsBackendCfs::filament_set_gcode(AmsBackendCfs::kalico_id_for(id), product);
+    const std::string kalico_id = AmsBackendCfs::kalico_id_for(id);
+    const std::string gcode = AmsBackendCfs::filament_set_gcode(kalico_id, product);
     if (!api || gcode.empty()) {
-        return false;
+        return "";
     }
     spdlog::info("[FilamentProductEditModal] {}", gcode);
     // Kalico publishes the saved product in box.filaments; a refusal is notified.
@@ -56,7 +59,11 @@ bool save_to_host_library(const nlohmann::json& product) {
             NOTIFY_WARNING(lv_tr("Filament not saved: {}"), err.message);
             spdlog::warn("[FilamentProductEditModal] {} failed: {}", gcode, err.message);
         });
-    return true;
+    return "k2oh-" + kalico_id;
+#else
+    (void)product;
+    return "";
+#endif
 }
 
 /// True if an authored overlay entry already exists for @p id.
@@ -304,10 +311,10 @@ void FilamentProductEditModal::handle_save() {
     const nlohmann::json sparse = build_product_json(v);
     const std::string id = sparse.value("id", "");
 
-    if (save_to_host_library(sparse)) {
+    if (const std::string saved = save_to_host_library(sparse); !saved.empty()) {
         ToastManager::instance().show(ToastSeverity::SUCCESS, lv_tr("Filament saved"), 2000);
         if (on_saved_)
-            on_saved_("k2oh-" + AmsBackendCfs::kalico_id_for(id));
+            on_saved_(saved);
         hide();
         return;
     }
