@@ -1848,6 +1848,7 @@
   <translation tag="Press Scan to search" de="Scannen drücken zum Suchen" en="Press Scan to search" es="Presione Escanear para buscar" fr="Appuyez sur Scanner pour rechercher" it="Premi Scansiona per cercare" ja="スキャンを押して検索" pt="Pressione Escanear para buscar" ru="Нажмите «Поиск» для сканирования" zh="按扫描搜索"/>
   <translation tag="Pressure advance" en="Pressure advance" it="Pressure advance"/>
   <translation tag="Pressure advance not saved: {}" en="Pressure advance not saved: {}" it="Pressure advance non salvato: {}"/>
+  <translation tag="Filament not saved: {}" en="Filament not saved: {}" it="Filamento non salvato: {}"/>
   <translation tag="Pressure:" de="Druck:" en="Pressure:" es="Presión:" fr="Pression :" it="Pressione:" ja="圧力:" pt="Pressão:" ru="Давление:" zh="压力:"/>
   <translation tag="Preview Sounds" de="Sounds vorhören" en="Preview Sounds" es="Vista previa de sonidos" fr="Aperçu des sons" it="Anteprima suoni" ja="サウンドをプレビュー" pt="Visualizar Sons" ru="Предпросмотр звуков" zh="预览声音"/>
   <translation tag="Previous" de="Zurück" en="Previous" es="Anterior" fr="Précédent" it="Precedente" ja="前回" pt="Anterior" ru="Прежняя" zh="上一步"/>

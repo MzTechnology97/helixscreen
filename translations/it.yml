@@ -58,6 +58,7 @@ translations:
   Nozzle temperature: Temperatura ugello
   Pause when the CFS stops feeding: Pausa quando la CFS smette di alimentare
   'Pressure advance not saved: {}': 'Pressure advance non salvato: {}'
+  'Filament not saved: {}': 'Filamento non salvato: {}'
   Pressure advance: Pressure advance
   Print a file: Stampa un file
   Print parameters: Parametri di stampa

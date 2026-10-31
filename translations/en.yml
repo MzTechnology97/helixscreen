@@ -58,6 +58,7 @@ translations:
   Nozzle temperature: Nozzle temperature
   Pause when the CFS stops feeding: Pause when the CFS stops feeding
   'Pressure advance not saved: {}': 'Pressure advance not saved: {}'
+  'Filament not saved: {}': 'Filament not saved: {}'
   Pressure advance: Pressure advance
   Print a file: Print a file
   Print parameters: Print parameters

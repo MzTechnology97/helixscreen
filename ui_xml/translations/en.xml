@@ -1848,6 +1848,7 @@
   <translation tag="Press Scan to search" en="Press Scan to search"/>
   <translation tag="Pressure advance" en="Pressure advance"/>
   <translation tag="Pressure advance not saved: {}" en="Pressure advance not saved: {}"/>
+  <translation tag="Filament not saved: {}" en="Filament not saved: {}"/>
   <translation tag="Pressure:" en="Pressure:"/>
   <translation tag="Preview Sounds" en="Preview Sounds"/>
   <translation tag="Previous" en="Previous"/>
