@@ -2062,6 +2062,11 @@ bool AmsEditOverlay::setup_details_selector() {
                                                  : std::optional<std::string>(working_info_.brand);
     details_selector_.attach(fragment);
     details_selector_.configure(std::move(seed), std::move(allowed), std::move(vendor_seed));
+    // K2-OpenHost: a filament added for a spool with an unknown tag learns that tag.
+    details_selector_.set_new_product_codes(
+        working_info_.rfid_unknown_code.empty()
+            ? std::map<std::string, std::string>{}
+            : std::map<std::string, std::string>{{"cfs", working_info_.rfid_unknown_code}});
     // A vendor/type dropdown change must always leave a product checked so a
     // subsequent header Save can't silently drop the identity change (the
     // rebuilt list would otherwise be all-unchecked and Save would skip

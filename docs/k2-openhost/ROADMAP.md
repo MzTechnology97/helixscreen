@@ -31,13 +31,13 @@ Aggiornata il 31/10/2026. Fork: [MzTechnology97/helixscreen](https://github.com/
 | 1.3 | Slot caricato in testa mostrato male | lo slot caricato era giusto, l'etichetta dell'utensile no (T3 invece di T0): è la 1.2 | da ricontrollare sullo schermo |
 | 1.4 | Residuo del filamento non mostrato | il parse flat non legge i campi del residuo | PR #3: metri residui come testo, `rfid_percent` per la barra; niente grammi stimati (finirebbero in Spoolman) |
 | 1.5 | Più CFS: temperatura e umidità solo della CFS che alimenta | gli slot sono già divisi per CFS; l'ambiente usa un solo valore | fatto: `boxes[]`, una lettura per unità |
-| 1.6 | Etichetta "sconosciuto" per tag non riconosciuti | campi `rfid_unknown_code` e `rfid_unknown_color` ignorati | letti dal backend; resta da provarli sullo schermo |
+| 1.6 | Etichetta "sconosciuto" per tag non riconosciuti | campi `rfid_unknown_code` e `rfid_unknown_color` ignorati | la scheda dello slot mostra il codice; "+ Aggiungi filamento" dall'editor dello slot crea il profilo con quel codice (`RFID_CODE`) e Kalico lo applica subito allo slot |
 
 ## Fase 2: libreria filamenti nativa
 
 **Fatta in k2oh.8.** Con il dialetto Fork il catalogo è la libreria di Kalico (`box.filaments`), aggiornata a ogni frame che la cambia: selettori, ricerca per codice RFID e modifica dei profili la usano subito, senza riavvio. `user_filaments.json` resta sopra la libreria per le personalizzazioni locali dei filamenti di sistema, che Kalico tiene in sola lettura. Un filamento nuovo, o la modifica di uno personalizzato, va a Kalico con `_BOX_FILAMENT_SET` (materiale, marca, nome, temperature; letto e densità non esistono in Kalico). Se la CFS torna allo schema di fabbrica, torna anche il catalogo incluso. Nel bootstrap `k2oh-helix-filaments` riconosce questa build e non parte più, dopo aver rimesso il catalogo originale.
 
-Resta fuori: il nome del preset Orca accanto al profilo.
+Nell'elenco dei filamenti ogni profilo mostra anche il preset OrcaSlicer a cui corrisponde (`orca_preset`).
 
 **Prima (fino a k2oh.7):** il servizio `k2oh-helix-filaments` sul T113 sostituisce il catalogo di HelixScreen (`filaments.json`) con la libreria di Kalico. Funziona, ma:
 - serve un servizio Python sempre attivo;
@@ -95,6 +95,11 @@ Dove si perde tempo, in ordine di guadagno atteso:
 
 Ogni intervento si misura prima e dopo con gli stessi numeri della fase 0.5.
 
+**Misura del 31/10, in stampa (k2oh.7, schermo spento):**
+- Da Kalico arriva **1 frame `box` al secondo**, quasi solo `load_path` (circa 0,7 KB/s); in 2 minuti `slots` è cambiato 2 volte. HelixScreen già scarta questi frame senza rielaborare nulla. La risposta iniziale è di 71 KB (`filaments` 39 KB, ora usato dal catalogo; `orca_presets` 23 KB, una volta sola alla connessione).
+- Quindi i punti 1 e 2 non valgono il rischio: chiedere a Moonraker solo alcuni campi romperebbe la CFS di fabbrica, che usa altri campi, per un guadagno minimo. Restano aperti solo se una misura futura li indica.
+- HelixScreen usa il **17% di un core**, quasi tutto nel thread dell'interfaccia (14,5%), anche con lo schermo spento e senza ridisegni (il framebuffer resta fermo). Dove vada quel tempo va misurato con un profiler sul T113 a stampante ferma: è il prossimo intervento della fase 3.
+
 ## Fase 4: funzioni utili a K2-OpenHost
 
 In ordine di utilità; ognuna usa dati che Kalico già pubblica.
@@ -103,7 +108,7 @@ In ordine di utilità; ognuna usa dati che Kalico già pubblica.
 2. **Esaurimento e cambio automatico:** ordine di cambio, gruppi di bobine identiche (`runout_rank`, `runout_groups`, `runout_order`).
 3. **Umidità:** avviso di essiccazione per slot (`humidity_pct`, `humidity_limit_pct`).
 4. **Parametri per slot** nell'editor: pressure advance e flusso massimo con la loro fonte (`pressure_advance`, `max_flow`).
-5. **Stato operazione e recupero:** cosa sta facendo la CFS e come riprendere dopo un errore (`operation`, `recovery`).
+5. **Stato operazione e recupero:** cosa sta facendo la CFS e come riprendere dopo un errore (`operation`, `recovery`). Fatto: la pagina CFS mostra la fase del carico e scarico; se Kalico ferma un cambio, la vista di stampa mostra al posto della bobina il motivo e cosa fare (Riprendi riprova lo slot, oppure carica uno slot dalla pagina CFS); un tocco apre la pagina CFS.
 6. **Interruttori:** scarico a fine stampa, rilevamento intasamenti, cambio automatico (`unload_after_print_enabled`, `clog_detection_enabled`, `runout_swap_enabled`).
 7. **Mappatura all'avvio della stampa dallo schermo** con le proposte di Kalico (`print_mapping`).
 

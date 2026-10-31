@@ -810,7 +810,7 @@ nlohmann::json kalico_library() {
     return nlohmann::json::parse(R"({
         "07001": {"id": "07001", "material": "ABS", "brand": "Creality", "name": "CR-ABS",
                   "target_temp": 260, "min_temp": 240, "max_temp": 280,
-                  "rfid_code": "07001", "system": true},
+                  "rfid_code": "07001", "system": true, "orca_preset": "CR-ABS @K2 Pro-all"},
         "HX0001": {"id": "HX0001", "material": "PLA", "brand": "acme", "name": "",
                    "target_temp": 215.0, "min_temp": null, "rfid_code": "", "system": false},
         "BROKEN": {"material": "PLA"}
@@ -828,12 +828,14 @@ TEST_CASE("host_product maps a Kalico entry to a catalog product", "[filament_ca
     CHECK(abs["nozzle_max"] == 280);
     CHECK(abs["codes"]["cfs"] == "07001");
     CHECK(abs["system"] == true);
+    CHECK(abs["orca_preset"] == "CR-ABS @K2 Pro-all");
 
     const auto pla = FilamentCatalog::host_product(lib["HX0001"]);
     CHECK(pla["name"] == "HX0001"); // no name: the id stands in
     CHECK(pla["nozzle"] == 215);
     CHECK_FALSE(pla.contains("nozzle_min")); // null stays unset
     CHECK_FALSE(pla.contains("codes"));
+    CHECK_FALSE(pla.contains("orca_preset"));
     CHECK(pla["system"] == false);
 }
 
@@ -847,7 +849,8 @@ TEST_CASE_METHOD(HelixTestFixture, "host library replaces the shipped catalog wh
 
     const auto base = FilamentCatalog::load_base();
     CHECK(base.all_products().size() == 2); // the entry without an id is dropped
-    CHECK(base.resolve_id("k2oh-07001") != nullptr);
+    REQUIRE(base.resolve_id("k2oh-07001") != nullptr);
+    CHECK(base.resolve_id("k2oh-07001")->orca_preset == "CR-ABS @K2 Pro-all");
     CHECK(base.resolve_id("k2oh-BROKEN") == nullptr);
 
     const auto codes = FilamentCatalog::load_codes_cached("cfs");

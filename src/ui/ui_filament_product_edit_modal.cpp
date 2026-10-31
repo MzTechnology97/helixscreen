@@ -308,7 +308,10 @@ void FilamentProductEditModal::handle_save() {
         return; // keep modal open
     }
 
-    const nlohmann::json sparse = build_product_json(v);
+    nlohmann::json sparse = build_product_json(v);
+    if (mode_ == Mode::Add && !new_codes_.empty()) {
+        sparse["codes"] = new_codes_; // e.g. the unknown tag this product is made for
+    }
     const std::string id = sparse.value("id", "");
 
     if (const std::string saved = save_to_host_library(sparse); !saved.empty()) {

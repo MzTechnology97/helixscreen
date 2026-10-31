@@ -8,6 +8,7 @@
 #include <functional>
 #include <memory>
 #include <lvgl.h>
+#include "hv/json.hpp"
 #include <string>
 #include <vector>
 
@@ -57,6 +58,11 @@ class K2ohCfsView {
 
     /// The slot the print swaps to when @p loaded_slot runs out, -1 if none.
     static int runout_next_slot(const AmsSystemInfo& info, int loaded_slot);
+
+    /// A CFS change Kalico stopped on (box.recovery) as "<reason> · <what to do>",
+    /// "" when nothing is blocked. @p slots is box.slots, for the external spool.
+    static std::string recovery_summary(const nlohmann::json& recovery,
+                                        const nlohmann::json& slots);
 
     /// Builds the view inside @p panel (once), hidden.
     void create(lv_obj_t* panel);
