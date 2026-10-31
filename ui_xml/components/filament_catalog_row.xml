@@ -24,9 +24,17 @@
               text="" style_text_font="#icon_font_xs" style_min_width="16" clickable="false" event_bubble="true"/>
     <!-- Product name. Flex-grows to push temps / edit to the trailing edge and
          ellipsizes on narrow screens. -->
-    <lv_label name="name_label"
-              text="" flex_grow="1" long_mode="dots" style_text_font="#font_body" style_text_color="#text"
-              clickable="false" event_bubble="true"/>
+    <lv_obj flex_grow="1" height="content" flex_flow="column" style_pad_all="0" style_bg_opa="0"
+            style_border_width="0" scrollable="false" clickable="false" event_bubble="true">
+      <lv_label name="name_label"
+                text="" width="100%" long_mode="dots" style_text_font="#font_body" style_text_color="#text"
+                clickable="false" event_bubble="true"/>
+      <!-- OrcaSlicer preset the profile maps to (K2-OpenHost: Kalico's library).
+           Hidden when the product names none. -->
+      <lv_label name="orca_label"
+                text="" hidden="true" width="100%" long_mode="dots" style_text_font="#font_small"
+                style_text_color="#text_muted" clickable="false" event_bubble="true"/>
+    </lv_obj>
     <!-- Variant-disambiguation chip (e.g. "ASA-CF" under the ASA heading).
          Hidden until C++ shows it for a variant row whose type differs from the
          family heading. -->

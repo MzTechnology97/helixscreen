@@ -339,6 +339,8 @@
   <translation tag="CALIBRATION" it="CALIBRAZIONE"/>
   <translation tag="CAPABILITIES" it="FUNZIONALITÀ"/>
   <translation tag="CARTOGRAPHER" it="CARTOGRAPHER"/>
+  <translation tag="CFS change incomplete" it="Cambio CFS non completato"/>
+  <translation tag="CFS change stopped" it="Cambio CFS fermo"/>
   <translation tag="CFS ready" it="CFS pronta"/>
   <translation tag="CFS settings" it="Impostazioni CFS"/>
   <translation tag="CHANGED FROM LAST SESSION" it="MODIFICATO DALLA SESSIONE PRECEDENTE"/>
@@ -1356,6 +1358,7 @@
   <translation tag="Live webcam feed" it="Flusso webcam dal vivo"/>
   <translation tag="Load" it="Carica"/>
   <translation tag="Load Filament" it="Carica filamento"/>
+  <translation tag="Load a slot from the CFS page, then Resume" it="Carica uno slot dalla pagina CFS, poi Riprendi"/>
   <translation tag="Load complete" it="Caricamento completato"/>
   <translation tag="Load filament" it="Carica il filamento"/>
   <translation tag="Load may still be running — response timed out" it="Il caricamento potrebbe essere ancora in corso — tempo scaduto"/>
@@ -2141,6 +2144,8 @@
   <translation tag="Resume interrupted print?" it="Riprendere la stampa interrotta?"/>
   <translation tag="Resume macro not configured" it="Macro ripresa non configurata"/>
   <translation tag="Resume preparation failed" it="Preparazione alla ripresa fallita"/>
+  <translation tag="Resume retries slot {}" it="Riprendi riprova lo slot {}"/>
+  <translation tag="Resume retries the external spool" it="Riprendi riprova la bobina esterna"/>
   <translation tag="Resuming print..." it="Ripresa della stampa..."/>
   <translation tag="Resuming..." it="Ripresa..."/>
   <translation tag="Retract" it="Retrazione"/>

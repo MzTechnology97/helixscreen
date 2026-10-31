@@ -6008,5 +6008,20 @@ TEST_CASE("CFS fork: a product saved from the screen goes to Kalico", "[cfs][k2o
     CHECK(AmsBackendCfs::filament_set_gcode("X", thin) ==
           "_BOX_FILAMENT_SET ID=X MATERIAL=\"PLA\" BRAND=\"\" NAME=\"\"");
     CHECK(AmsBackendCfs::filament_set_gcode("X", json{{"brand", "Acme"}}).empty());
+
+    // Made for an unknown tag: Kalico learns the code and applies the profile to that slot.
+    const json tagged = {{"type", "PLA"}, {"codes", {{"cfs", "106691"}}}};
+    CHECK(AmsBackendCfs::filament_set_gcode("X", tagged) ==
+          "_BOX_FILAMENT_SET ID=X MATERIAL=\"PLA\" BRAND=\"\" NAME=\"\" RFID_CODE=\"106691\"");
     CHECK(AmsBackendCfs::filament_set_gcode("", thin).empty());
+}
+
+TEST_CASE("CFS fork: an unknown tag's code reaches the slot", "[ams][cfs][flat][k2oh]") {
+    json box = make_flat_box("", "", "", "#000000");
+    box["slots"][0]["rfid_unknown_code"] = "106691";
+    box["slots"][0]["rfid_unknown_color"] = "#112233";
+    const auto info = AmsBackendCfs::parse_box_status(box);
+    REQUIRE_FALSE(info.units.empty());
+    CHECK(info.units[0].slots[0].rfid_unknown_code == "106691");
+    CHECK(info.units[0].slots[1].rfid_unknown_code.empty());
 }
