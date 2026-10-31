@@ -6,6 +6,7 @@
 #include "ams_types.h"
 
 #include "../catch_amalgamated.hpp"
+#include "hv/json.hpp"
 
 using helix::ui::K2ohCfsView;
 
@@ -36,4 +37,31 @@ TEST_CASE("K2oh CFS: runout swaps to the lowest remaining spool of the group", "
     CHECK(K2ohCfsView::runout_next_slot(info, 1) == 3); // the loaded one first, then the lowest
     CHECK(K2ohCfsView::runout_next_slot(info, 2) == -1); // no group
     CHECK(K2ohCfsView::runout_next_slot(info, -1) == -1); // nothing loaded
+}
+
+TEST_CASE("K2oh CFS: a stopped change says what happened and what to do", "[k2oh][cfs]") {
+    const auto slots = nlohmann::json::parse(R"([{"index": 2, "external": false},
+                                                {"index": 4, "external": true}])");
+    auto recovery = nlohmann::json::parse(
+        R"({"blocked": false, "automatic": false, "target": null, "step": null, "reason": null})");
+    CHECK(K2ohCfsView::recovery_summary(recovery, slots).empty());
+    CHECK(K2ohCfsView::recovery_summary(nlohmann::json(), slots).empty());
+
+    recovery["blocked"] = true;
+    CHECK(K2ohCfsView::recovery_summary(recovery, slots) ==
+          "CFS change incomplete · Load a slot from the CFS page, then Resume");
+
+    recovery["automatic"] = true;
+    recovery["target"] = 2;
+    recovery["reason"] = "Filament did not reach the head";
+    CHECK(K2ohCfsView::recovery_summary(recovery, slots) ==
+          "Filament did not reach the head · Resume retries slot 3");
+
+    recovery["target"] = 4;
+    CHECK(K2ohCfsView::recovery_summary(recovery, slots) ==
+          "Filament did not reach the head · Resume retries the external spool");
+
+    recovery["automatic"] = false; // a target without automatic retry: the user picks
+    CHECK(K2ohCfsView::recovery_summary(recovery, slots) ==
+          "Filament did not reach the head · Load a slot from the CFS page, then Resume");
 }

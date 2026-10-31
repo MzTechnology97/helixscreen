@@ -241,6 +241,32 @@ std::string K2ohCfsView::runout_summary(const AmsSystemInfo& info, int loaded_sl
     return runout_text(info, loaded_slot);
 }
 
+std::string K2ohCfsView::recovery_summary(const nlohmann::json& recovery,
+                                          const nlohmann::json& slots) {
+    if (!recovery.is_object() || recovery.value("blocked", false) != true) {
+        return "";
+    }
+    const auto reason = recovery.find("reason");
+    std::string text = reason != recovery.end() && reason->is_string() && !reason->empty()
+                           ? reason->get<std::string>()
+                           : lv_tr("CFS change incomplete");
+    const auto target = recovery.find("target");
+    if (recovery.value("automatic", false) == true && target != recovery.end() &&
+        target->is_number_integer()) {
+        const int index = target->get<int>();
+        bool external = false;
+        for (const auto& slot : slots.is_array() ? slots : nlohmann::json::array()) {
+            if (slot.is_object() && slot.value("index", -1) == index) {
+                external = slot.value("external", false) == true;
+            }
+        }
+        return text + " · " +
+               (external ? std::string(lv_tr("Resume retries the external spool"))
+                         : fmt::format(fmt::runtime(lv_tr("Resume retries slot {}")), index + 1));
+    }
+    return text + " · " + lv_tr("Load a slot from the CFS page, then Resume");
+}
+
 int K2ohCfsView::runout_next_slot(const AmsSystemInfo& info, int loaded_slot) {
     for (const auto& [id, members] : runout_groups(info, loaded_slot)) {
         if (members.front()->global_index == loaded_slot) {
@@ -486,7 +512,10 @@ void K2ohCfsView::update_card(Card& card, const SlotInfo& slot, bool loaded, boo
         set_text(root, "brand_label", "");
     } else if (unknown) {
         set_text(root, "material_label", lv_tr("Not recognised"));
-        set_text(root, "brand_label", lv_tr("unknown tag"));
+        set_text(root, "brand_label",
+                 slot.rfid_unknown_code.empty()
+                     ? std::string(lv_tr("unknown tag"))
+                     : std::string(lv_tr("unknown tag")) + " " + slot.rfid_unknown_code);
     } else {
         set_text(root, "material_label", slot.material);
         set_text(root, "brand_label", slot.brand);

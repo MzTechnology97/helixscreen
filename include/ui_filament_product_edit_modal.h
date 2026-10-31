@@ -8,6 +8,7 @@
 #include "filament_product_form.h"
 
 #include <functional>
+#include <map>
 #include <string>
 
 namespace helix::ui {
@@ -51,6 +52,11 @@ class FilamentProductEditModal : public Modal {
     /// Empty form; id defaults from brand+name when left blank, type defaults
     /// to the first material.
     bool show_for_add(lv_obj_t* parent);
+    /// Codes (scheme -> code) a product created with show_for_add() carries,
+    /// e.g. the CFS code of the unknown tag it is made for. Empty for none.
+    void set_new_product_codes(std::map<std::string, std::string> codes) {
+        new_codes_ = std::move(codes);
+    }
     /// Pre-fill from the resolved catalog entry for @p product_id.
     bool show_for_edit(lv_obj_t* parent, const std::string& product_id);
 
@@ -73,6 +79,7 @@ class FilamentProductEditModal : public Modal {
     std::string edit_id_;      ///< id being edited (edit mode)
     bool is_builtin_ = false;  ///< edit target resolves in the shipped catalog
     bool has_overlay_ = false; ///< an overlay entry already exists for edit_id_
+    std::map<std::string, std::string> new_codes_; ///< codes for a product added here
     SavedCallback on_saved_;
 
     bool subjects_initialized_ = false;
