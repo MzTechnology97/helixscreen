@@ -118,7 +118,111 @@ std::vector<nlohmann::json> read_products(const std::vector<std::string>& paths)
     return {};
 }
 
+/// K2-OpenHost host library (Kalico's box.filaments) as product JSON. Written by
+/// the CFS backend on the WebSocket thread, read by loaders on any thread.
+std::mutex g_host_mutex;
+std::shared_ptr<const std::vector<nlohmann::json>> g_host_products;
+std::atomic<uint64_t> g_host_generation{0};
+
+std::shared_ptr<const std::vector<nlohmann::json>> host_products() {
+    std::lock_guard<std::mutex> lock(g_host_mutex);
+    return g_host_products;
+}
+
+/// The catalog's base before the user overlay: the host library when set.
+std::vector<nlohmann::json> base_products() {
+    if (auto host = host_products())
+        return *host;
+    return read_products(BUILTIN_PATHS);
+}
+
+std::string trimmed(const std::string& s) {
+    const auto b = s.find_first_not_of(" \t\r\n");
+    const auto e = s.find_last_not_of(" \t\r\n");
+    return b == std::string::npos ? std::string() : s.substr(b, e - b + 1);
+}
+
+std::string lower(std::string s) {
+    std::transform(s.begin(), s.end(), s.begin(),
+                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+    return s;
+}
+
 } // namespace
+
+nlohmann::json FilamentCatalog::host_product(const nlohmann::json& entry) {
+    using helix::json_util::safe_string;
+    const std::string id = trimmed(safe_string(entry, "id"));
+    const std::string name = safe_string(entry, "name");
+    auto system = entry.find("system");
+    nlohmann::json p = {{"id", "k2oh-" + id},
+                        {"brand", safe_string(entry, "brand")},
+                        {"name", name.empty() ? id : name},
+                        {"type", safe_string(entry, "material")},
+                        {"source", "k2openhost"},
+                        {"system", system != entry.end() && system->is_boolean() && system->get<bool>()}};
+    for (const auto& [key, src] : {std::pair{"nozzle", "target_temp"},
+                                   std::pair{"nozzle_min", "min_temp"},
+                                   std::pair{"nozzle_max", "max_temp"}}) {
+        if (auto it = entry.find(src);
+            it != entry.end() && it->is_number() && it->get<double>() > 0) {
+            p[key] = static_cast<int>(it->get<double>());
+        }
+    }
+    const std::string code = trimmed(safe_string(entry, "rfid_code"));
+    if (!code.empty())
+        p["codes"] = {{"cfs", code}};
+    return p;
+}
+
+void FilamentCatalog::set_host_library(const nlohmann::json& filaments) {
+    if (!filaments.is_object())
+        return;
+    std::vector<nlohmann::json> products;
+    for (const auto& [key, entry] : filaments.items()) {
+        if (entry.is_object() && !trimmed(helix::json_util::safe_string(entry, "id")).empty())
+            products.push_back(host_product(entry));
+    }
+    std::sort(products.begin(), products.end(),
+              [](const nlohmann::json& a, const nlohmann::json& b) {
+                  return std::pair(lower(a.value("brand", "")), lower(a.value("name", ""))) <
+                         std::pair(lower(b.value("brand", "")), lower(b.value("name", "")));
+              });
+    auto next = std::make_shared<const std::vector<nlohmann::json>>(std::move(products));
+    {
+        std::lock_guard<std::mutex> lock(g_host_mutex);
+        if (g_host_products && *g_host_products == *next)
+            return;
+        g_host_products = next;
+    }
+    g_host_generation.fetch_add(1, std::memory_order_release);
+    spdlog::info("[filament] catalog from the host library: {} filaments", next->size());
+}
+
+void FilamentCatalog::clear_host_library() {
+    {
+        std::lock_guard<std::mutex> lock(g_host_mutex);
+        if (!g_host_products)
+            return;
+        g_host_products.reset();
+    }
+    g_host_generation.fetch_add(1, std::memory_order_release);
+    spdlog::info("[filament] host library dropped, back to the shipped catalog");
+}
+
+bool FilamentCatalog::host_library_active() {
+    return host_products() != nullptr;
+}
+
+nlohmann::json FilamentCatalog::host_product_by_id(const std::string& id) {
+    if (auto host = host_products()) {
+        for (const auto& p : *host) {
+            if (p.value("id", "") == id)
+                return p;
+        }
+    }
+    return nullptr;
+}
 
 void FilamentCatalog::index() {
     by_id_.clear();
@@ -146,16 +250,29 @@ FilamentCatalog FilamentCatalog::load_from_file(const std::string& path, bool co
 
 FilamentCatalog FilamentCatalog::load_with_overlay(const std::string& builtin_path,
                                                    const std::string& overlay_path) {
+    return from_products(read_products({builtin_path}), read_products({overlay_path}));
+}
+
+FilamentCatalog FilamentCatalog::load_base() {
+    FilamentCatalog cat;
+    for (const auto& jp : base_products())
+        cat.products_.push_back(to_effective(jp));
+    cat.index();
+    return cat;
+}
+
+FilamentCatalog FilamentCatalog::from_products(const std::vector<nlohmann::json>& base,
+                                               const std::vector<nlohmann::json>& overlay) {
     // Raw product JSON keyed by id, so overlay can override before resolution.
     std::unordered_map<std::string, nlohmann::json> merged;
     std::vector<std::string> order;
-    for (const auto& jp : read_products({builtin_path})) {
+    for (const auto& jp : base) {
         std::string id = helix::json_util::safe_string(jp, "id");
         if (merged.find(id) == merged.end())
             order.push_back(id);
         merged[id] = jp;
     }
-    for (const auto& jp : read_products({overlay_path})) {
+    for (const auto& jp : overlay) {
         std::string id = helix::json_util::safe_string(jp, "id");
         if (merged.find(id) == merged.end()) {
             order.push_back(id);
@@ -179,8 +296,9 @@ namespace {
 std::atomic<uint64_t> g_user_overlay_generation{0};
 
 std::mutex g_codes_cache_mutex;
-/// scheme -> (generation it was built at, snapshot)
-std::map<std::string, std::pair<uint64_t, std::shared_ptr<const FilamentCatalog>>> g_codes_cache;
+/// scheme -> ((overlay, host library) generations it was built at, snapshot)
+std::map<std::string, std::pair<std::pair<uint64_t, uint64_t>, std::shared_ptr<const FilamentCatalog>>>
+    g_codes_cache;
 
 } // namespace
 
@@ -190,7 +308,9 @@ uint64_t FilamentCatalog::user_overlay_generation() {
 
 std::shared_ptr<const FilamentCatalog>
 FilamentCatalog::load_codes_cached(const std::string& scheme) {
-    const uint64_t gen = g_user_overlay_generation.load(std::memory_order_acquire);
+    const std::pair<uint64_t, uint64_t> gen{
+        g_user_overlay_generation.load(std::memory_order_acquire),
+        g_host_generation.load(std::memory_order_acquire)};
     {
         std::lock_guard<std::mutex> lock(g_codes_cache_mutex);
         auto it = g_codes_cache.find(scheme);
@@ -208,13 +328,14 @@ FilamentCatalog::load_codes_cached(const std::string& scheme) {
         std::lock_guard<std::mutex> lock(g_codes_cache_mutex);
         g_codes_cache[scheme] = {gen, built};
     }
-    spdlog::debug("[filament] built '{}' code-slice cache (generation {})", scheme, gen);
+    spdlog::debug("[filament] built '{}' code-slice cache (generation {}/{})", scheme, gen.first,
+                  gen.second);
     return built;
 }
 
 FilamentCatalog FilamentCatalog::load_codes(const std::string& scheme) {
     FilamentCatalog cat;
-    for (const auto& jp : read_products(BUILTIN_PATHS)) {
+    for (const auto& jp : base_products()) {
         auto e = to_effective(jp);
         if (e.codes.find(scheme) != e.codes.end())
             cat.products_.push_back(std::move(e));
@@ -244,7 +365,7 @@ std::string first_existing(const std::vector<std::string>& paths) {
 } // namespace
 
 FilamentCatalog FilamentCatalog::load_full() {
-    return load_with_overlay(first_existing(BUILTIN_PATHS), first_existing(user_paths()));
+    return from_products(base_products(), read_products({first_existing(user_paths())}));
 }
 
 std::map<std::string, std::string> FilamentCatalog::load_user_orca_type_map() {

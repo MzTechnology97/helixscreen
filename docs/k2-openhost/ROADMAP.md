@@ -1,6 +1,6 @@
 # HelixScreen K2-OpenHost: roadmap
 
-Aggiornata il 28/10/2026. Fork: [MzTechnology97/helixscreen](https://github.com/MzTechnology97/helixscreen), ramo `k2-openhost`, basato su v1.0.6 (la versione installata sul T113).
+Aggiornata il 31/10/2026. Fork: [MzTechnology97/helixscreen](https://github.com/MzTechnology97/helixscreen), ramo `k2-openhost`, basato su v1.0.6 (la versione installata sul T113).
 
 ## Regole del fork
 
@@ -15,12 +15,12 @@ Aggiornata il 28/10/2026. Fork: [MzTechnology97/helixscreen](https://github.com/
 
 | # | Cosa | Stato |
 | --- | --- | --- |
-| 0.1 | CI del fork: pacchetto K2 più test `[cfs]` | fatto; il job dei test arriva con la PR #1 |
-| 0.2 | Niente `lane_data` scritto da HelixScreen con Kalico (colore grigio dopo il reinserimento) | PR #1, test aggiornato, in attesa della CI |
-| 0.3 | Installazione della nostra build sul T113: release nel fork, script nel bootstrap con backup e ripristino | pronta: `k2oh-setup helix-update` / `helix-restore` (bootstrap PR #17), release dalla PR #2; si installa a stampante ferma |
+| 0.1 | CI del fork: pacchetto K2 più test `[cfs]` e `[k2oh]` | fatto |
+| 0.2 | Niente `lane_data` scritto da HelixScreen con Kalico (colore grigio dopo il reinserimento) | fatto (PR #1) |
+| 0.3 | Installazione della nostra build sul T113: release nel fork, script nel bootstrap con backup e ripristino | fatto: `k2oh-setup helix-update` / `helix-restore` (bootstrap PR #17, sul T113 dal 31/10), aggiornamento anche dallo schermo; a stampante ferma |
 | 0.4 | Spegnere `ustreamer` sul T113: in OpenHost la telecamera è sul CM5 e `/dev/video0` sul T113 non esiste. Oggi gira a vuoto da 13 giorni (oltre 2 h di CPU, circa 5% fisso, `killall cam_app` ogni 5 s) | fatto il 28/10 a mano e nel bootstrap (PR #16); nel fork l'installer salta la telecamera se manca `/dev/video0` (PR #2) |
-| 0.5 | Misure di riferimento durante una stampa: CPU per thread, frame `box` al secondo, tempo di parse | da fare |
-| 0.6 | Versione propria (`1.0.6-k2oh.N`) e aggiornamenti automatici solo dalle release del fork; l'attesa all'avvio legge l'host Moonraker da `settings.json`, così un aggiornamento non perde il CM5 | PR #2 |
+| 0.5 | Misure di riferimento durante una stampa: CPU per thread, frame `box` al secondo, tempo di parse | in parte: 28/10 in stampa, con anteprima solo miniatura, ~9% di CPU e 32 MB; mancano frame al secondo e tempo di parse |
+| 0.6 | Versione propria (`1.0.6-k2oh.N`) e aggiornamenti automatici solo dalle release del fork; l'attesa all'avvio legge l'host Moonraker da `settings.json`, così un aggiornamento non perde il CM5 | fatto (PR #2) |
 
 ## Fase 1: dati CFS corretti sullo schermo
 
@@ -28,14 +28,18 @@ Aggiornata il 28/10/2026. Fork: [MzTechnology97/helixscreen](https://github.com/
 | --- | --- | --- | --- |
 | 1.1 | Colore grigio dopo il reinserimento | auto-mirror `FillUnsetOnly` in `lane_data` | PR #1 |
 | 1.2 | Utensili (T0–T3) diversi dalla mappatura reale | con il formato `slots[]` HelixScreen ignora `map` e `print_mapping` e usa sempre T*n* = slot *n* | PR #3: in stampa `print_mapping.map` (Kalico la azzera a fine stampa), altrimenti `box.map`; l'utensile corrente è quello che passa per lo slot caricato |
-| 1.3 | Slot caricato in testa mostrato male | lo slot caricato era giusto, l'etichetta dell'utensile no (T3 invece di T0): è la 1.2 | da ricontrollare sullo schermo dopo l'installazione della PR #3 |
+| 1.3 | Slot caricato in testa mostrato male | lo slot caricato era giusto, l'etichetta dell'utensile no (T3 invece di T0): è la 1.2 | da ricontrollare sullo schermo |
 | 1.4 | Residuo del filamento non mostrato | il parse flat non legge i campi del residuo | PR #3: metri residui come testo, `rfid_percent` per la barra; niente grammi stimati (finirebbero in Spoolman) |
-| 1.5 | Più CFS: temperatura e umidità solo della CFS che alimenta | gli slot sono già divisi per CFS; l'ambiente usa un solo valore | leggere `boxes[]`, una lettura per unità |
-| 1.6 | Etichetta "sconosciuto" per tag non riconosciuti | campi `rfid_unknown_code` e `rfid_unknown_color` ignorati | mostrarli e proporre di creare il profilo |
+| 1.5 | Più CFS: temperatura e umidità solo della CFS che alimenta | gli slot sono già divisi per CFS; l'ambiente usa un solo valore | fatto: `boxes[]`, una lettura per unità |
+| 1.6 | Etichetta "sconosciuto" per tag non riconosciuti | campi `rfid_unknown_code` e `rfid_unknown_color` ignorati | letti dal backend; resta da provarli sullo schermo |
 
 ## Fase 2: libreria filamenti nativa
 
-**Oggi:** il servizio `k2oh-helix-filaments` sul T113 sostituisce il catalogo di HelixScreen (`filaments.json`) con la libreria di Kalico. Funziona, ma:
+**Fatta in k2oh.8.** Con il dialetto Fork il catalogo è la libreria di Kalico (`box.filaments`), aggiornata a ogni frame che la cambia: selettori, ricerca per codice RFID e modifica dei profili la usano subito, senza riavvio. `user_filaments.json` resta sopra la libreria per le personalizzazioni locali dei filamenti di sistema, che Kalico tiene in sola lettura. Un filamento nuovo, o la modifica di uno personalizzato, va a Kalico con `_BOX_FILAMENT_SET` (materiale, marca, nome, temperature; letto e densità non esistono in Kalico). Se la CFS torna allo schema di fabbrica, torna anche il catalogo incluso. Nel bootstrap `k2oh-helix-filaments` riconosce questa build e non parte più, dopo aver rimesso il catalogo originale.
+
+Resta fuori: il nome del preset Orca accanto al profilo.
+
+**Prima (fino a k2oh.7):** il servizio `k2oh-helix-filaments` sul T113 sostituisce il catalogo di HelixScreen (`filaments.json`) con la libreria di Kalico. Funziona, ma:
 - serve un servizio Python sempre attivo;
 - sostituisce un file del pacchetto, che ogni aggiornamento di HelixScreen riscrive;
 - dopo ogni modifica serve un riavvio di HelixScreen, perché la cache dei codici RFID si ricostruisce solo all'avvio;
@@ -53,10 +57,10 @@ Aggiornata il 28/10/2026. Fork: [MzTechnology97/helixscreen](https://github.com/
 | Servizi sul T113 | `k2oh-helix-filaments` | nessuno, servizio rimosso |
 
 Passi:
-1. Il backend del catalogo legge `box.filaments`, solo con il dialetto Fork.
-2. Ricerca per codice RFID dagli stessi dati.
-3. Creazione e modifica con i comandi di Kalico.
-4. Rimozione del servizio dal bootstrap, con migrazione.
+1. Il backend del catalogo legge `box.filaments`, solo con il dialetto Fork. Fatto.
+2. Ricerca per codice RFID dagli stessi dati. Fatto.
+3. Creazione e modifica con i comandi di Kalico. Fatto.
+4. Rimozione del servizio dal bootstrap, con migrazione. Fatto: il servizio si ritira da solo con k2oh.8 o successive.
 
 Questa fase resta nostra: upstream non ha un'altra stampante con una libreria lato host.
 

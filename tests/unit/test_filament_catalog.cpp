@@ -796,3 +796,89 @@ TEST_CASE_METHOD(HelixTestFixture, "saving through a symlinked overlay keeps the
     CHECK(std::filesystem::is_symlink(link));
     CHECK(read_small_file(real.string()).find("link-probe-pla") != std::string::npos);
 }
+
+
+// --- K2-OpenHost host library (Kalico's box.filaments) ----------------------
+
+namespace {
+/// The host library is process-wide: every test that sets one drops it again.
+struct HostLibraryGuard {
+    ~HostLibraryGuard() { FilamentCatalog::clear_host_library(); }
+};
+
+nlohmann::json kalico_library() {
+    return nlohmann::json::parse(R"({
+        "07001": {"id": "07001", "material": "ABS", "brand": "Creality", "name": "CR-ABS",
+                  "target_temp": 260, "min_temp": 240, "max_temp": 280,
+                  "rfid_code": "07001", "system": true},
+        "HX0001": {"id": "HX0001", "material": "PLA", "brand": "acme", "name": "",
+                   "target_temp": 215.0, "min_temp": null, "rfid_code": "", "system": false},
+        "BROKEN": {"material": "PLA"}
+    })");
+}
+} // namespace
+
+TEST_CASE("host_product maps a Kalico entry to a catalog product", "[filament_catalog][k2oh]") {
+    const auto lib = kalico_library();
+    const auto abs = FilamentCatalog::host_product(lib["07001"]);
+    CHECK(abs["id"] == "k2oh-07001");
+    CHECK(abs["type"] == "ABS");
+    CHECK(abs["nozzle"] == 260);
+    CHECK(abs["nozzle_min"] == 240);
+    CHECK(abs["nozzle_max"] == 280);
+    CHECK(abs["codes"]["cfs"] == "07001");
+    CHECK(abs["system"] == true);
+
+    const auto pla = FilamentCatalog::host_product(lib["HX0001"]);
+    CHECK(pla["name"] == "HX0001"); // no name: the id stands in
+    CHECK(pla["nozzle"] == 215);
+    CHECK_FALSE(pla.contains("nozzle_min")); // null stays unset
+    CHECK_FALSE(pla.contains("codes"));
+    CHECK(pla["system"] == false);
+}
+
+TEST_CASE_METHOD(HelixTestFixture, "host library replaces the shipped catalog while set",
+                 "[filament_catalog][k2oh]") {
+    HostLibraryGuard guard;
+    REQUIRE_FALSE(FilamentCatalog::host_library_active());
+
+    FilamentCatalog::set_host_library(kalico_library());
+    REQUIRE(FilamentCatalog::host_library_active());
+
+    const auto base = FilamentCatalog::load_base();
+    CHECK(base.all_products().size() == 2); // the entry without an id is dropped
+    CHECK(base.resolve_id("k2oh-07001") != nullptr);
+    CHECK(base.resolve_id("k2oh-BROKEN") == nullptr);
+
+    const auto codes = FilamentCatalog::load_codes_cached("cfs");
+    const auto* abs = codes->resolve_code("cfs", "07001");
+    REQUIRE(abs != nullptr);
+    CHECK(abs->id == "k2oh-07001");
+    CHECK(codes->resolve_code("cfs", "01001") == nullptr); // shipped codes are gone
+
+    CHECK(FilamentCatalog::host_product_by_id("k2oh-HX0001")["brand"] == "acme");
+    CHECK(FilamentCatalog::host_product_by_id("k2oh-NOPE").is_null());
+
+    FilamentCatalog::clear_host_library();
+    CHECK_FALSE(FilamentCatalog::host_library_active());
+    const auto* shipped = FilamentCatalog::load_codes_cached("cfs")->resolve_code("cfs", "07001");
+    CHECK((shipped == nullptr || shipped->id != "k2oh-07001")); // back on the shipped catalog
+}
+
+TEST_CASE_METHOD(HelixTestFixture, "host library change retires the code cache",
+                 "[filament_catalog][k2oh]") {
+    HostLibraryGuard guard;
+    auto lib = kalico_library();
+    FilamentCatalog::set_host_library(lib);
+    const auto first = FilamentCatalog::load_codes_cached("cfs");
+
+    FilamentCatalog::set_host_library(lib); // unchanged: same snapshot
+    CHECK(FilamentCatalog::load_codes_cached("cfs") == first);
+
+    lib["HX0001"]["rfid_code"] = "05628";
+    FilamentCatalog::set_host_library(lib);
+    const auto second = FilamentCatalog::load_codes_cached("cfs");
+    CHECK(second != first);
+    REQUIRE(second->resolve_code("cfs", "05628") != nullptr);
+    CHECK(second->resolve_code("cfs", "05628")->id == "k2oh-HX0001");
+}
