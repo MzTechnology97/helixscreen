@@ -25,6 +25,7 @@ struct EffectiveFilament {
     int dry_time_min = 0;
     float density_g_cm3 = 0.0f;
     std::string compat_group;
+    std::string orca_preset; ///< OrcaSlicer preset name, when the source names one
     std::map<std::string, std::string> codes; ///< scheme -> code
 };
 
@@ -71,6 +72,22 @@ class FilamentCatalog {
     /// Explicit built-in + overlay paths; overlay overrides existing ids and adds new ones.
     static FilamentCatalog load_with_overlay(const std::string& builtin_path,
                                              const std::string& overlay_path);
+    /// Base products only, no user overlay: the host library when one is set,
+    /// otherwise the shipped catalog. Answers "is this id one we ship?".
+    static FilamentCatalog load_base();
+
+    /// K2-OpenHost: the filament library Kalico publishes as box.filaments.
+    /// While set it replaces the shipped catalog as the base of load_full(),
+    /// load_codes() and load_base(); the user overlay still applies over it.
+    /// An unchanged library is a no-op, a changed one retires the code caches.
+    static void set_host_library(const nlohmann::json& filaments);
+    static void clear_host_library();
+    static bool host_library_active();
+    /// One Kalico library entry as a catalog product: id "k2oh-<Kalico id>",
+    /// rfid_code as the "cfs" code, `system` kept so edits know it is read only.
+    static nlohmann::json host_product(const nlohmann::json& entry);
+    /// The host library's product for a catalog id; null when absent.
+    static nlohmann::json host_product_by_id(const std::string& id);
 
     /// Read the user overlay's `orca_type_map` (Helix display name -> Orca wire
     /// string). Returns an empty map if the user overlay is missing, is a bare
@@ -145,6 +162,8 @@ class FilamentCatalog {
     // scheme -> (code -> product index)
     std::unordered_map<std::string, std::unordered_map<std::string, size_t>> by_code_;
     void index();
+    static FilamentCatalog from_products(const std::vector<nlohmann::json>& base,
+                                         const std::vector<nlohmann::json>& overlay);
 };
 
 } // namespace helix::printer

@@ -1204,7 +1204,7 @@ constexpr const char* kFlatNoiseFields[] = {
     "filament_check", "environment_raw", "environment_source", "environment_error",
     "runout_groups", "runout_order", "mapping_warnings", "print_info", "tracking_active",
     "fluidd_widget_version", "cfs_versions", "spool_length_defaults", "print_mapping_enabled",
-    "print_mapping_version", "state_code", "status_code", "recovery", "auto_mapping",
+    "print_mapping_version", "state_code", "status_code", "auto_mapping",
     "data_ready", "slot_filament_mask", "loaded_mask", "filament_sensor_error",
     "helix_compat_version",
 };
@@ -1446,6 +1446,7 @@ AmsSystemInfo AmsBackendCfs::parse_flat_box_status(const nlohmann::json& box_jso
                 // A tag Kalico could not identify keeps its own colour, and the
                 // slot says so instead of looking untagged.
                 const std::string unknown_code = flat_text_field(slot_json, "rfid_unknown_code");
+                slot.rfid_unknown_code = unknown_code;
                 if (!unknown_code.empty()) {
                     if (slot.material.empty()) {
                         if (auto c = read_flat_slot_color(
@@ -1789,6 +1790,7 @@ void AmsBackendCfs::handle_status_update(const nlohmann::json& notification) {
             schema_ = CfsSchema::Stock;
             if (macro_variant_ == CfsMacroVariant::Fork) {
                 macro_variant_ = model_macro_variant_;
+                FilamentCatalog::clear_host_library();
             }
             spdlog::info("[AMS CFS] Stock box schema reported, flat state dropped");
         }
@@ -1824,8 +1826,8 @@ void AmsBackendCfs::handle_status_update(const nlohmann::json& notification) {
                         fork_switches_[sw.field] = it->get<bool>();
                     }
                 }
-                for (const char* key : {"load_path", "operation", "runout", "runout_groups",
-                                         "runout_order", "slots"}) {
+                for (const char* key : {"load_path", "operation", "recovery", "runout",
+                                         "runout_groups", "runout_order", "slots"}) {
                     if (auto it = box.find(key); it != box.end()) {
                         k2oh_fields_[key] = *it;
                     }
@@ -1856,10 +1858,12 @@ void AmsBackendCfs::handle_status_update(const nlohmann::json& notification) {
         // assuming every `slots[]` payload implements the same commands.
         // K2-OpenHost: during a print a slots delta can arrive before the full
         // answer that carries api_version, so a later api_version still counts.
+        bool fork_detected = false;
         if (is_flat && macro_variant_ != CfsMacroVariant::Fork &&
             (flat_entered || box.contains("api_version"))) {
             if (detect_fork_dialect(state)) {
                 macro_variant_ = CfsMacroVariant::Fork;
+                fork_detected = true;
                 spdlog::info("[AMS CFS] Flat box schema + fork dialect detected "
                              "(community box.py, API v{}) — Fork control enabled",
                              helix::json_util::safe_int(state, "api_version", 0));
@@ -1867,6 +1871,13 @@ void AmsBackendCfs::handle_status_update(const nlohmann::json& notification) {
                 spdlog::warn("[AMS CFS] Flat box schema without a supported API version — "
                              "slot display active, control paths disabled (no verified "
                              "command dialect)");
+            }
+        }
+        // K2-OpenHost: Kalico's library is the filament catalog, live.
+        if (is_flat && macro_variant_ == CfsMacroVariant::Fork &&
+            (fork_detected || box.contains("filaments"))) {
+            if (auto it = state.find("filaments"); it != state.end()) {
+                FilamentCatalog::set_host_library(*it);
             }
         }
 
@@ -3451,6 +3462,49 @@ std::string AmsBackendCfs::kalico_filament_id(const std::string& catalog_id) {
     return catalog_id.size() > kPrefix.size() && catalog_id.compare(0, kPrefix.size(), kPrefix) == 0
                ? catalog_id.substr(kPrefix.size())
                : std::string();
+}
+
+std::string AmsBackendCfs::kalico_id_for(const std::string& catalog_id) {
+    if (std::string id = kalico_filament_id(catalog_id); !id.empty()) {
+        return id;
+    }
+    std::string id = ascii_uppercase(catalog_id);
+    for (char& c : id) {
+        if (!std::isalnum(static_cast<unsigned char>(c)) && c != '.' && c != '_' && c != '-') {
+            c = '-';
+        }
+    }
+    return id;
+}
+
+std::string AmsBackendCfs::filament_set_gcode(const std::string& kalico_id,
+                                              const nlohmann::json& product) {
+    using helix::json_util::safe_int;
+    using helix::json_util::safe_string;
+    const std::string material = ascii_uppercase(safe_string(product, "type"));
+    if (kalico_id.empty() || material.empty()) {
+        return "";
+    }
+    std::string gcode = "_BOX_FILAMENT_SET ID=" + kalico_id + " MATERIAL=" +
+                        quote_gcode_param(material) +
+                        " BRAND=" + quote_gcode_param(safe_string(product, "brand")) +
+                        " NAME=" + quote_gcode_param(safe_string(product, "name"));
+    // Kalico's TARGET_TEMP range; without it Kalico keeps or derives one.
+    if (const int nozzle = safe_int(product, "nozzle", 0); nozzle > 0) {
+        gcode += " TARGET_TEMP=" + std::to_string(std::clamp(nozzle, 170, 350));
+    }
+    const int lo = safe_int(product, "nozzle_min", 0);
+    const int hi = safe_int(product, "nozzle_max", 0);
+    if (lo > 0 && hi > 0 && lo <= hi) {
+        gcode += " MIN_TEMP=" + std::to_string(lo) + " MAX_TEMP=" + std::to_string(hi);
+    }
+    // A product made for an unknown tag: Kalico then recognises that tag.
+    if (auto codes = product.find("codes"); codes != product.end() && codes->is_object()) {
+        if (const std::string code = safe_string(*codes, "cfs"); !code.empty()) {
+            gcode += " RFID_CODE=" + quote_gcode_param(code);
+        }
+    }
+    return gcode;
 }
 
 std::string AmsBackendCfs::slot_profile_gcode(int global_slot_index, const std::string& catalog_id,

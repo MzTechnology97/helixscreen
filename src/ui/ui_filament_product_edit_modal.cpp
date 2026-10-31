@@ -3,15 +3,20 @@
 
 #include "ui_filament_product_edit_modal.h"
 
+#include "ui_error_reporting.h"
 #include "ui_toast_manager.h"
 
+#if HELIX_HAS_CFS
+#include "ams_backend_cfs.h"
+#endif
+#include "app_globals.h"
 #include "filament_catalog.h"
 #include "filament_database.h"
+#include "i_moonraker_api.h"
 #include "lvgl/src/others/translation/lv_translation.h"
 
 #include <spdlog/spdlog.h>
 
-#include <fstream>
 #include <string>
 #include <vector>
 
@@ -22,29 +27,43 @@ using helix::printer::FilamentCatalog;
 
 namespace {
 
-// Built-in catalog search paths, mirroring filament_catalog.cpp's private
-// BUILTIN_PATHS. Used only to answer "is this id shipped?" for the secondary
-// button label (Delete vs Restore Defaults); the resolved values themselves
-// come from FilamentCatalog::load_full().
-const char* BUILTIN_PATHS[] = {"assets/filaments.json", "../assets/filaments.json",
-                               "/opt/helixscreen/assets/filaments.json"};
-
-std::string first_existing_builtin() {
-    for (const char* p : BUILTIN_PATHS) {
-        std::ifstream f(p);
-        if (f.is_open())
-            return p;
-    }
-    return "";
+/// True if @p id is in the catalog's base (shipped file, or Kalico's library):
+/// the secondary button then restores it instead of deleting it.
+bool id_in_builtin(const std::string& id) {
+    return FilamentCatalog::load_base().resolve_id(id) != nullptr;
 }
 
-/// True if @p id is present in the shipped (built-in-only) catalog.
-bool id_in_builtin(const std::string& id) {
-    const std::string path = first_existing_builtin();
-    if (path.empty())
-        return false;
-    FilamentCatalog builtin = FilamentCatalog::load_from_file(path, /*codes_only=*/false, "");
-    return builtin.resolve_id(id) != nullptr;
+/// K2-OpenHost: a product saved from the screen goes into Kalico's library,
+/// except edits of read-only system filaments, which stay a local override.
+/// Returns the saved product's catalog id, "" when the save is not Kalico's to take.
+std::string save_to_host_library(const nlohmann::json& product) {
+#if HELIX_HAS_CFS
+    using helix::printer::AmsBackendCfs;
+    const std::string id = product.value("id", "");
+    const nlohmann::json host = FilamentCatalog::host_product_by_id(id);
+    if (!FilamentCatalog::host_library_active() ||
+        (host.is_object() && host.value("system", false))) {
+        return "";
+    }
+    IMoonrakerAPI* api = get_moonraker_api();
+    const std::string kalico_id = AmsBackendCfs::kalico_id_for(id);
+    const std::string gcode = AmsBackendCfs::filament_set_gcode(kalico_id, product);
+    if (!api || gcode.empty()) {
+        return "";
+    }
+    spdlog::info("[FilamentProductEditModal] {}", gcode);
+    // Kalico publishes the saved product in box.filaments; a refusal is notified.
+    api->execute_gcode(
+        gcode, []() {},
+        [gcode](const MoonrakerError& err) {
+            NOTIFY_WARNING(lv_tr("Filament not saved: {}"), err.message);
+            spdlog::warn("[FilamentProductEditModal] {} failed: {}", gcode, err.message);
+        });
+    return "k2oh-" + kalico_id;
+#else
+    (void)product;
+    return "";
+#endif
 }
 
 /// True if an authored overlay entry already exists for @p id.
@@ -289,8 +308,19 @@ void FilamentProductEditModal::handle_save() {
         return; // keep modal open
     }
 
-    const nlohmann::json sparse = build_product_json(v);
+    nlohmann::json sparse = build_product_json(v);
+    if (mode_ == Mode::Add && !new_codes_.empty()) {
+        sparse["codes"] = new_codes_; // e.g. the unknown tag this product is made for
+    }
     const std::string id = sparse.value("id", "");
+
+    if (const std::string saved = save_to_host_library(sparse); !saved.empty()) {
+        ToastManager::instance().show(ToastSeverity::SUCCESS, lv_tr("Filament saved"), 2000);
+        if (on_saved_)
+            on_saved_(saved);
+        hide();
+        return;
+    }
 
     auto products = FilamentCatalog::load_user_products();
 
