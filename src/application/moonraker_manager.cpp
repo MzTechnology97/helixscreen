@@ -287,7 +287,8 @@ void MoonrakerManager::process_notifications() {
                         lv_obj_find_by_name(modal, helix::ui::kModalTitleWidgetName);
                     if (title_label) {
                         const char* title = lv_label_get_text(title_label);
-                        if (title && strcmp(title, "Connection Failed") == 0) {
+                        // The modal shows the translated title (see ConnectionFailedModal).
+                        if (title && strcmp(title, lv_tr("Connection Failed")) == 0) {
                             spdlog::info("[MoonrakerManager] Auto-closing '{}' modal on reconnect",
                                          title);
                             helix::ui::modal_hide(modal);
