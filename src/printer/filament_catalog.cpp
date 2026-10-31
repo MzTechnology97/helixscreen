@@ -71,6 +71,7 @@ EffectiveFilament to_effective(const nlohmann::json& p) {
                           ? p["density"].get<float>()
                           : (base ? base->density_g_cm3 : 0.0f);
     e.compat_group = base ? base->compat_group : "";
+    e.orca_preset = helix::json_util::safe_string(p, "orca_preset");
 
     if (auto it = p.find("codes"); it != p.end() && it->is_object()) {
         for (auto& [scheme, code] : it->items()) {
@@ -172,6 +173,8 @@ nlohmann::json FilamentCatalog::host_product(const nlohmann::json& entry) {
     const std::string code = trimmed(safe_string(entry, "rfid_code"));
     if (!code.empty())
         p["codes"] = {{"cfs", code}};
+    if (const std::string preset = safe_string(entry, "orca_preset"); !preset.empty())
+        p["orca_preset"] = preset;
     return p;
 }
 

@@ -8,6 +8,9 @@
 #include "ui_k2oh_cfs_view.h"
 
 #include "ams_backend.h"
+#if HELIX_HAS_CFS
+#include "ams_backend_cfs.h"
+#endif
 #include "ams_state.h"
 #include "ams_types.h"
 #include "lvgl/src/others/translation/lv_translation.h"
@@ -101,7 +104,7 @@ void K2ohPrintView::create(lv_obj_t* content) {
         lv_obj_set_style_arc_color(arc_, theme_manager_get_color("elevated_bg"), LV_PART_MAIN);
         lv_obj_set_style_arc_color(arc_, theme_manager_get_color("primary"), LV_PART_INDICATOR);
     }
-    for (const char* name : {"btn_tune", "slot_card", "factors_row"}) {
+    for (const char* name : {"btn_tune", "slot_card", "recovery_card", "factors_row"}) {
         if (lv_obj_t* obj = child(root_, name)) {
             lv_obj_add_event_cb(obj, on_click, LV_EVENT_CLICKED, this);
         }
@@ -225,8 +228,30 @@ void K2ohPrintView::refresh() {
         }
     }
 
+    // A CFS change Kalico stopped on takes the spool card's place.
+    std::string recovery;
+#if HELIX_HAS_CFS
+    if (auto* cfs = dynamic_cast<printer::AmsBackendCfs*>(AmsState::instance().get_backend())) {
+        recovery = K2ohCfsView::recovery_summary(cfs->box_field("recovery"), cfs->box_field("slots"));
+    }
+#endif
+    if (lv_obj_t* card = child(root_, "recovery_card")) {
+        if (recovery.empty()) {
+            lv_obj_add_flag(card, LV_OBJ_FLAG_HIDDEN);
+        } else {
+            lv_obj_remove_flag(card, LV_OBJ_FLAG_HIDDEN);
+            set_text(root_, "recovery_detail", recovery);
+        }
+    }
+
     // The spool feeding the print, and where the runout swap goes next.
     lv_obj_t* slot_card = child(root_, "slot_card");
+    if (!recovery.empty()) {
+        if (slot_card) {
+            lv_obj_add_flag(slot_card, LV_OBJ_FLAG_HIDDEN);
+        }
+        return;
+    }
     AmsBackend* backend = AmsState::instance().get_backend();
     const AmsSystemInfo info = backend ? backend->get_system_info() : AmsSystemInfo{};
     const SlotInfo* loaded = nullptr;
@@ -284,7 +309,8 @@ void K2ohPrintView::on_click(lv_event_t* e) {
     if ((std::strcmp(name, "btn_tune") == 0 || std::strcmp(name, "factors_row") == 0) &&
         self->actions_.tune) {
         self->actions_.tune();
-    } else if (std::strcmp(name, "slot_card") == 0 && self->actions_.open_cfs) {
+    } else if ((std::strcmp(name, "slot_card") == 0 || std::strcmp(name, "recovery_card") == 0) &&
+               self->actions_.open_cfs) {
         self->actions_.open_cfs();
     }
 }

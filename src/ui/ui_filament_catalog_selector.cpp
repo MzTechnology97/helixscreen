@@ -540,6 +540,10 @@ void FilamentCatalogSelector::rebuild_product_list() {
             lv_label_set_text(nm, p->name.c_str());
             lv_obj_set_style_text_color(nm, is_current ? accent : text_color, 0);
         }
+        if (auto* orca = lv_obj_find_by_name(row, "orca_label"); orca && !p->orca_preset.empty()) {
+            lv_label_set_text(orca, ("Orca: " + p->orca_preset).c_str());
+            lv_obj_remove_flag(orca, LV_OBJ_FLAG_HIDDEN);
+        }
         // Variant chip: under a collapsed family heading the row's own type is
         // the only thing separating ASA-CF from ASA-GF, and it is exactly the
         // string this selection emits. Base-type rows carry no chip — the

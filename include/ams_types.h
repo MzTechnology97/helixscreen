@@ -886,6 +886,7 @@ struct SlotInfo {
     // firmware as SUB_TYPE.
     std::string catalog_id;   ///< assets/filaments.json product id ("sunlu-pla-plus-2-0")
     std::string product_name; ///< Catalog display name ("PLA+ 2.0")
+    std::string rfid_unknown_code; ///< K2-OpenHost: code of a tag Kalico's library lacks
 
     // Temperature recommendations (from Spoolman or manual entry)
     int nozzle_temp_min = 0; ///< Minimum nozzle temp (°C)

@@ -339,6 +339,8 @@
   <translation tag="CALIBRATION" en="CALIBRATION"/>
   <translation tag="CAPABILITIES" en="CAPABILITIES"/>
   <translation tag="CARTOGRAPHER" en="CARTOGRAPHER"/>
+  <translation tag="CFS change incomplete" en="CFS change incomplete"/>
+  <translation tag="CFS change stopped" en="CFS change stopped"/>
   <translation tag="CFS ready" en="CFS ready"/>
   <translation tag="CFS settings" en="CFS settings"/>
   <translation tag="CHANGED FROM LAST SESSION" en="CHANGED FROM LAST SESSION"/>
@@ -1356,6 +1358,7 @@
   <translation tag="Live webcam feed" en="Live webcam feed"/>
   <translation tag="Load" en="Load"/>
   <translation tag="Load Filament" en="Load Filament"/>
+  <translation tag="Load a slot from the CFS page, then Resume" en="Load a slot from the CFS page, then Resume"/>
   <translation tag="Load complete" en="Load complete"/>
   <translation tag="Load filament" en="Load filament"/>
   <translation tag="Load may still be running — response timed out" en="Load may still be running — response timed out"/>
@@ -2141,6 +2144,8 @@
   <translation tag="Resume interrupted print?" en="Resume interrupted print?"/>
   <translation tag="Resume macro not configured" en="Resume macro not configured"/>
   <translation tag="Resume preparation failed" en="Resume preparation failed"/>
+  <translation tag="Resume retries slot {}" en="Resume retries slot {}"/>
+  <translation tag="Resume retries the external spool" en="Resume retries the external spool"/>
   <translation tag="Resuming print..." en="Resuming print..."/>
   <translation tag="Resuming..." en="Resuming..."/>
   <translation tag="Retract" en="Retract"/>

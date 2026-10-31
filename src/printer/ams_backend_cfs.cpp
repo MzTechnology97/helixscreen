@@ -1204,7 +1204,7 @@ constexpr const char* kFlatNoiseFields[] = {
     "filament_check", "environment_raw", "environment_source", "environment_error",
     "runout_groups", "runout_order", "mapping_warnings", "print_info", "tracking_active",
     "fluidd_widget_version", "cfs_versions", "spool_length_defaults", "print_mapping_enabled",
-    "print_mapping_version", "state_code", "status_code", "recovery", "auto_mapping",
+    "print_mapping_version", "state_code", "status_code", "auto_mapping",
     "data_ready", "slot_filament_mask", "loaded_mask", "filament_sensor_error",
     "helix_compat_version",
 };
@@ -1446,6 +1446,7 @@ AmsSystemInfo AmsBackendCfs::parse_flat_box_status(const nlohmann::json& box_jso
                 // A tag Kalico could not identify keeps its own colour, and the
                 // slot says so instead of looking untagged.
                 const std::string unknown_code = flat_text_field(slot_json, "rfid_unknown_code");
+                slot.rfid_unknown_code = unknown_code;
                 if (!unknown_code.empty()) {
                     if (slot.material.empty()) {
                         if (auto c = read_flat_slot_color(
@@ -1825,8 +1826,8 @@ void AmsBackendCfs::handle_status_update(const nlohmann::json& notification) {
                         fork_switches_[sw.field] = it->get<bool>();
                     }
                 }
-                for (const char* key : {"load_path", "operation", "runout", "runout_groups",
-                                         "runout_order", "slots"}) {
+                for (const char* key : {"load_path", "operation", "recovery", "runout",
+                                         "runout_groups", "runout_order", "slots"}) {
                     if (auto it = box.find(key); it != box.end()) {
                         k2oh_fields_[key] = *it;
                     }
@@ -3496,6 +3497,12 @@ std::string AmsBackendCfs::filament_set_gcode(const std::string& kalico_id,
     const int hi = safe_int(product, "nozzle_max", 0);
     if (lo > 0 && hi > 0 && lo <= hi) {
         gcode += " MIN_TEMP=" + std::to_string(lo) + " MAX_TEMP=" + std::to_string(hi);
+    }
+    // A product made for an unknown tag: Kalico then recognises that tag.
+    if (auto codes = product.find("codes"); codes != product.end() && codes->is_object()) {
+        if (const std::string code = safe_string(*codes, "cfs"); !code.empty()) {
+            gcode += " RFID_CODE=" + quote_gcode_param(code);
+        }
     }
     return gcode;
 }

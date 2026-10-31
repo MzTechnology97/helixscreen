@@ -112,6 +112,11 @@ class FilamentCatalogSelector {
     void set_show_edit_affordances(bool v) {
         show_edit_affordances_ = v;
     }
+    /// Codes a product made with "+ Add custom filament" carries (the CFS code of
+    /// the slot's unknown tag). Empty for none.
+    void set_new_product_codes(std::map<std::string, std::string> codes) {
+        edit_modal_.set_new_product_codes(std::move(codes));
+    }
 
     // === Introspection (tests + hosts) ===
     [[nodiscard]] std::string current_vendor() const;
