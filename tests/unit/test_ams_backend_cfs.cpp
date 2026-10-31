@@ -5970,3 +5970,43 @@ TEST_CASE("CFS flat: runout_groups become the endless-spool groups (K2-OpenHost)
     // No field: nothing reported, as before.
     CHECK_FALSE(AmsBackendCfs::parse_box_status(make_flat_fork_box()).endless_spool_groups_reported);
 }
+
+
+TEST_CASE("CFS fork: Kalico's library becomes the filament catalog", "[ams][cfs][flat][k2oh]") {
+    CfsOverrideRig rig("cfs_host_library");
+    struct Guard {
+        ~Guard() { FilamentCatalog::clear_host_library(); }
+    } guard;
+    json box = make_flat_box("PLA", "Sunlu", "PLA Basic", "#FF5500");
+    box["filaments"] = json::parse(R"({"07001": {"id": "07001", "material": "ABS",
+        "brand": "Creality", "name": "CR-ABS", "rfid_code": "07001", "system": true}})");
+    rig.poll(box);
+    REQUIRE(FilamentCatalog::host_library_active());
+    CHECK(FilamentCatalog::load_full().resolve_id("k2oh-07001") != nullptr);
+
+    // A library delta replaces it.
+    rig.poll(json{{"filaments", json::parse(R"({"HX0001": {"id": "HX0001", "material": "PETG",
+        "brand": "Acme", "name": "Acme PETG", "system": false}})")}});
+    CHECK(FilamentCatalog::load_full().resolve_id("k2oh-07001") == nullptr);
+    CHECK(FilamentCatalog::load_full().resolve_id("k2oh-HX0001") != nullptr);
+}
+
+TEST_CASE("CFS fork: a product saved from the screen goes to Kalico", "[cfs][k2oh]") {
+    CHECK(AmsBackendCfs::kalico_id_for("k2oh-05628") == "05628");
+    CHECK(AmsBackendCfs::kalico_id_for("acme pla+") == "ACME-PLA-");
+    CHECK(AmsBackendCfs::kalico_id_for("eryone-pla_silk.2") == "ERYONE-PLA_SILK.2");
+
+    const json product = {{"id", "acme-petg"}, {"type", "petg"}, {"brand", "Acme"},
+                          {"name", "Acme \"Pro\" PETG"}, {"nozzle", 400},
+                          {"nozzle_min", 230}, {"nozzle_max", 250}};
+    CHECK(AmsBackendCfs::filament_set_gcode("ACME-PETG", product) ==
+          "_BOX_FILAMENT_SET ID=ACME-PETG MATERIAL=\"PETG\" BRAND=\"Acme\" "
+          "NAME=\"Acme \\\"Pro\\\" PETG\" TARGET_TEMP=350 MIN_TEMP=230 MAX_TEMP=250");
+
+    // Inverted range: dropped; no temperature: Kalico picks one.
+    const json thin = {{"type", "PLA"}, {"nozzle_min", 220}, {"nozzle_max", 200}};
+    CHECK(AmsBackendCfs::filament_set_gcode("X", thin) ==
+          "_BOX_FILAMENT_SET ID=X MATERIAL=\"PLA\" BRAND=\"\" NAME=\"\"");
+    CHECK(AmsBackendCfs::filament_set_gcode("X", json{{"brand", "Acme"}}).empty());
+    CHECK(AmsBackendCfs::filament_set_gcode("", thin).empty());
+}

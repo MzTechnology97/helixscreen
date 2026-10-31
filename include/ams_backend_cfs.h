@@ -361,8 +361,8 @@ class AmsBackendCfs : public AmsSubscriptionBackend {
                                       const std::string& name, int spoolman_id);
 
     /// Fork dialect: the write for a slot (CFS or external) whose profile was
-    /// picked from the catalog. A K2-OpenHost catalog product ("k2oh-<id>", the
-    /// Kalico library synced by k2oh-helix-filaments) is assigned whole with
+    /// picked from the catalog. A K2-OpenHost catalog product ("k2oh-<id>", from
+    /// the Kalico library in box.filaments) is assigned whole with
     /// `_BOX_SLOT_ASSIGN` (temperature, PA, max flow, Orca id), keeping the
     /// picked colour; anything else, or a Spoolman-bound slot, is slot_set_gcode().
     static std::string slot_profile_gcode(int global_slot_index, const std::string& catalog_id,
@@ -372,6 +372,15 @@ class AmsBackendCfs : public AmsSubscriptionBackend {
 
     /// The Kalico library id behind a K2-OpenHost catalog id, "" for other ids.
     static std::string kalico_filament_id(const std::string& catalog_id);
+
+    /// Kalico library id for a product saved from the screen: an existing
+    /// "k2oh-<id>" keeps its id, any other id is upper-cased with characters
+    /// outside [A-Z0-9._-] turned into '-'.
+    static std::string kalico_id_for(const std::string& catalog_id);
+    /// `_BOX_FILAMENT_SET` saving a catalog product (form fields) into Kalico's
+    /// library: material, brand, name, temperatures. "" without id or material.
+    static std::string filament_set_gcode(const std::string& kalico_id,
+                                          const nlohmann::json& product);
 
     // GCode helpers (public for testing)
     static std::string load_gcode(int global_slot_index,
