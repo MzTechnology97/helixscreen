@@ -59,6 +59,11 @@ translations:
   Pause when the CFS stops feeding: Pause when the CFS stops feeding
   'Pressure advance not saved: {}': 'Pressure advance not saved: {}'
   'Filament not saved: {}': 'Filament not saved: {}'
+  'CFS change stopped': 'CFS change stopped'
+  'CFS change incomplete': 'CFS change incomplete'
+  'Resume retries slot {}': 'Resume retries slot {}'
+  'Resume retries the external spool': 'Resume retries the external spool'
+  'Load a slot from the CFS page, then Resume': 'Load a slot from the CFS page, then Resume'
   Pressure advance: Pressure advance
   Print a file: Print a file
   Print parameters: Print parameters

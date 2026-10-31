@@ -25,6 +25,7 @@ struct EffectiveFilament {
     int dry_time_min = 0;
     float density_g_cm3 = 0.0f;
     std::string compat_group;
+    std::string orca_preset; ///< OrcaSlicer preset name, when the source names one
     std::map<std::string, std::string> codes; ///< scheme -> code
 };
 

@@ -59,6 +59,11 @@ translations:
   Pause when the CFS stops feeding: Pausa quando la CFS smette di alimentare
   'Pressure advance not saved: {}': 'Pressure advance non salvato: {}'
   'Filament not saved: {}': 'Filamento non salvato: {}'
+  'CFS change stopped': 'Cambio CFS fermo'
+  'CFS change incomplete': 'Cambio CFS non completato'
+  'Resume retries slot {}': 'Riprendi riprova lo slot {}'
+  'Resume retries the external spool': 'Riprendi riprova la bobina esterna'
+  'Load a slot from the CFS page, then Resume': 'Carica uno slot dalla pagina CFS, poi Riprendi'
   Pressure advance: Pressure advance
   Print a file: Stampa un file
   Print parameters: Parametri di stampa
