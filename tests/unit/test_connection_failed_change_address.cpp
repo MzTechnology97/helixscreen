@@ -328,3 +328,31 @@ TEST_CASE_METHOD(ConnFailedFixture, "An unconfigured host still offers Change Ad
     cfg->set<std::string>(key, prev);
     helix::invalidate_host_identity_cache();
 }
+
+TEST_CASE_METHOD(ConnFailedFixture, "A restored connection closes the Connection Failed prompt",
+                 "[modal][connection][change_host][reconnect]") {
+    // Nothing shown: a reconnect must not touch whatever else is on screen.
+    helix::ui::hide_connection_failed_modal();
+    CHECK(Modal::get_top() == nullptr);
+
+    // Shown with a translated title (the Italian UI: "Connessione fallita"),
+    // then another dialog opens above it before the connection comes back.
+    helix::ui::show_connection_failed_modal("Connessione fallita", "Unable to reach printer.");
+    UpdateQueue::instance().drain();
+    lv_obj_t* prompt = Modal::get_top();
+    REQUIRE(prompt != nullptr);
+    lv_obj_t* other = helix::ui::modal_alert("Other", "Something else", ModalSeverity::Info);
+    UpdateQueue::instance().drain();
+    REQUIRE(Modal::get_top() == other);
+
+    helix::ui::hide_connection_failed_modal();
+    UpdateQueue::instance().drain();
+    CHECK(Modal::get_top() == other); // the unrelated dialog stays
+
+    Modal::hide(other);
+    UpdateQueue::instance().drain();
+    CHECK(Modal::get_top() == nullptr); // and the prompt below it is gone
+
+    helix::ui::hide_connection_failed_modal(); // a second reconnect is a no-op
+    CHECK(Modal::get_top() == nullptr);
+}

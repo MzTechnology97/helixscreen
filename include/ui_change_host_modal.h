@@ -57,6 +57,10 @@ void show_change_host_modal(std::function<void(bool changed)> extra_on_complete 
  */
 void show_connection_failed_modal(const std::string& title, const std::string& message);
 
+/// Close the prompt show_connection_failed_modal() opened, if it is still up
+/// (the connection came back on its own). Main thread only.
+void hide_connection_failed_modal();
+
 } // namespace helix::ui
 
 class ChangeHostModal : public Modal {

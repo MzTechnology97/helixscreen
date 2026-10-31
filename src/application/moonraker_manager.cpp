@@ -281,20 +281,7 @@ void MoonrakerManager::process_notifications() {
             // Auto-close Connection Failed modal when connection is restored
             // (Disconnect modal is now handled by unified recovery dialog in EmergencyStopOverlay)
             if (new_state == static_cast<int>(ConnectionState::CONNECTED)) {
-                lv_obj_t* modal = helix::ui::modal_get_top();
-                if (modal) {
-                    lv_obj_t* title_label =
-                        lv_obj_find_by_name(modal, helix::ui::kModalTitleWidgetName);
-                    if (title_label) {
-                        const char* title = lv_label_get_text(title_label);
-                        // The modal shows the translated title (see ConnectionFailedModal).
-                        if (title && strcmp(title, lv_tr("Connection Failed")) == 0) {
-                            spdlog::info("[MoonrakerManager] Auto-closing '{}' modal on reconnect",
-                                         title);
-                            helix::ui::modal_hide(modal);
-                        }
-                    }
-                }
+                helix::ui::hide_connection_failed_modal();
             }
         } else {
             // Regular Moonraker notification — extract status and update directly

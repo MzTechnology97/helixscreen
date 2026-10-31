@@ -432,6 +432,34 @@ void ChangeHostModal::on_cancel_cb(lv_event_t* /*e*/) {
 
 namespace helix::ui {
 
+namespace {
+/// The Connection Failed prompt on screen, so a restored connection closes that
+/// one dialog whatever its title language and whatever opened above it.
+lv_obj_t* g_connection_failed_dialog = nullptr;
+
+void remember_connection_failed_dialog(lv_obj_t* dialog) {
+    if (!dialog) {
+        return;
+    }
+    g_connection_failed_dialog = dialog;
+    lv_obj_add_event_cb(
+        dialog,
+        [](lv_event_t* e) {
+            if (lv_event_get_target(e) == g_connection_failed_dialog) {
+                g_connection_failed_dialog = nullptr;
+            }
+        },
+        LV_EVENT_DELETE, nullptr);
+}
+} // namespace
+
+void hide_connection_failed_modal() {
+    if (lv_obj_t* dialog = g_connection_failed_dialog) {
+        spdlog::info("[ChangeHost] Connection restored: closing the Connection Failed prompt");
+        Modal::hide(dialog);
+    }
+}
+
 void show_change_host_modal(std::function<void(bool changed)> extra_on_complete) {
     // Function-local static: ChangeHostModal's active_instance_ is a static
     // singleton, so a second owner elsewhere would fight this one. The instance
@@ -497,8 +525,8 @@ void show_connection_failed_modal(const std::string& title, const std::string& m
             host = cfg->get<std::string>(cfg->df() + "moonraker_host", "");
         }
         if (!host.empty() && helix::is_moonraker_on_same_host(host)) {
-            helix::ui::modal_alert(title.c_str(), message.c_str(), ModalSeverity::Error,
-                                   lv_tr("Reconnect"), reconnect);
+            remember_connection_failed_dialog(helix::ui::modal_alert(
+                title.c_str(), message.c_str(), ModalSeverity::Error, lv_tr("Reconnect"), reconnect));
             return;
         }
 
@@ -511,8 +539,9 @@ void show_connection_failed_modal(const std::string& title, const std::string& m
         };
         opts.cancel_text = lv_tr("Change Address");
 
-        helix::ui::modal_confirm(title.c_str(), message.c_str(), ModalSeverity::Error,
-                                 lv_tr("Reconnect"), reconnect, opts);
+        remember_connection_failed_dialog(helix::ui::modal_confirm(
+            title.c_str(), message.c_str(), ModalSeverity::Error, lv_tr("Reconnect"), reconnect,
+            opts));
     });
 }
 
