@@ -865,6 +865,10 @@ void DisplayManager::enter_sleep(int timeout_sec) {
         if (m_backend) {
             m_backend->blank_display();
         }
+        // K2-OpenHost: nobody sees a blanked panel, so stop rendering into it.
+        // On the K2's T113 every status update was still drawn while blanked
+        // (a print kept ~9% of a core busy). wake_display() repaints in full.
+        suppress_flush_for_sleep();
         break;
 
     case SleepMechanism::PanelPowerOff:
@@ -1000,7 +1004,7 @@ void DisplayManager::suppress_flush_for_sleep() {
     m_saved_flush_cb_for_sleep = m_display->flush_cb;
     lv_display_set_flush_cb(m_display, sleep_noop_flush_cb);
     m_flush_suppressed_for_sleep = true;
-    spdlog::debug("[DisplayManager] Flush suppressed while panel powered off");
+    spdlog::debug("[DisplayManager] Flush suppressed while the panel sleeps");
 }
 
 void DisplayManager::restore_flush_after_sleep() {
@@ -1217,7 +1221,9 @@ void DisplayManager::restore_display_output() {
     // Undo whatever enter_sleep() did to the panel output, mirroring its branches.
     // This must run BEFORE the post-wake lv_refr_now() (#303 wake-race).
     if (m_use_hardware_blank) {
-        // Hardware path: unblank framebuffer (FBIOBLANK was used during sleep).
+        // Hardware path: re-enable rendering, then unblank framebuffer (FBIOBLANK
+        // was used during sleep).
+        restore_flush_after_sleep();
         if (m_backend) {
             m_backend->unblank_display();
         }
@@ -1293,6 +1299,9 @@ void DisplayManager::wake_display() {
         // on some hardware (#303). lv_refr_now() renders synchronously.
         lv_obj_invalidate(lv_screen_active());
         lv_refr_now(nullptr);
+        // Nothing was drawn while asleep, so a lost wake frame (#303) would leave
+        // the stale pre-sleep picture up: paint once more on the next tick.
+        lv_obj_invalidate(lv_screen_active());
     }
 
     // Restore configured brightness from settings
