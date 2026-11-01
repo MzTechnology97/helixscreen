@@ -723,6 +723,12 @@ void DisplayManager::shutdown() {
     m_initialized = false;
 }
 
+#ifdef HELIX_PLATFORM_K2
+// K2-OpenHost: read the touch every 16 ms instead of LVGL's 33 ms refresh period, so a
+// touch reaches the UI up to one frame sooner.
+static constexpr uint32_t K2_POINTER_READ_PERIOD_MS = 16;
+#endif
+
 void DisplayManager::configure_scroll(int scroll_throw, int scroll_limit) {
     // Remember the values so a post-swap input rebuild (rotation fallback) can
     // reapply them to the freshly-created pointer without re-reading config.
@@ -732,6 +738,13 @@ void DisplayManager::configure_scroll(int scroll_throw, int scroll_limit) {
         return;
     }
 
+#ifdef HELIX_PLATFORM_K2
+    // LVGL measures the flick speed and decays it once per read: at the faster read rate
+    // the speed per read shrinks by the same ratio, so scale the decay to keep a flick as
+    // long as before.
+    scroll_throw = std::max(1, scroll_throw * static_cast<int>(K2_POINTER_READ_PERIOD_MS) /
+                                   LV_DEF_REFR_PERIOD);
+#endif
     lv_indev_set_scroll_throw(m_pointer, static_cast<uint8_t>(scroll_throw));
     lv_indev_set_scroll_limit(m_pointer, static_cast<uint8_t>(scroll_limit));
     spdlog::trace("[DisplayManager] Scroll config: throw={}, limit={}", scroll_throw, scroll_limit);
@@ -746,6 +759,9 @@ void DisplayManager::configure_pointer(int scroll_throw, int scroll_limit) {
     const int long_press_ms = cfg->get<int>("/input/long_press_time",
                                             static_cast<int>(AppConstants::Input::LONG_PRESS_MS));
     lv_indev_set_long_press_time(m_pointer, long_press_ms);
+#ifdef HELIX_PLATFORM_K2
+    lv_timer_set_period(lv_indev_get_read_timer(m_pointer), K2_POINTER_READ_PERIOD_MS);
+#endif
 
     // Config rather than InputSettingsManager: this runs before its subjects exist.
     // Both read the same key; the Settings toggle asks for a restart.
