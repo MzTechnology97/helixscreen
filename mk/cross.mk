@@ -537,7 +537,7 @@ else ifeq ($(PLATFORM_TARGET),k2)
     CROSS_COMPILE ?= arm-buildroot-linux-musleabihf-
     TARGET_ARCH := armv7-a
     TARGET_TRIPLE := arm-buildroot-linux-musleabihf
-    TARGET_CFLAGS := -march=armv7-a -mfpu=neon-vfpv4 -mfloat-abi=hard \
+    TARGET_CFLAGS := -march=armv7-a -mfpu=neon-vfpv4 -mfloat-abi=hard -mtune=cortex-a7 \
         -O2 -flto=auto -ffunction-sections -fdata-sections \
         -fno-omit-frame-pointer -funwind-tables \
         -fmerge-all-constants -fno-ident \

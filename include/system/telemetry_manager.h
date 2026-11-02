@@ -1068,6 +1068,9 @@ class TelemetryManager {
     /** @brief Stop the frame performance snapshot timer */
     void stop_frame_perf_timer();
 
+    /** @brief Log the frame-time ring per panel and reset it (HELIX_FRAME_LOG, K2-OpenHost) */
+    void log_frame_stats();
+
     /// Persist the unsent accumulator with this boot's id and next
     /// snapshot_seq, so an unclean exit loses only the time since the save.
     void save_accumulator() const;
@@ -1324,6 +1327,9 @@ class TelemetryManager {
 
     /// LVGL timer that fires every FRAME_PERF_INTERVAL_MS for frame performance snapshots
     lv_timer_t* frame_perf_timer_{nullptr};
+
+    /// LVGL timer for the local frame log (HELIX_FRAME_LOG), nullptr when off
+    lv_timer_t* frame_log_timer_{nullptr};
 
     /// Sequence number of the next delta snapshot. Starts at 0 every boot;
     /// with device_id and boot_id it is the delta's idempotency key.

@@ -45,6 +45,7 @@
 #include <array>
 #include <chrono>
 #include <cstdio>
+#include <cstdlib>
 #include <ctime>
 #include <filesystem>
 #include <fstream>
@@ -505,6 +506,24 @@ void TelemetryManager::init(const std::string& config_dir) {
         spdlog::debug("[TelemetryManager] LVGL subject initialized");
     }
 
+    // K2-OpenHost: HELIX_FRAME_LOG=<seconds> writes the frame-time ring to the log
+    // on that period, per panel, to profile screens on the printer. Nothing is
+    // queued or sent; with telemetry enabled the two readers share the ring.
+    if (const char* frame_log = std::getenv("HELIX_FRAME_LOG")) {
+        const int sec = std::atoi(frame_log);
+        if (sec > 0 && !frame_log_timer_) {
+            frame_log_timer_ = lv_timer_create(
+                [](lv_timer_t* timer) {
+                    auto* self = static_cast<TelemetryManager*>(lv_timer_get_user_data(timer));
+                    if (self && !self->shutting_down_.load()) {
+                        self->log_frame_stats();
+                    }
+                },
+                static_cast<uint32_t>(sec) * 1000U, this);
+            spdlog::info("[TelemetryManager] Frame log every {}s", sec);
+        }
+    }
+
     initialized_.store(true);
     spdlog::info("[TelemetryManager] Initialization complete (enabled={}, queue={})",
                  enabled_.load() ? "true" : "false", queue_size());
@@ -538,11 +557,15 @@ void TelemetryManager::shutdown() {
     // Stop auto-send timer first (LVGL call — skip if LVGL already torn down)
     if (lv_is_initialized()) {
         stop_auto_send();
+        if (frame_log_timer_) {
+            lv_timer_delete(frame_log_timer_);
+        }
     } else {
         auto_send_timer_ = nullptr;
         snapshot_timer_ = nullptr;
         settings_debounce_timer_ = nullptr;
     }
+    frame_log_timer_ = nullptr;
 
     // Persist queue to disk
     save_queue();
@@ -2805,6 +2828,20 @@ nlohmann::json TelemetryManager::build_performance_snapshot_event() const {
     event["panels"] = panels_obj;
 
     return event;
+}
+
+void TelemetryManager::log_frame_stats() {
+    if (frame_ring_count_ == 0) {
+        return;
+    }
+    const auto event = build_performance_snapshot_event();
+    spdlog::info("[TelemetryManager] Frames: {} rendered, p50 {} ms, p95 {} ms, p99 {} ms, "
+                 "{} over 33 ms; panels {}",
+                 event["total_frame_count"].get<int64_t>(), event["frame_time_p50_ms"].get<int>(),
+                 event["frame_time_p95_ms"].get<int>(), event["frame_time_p99_ms"].get<int>(),
+                 event["dropped_frame_count"].get<int>(), event["panels"].dump());
+    frame_ring_count_ = 0;
+    frame_ring_idx_ = 0;
 }
 
 void TelemetryManager::record_performance_snapshot() {
