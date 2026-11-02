@@ -2830,16 +2830,50 @@ nlohmann::json TelemetryManager::build_performance_snapshot_event() const {
     return event;
 }
 
+// K2-OpenHost: areas invalidated since the last frame log line, so a slow frame
+// can be traced to the widget that keeps redrawing.
+namespace {
+struct FrameLogInvalidations {
+    uint32_t count = 0;
+    uint64_t pixels = 0;
+    lv_area_t largest{};
+    int32_t largest_px = 0;
+} g_frame_log_inv;
+
+void frame_log_invalidate_cb(lv_event_t* e) {
+    const auto* a = static_cast<const lv_area_t*>(lv_event_get_param(e));
+    if (!a)
+        return;
+    const int32_t px = lv_area_get_size(a);
+    g_frame_log_inv.count++;
+    g_frame_log_inv.pixels += px;
+    if (px > g_frame_log_inv.largest_px) {
+        g_frame_log_inv.largest_px = px;
+        g_frame_log_inv.largest = *a;
+    }
+}
+} // namespace
+
 void TelemetryManager::log_frame_stats() {
+    static bool inv_hooked = false;
+    if (!inv_hooked && lv_display_get_default()) {
+        lv_display_add_event_cb(lv_display_get_default(), frame_log_invalidate_cb,
+                                LV_EVENT_INVALIDATE_AREA, nullptr);
+        inv_hooked = true;
+    }
     if (frame_ring_count_ == 0) {
         return;
     }
     const auto event = build_performance_snapshot_event();
+    const auto& inv = g_frame_log_inv;
     spdlog::info("[TelemetryManager] Frames: {} rendered, p50 {} ms, p95 {} ms, p99 {} ms, "
-                 "{} over 33 ms; panels {}",
+                 "{} over 33 ms; invalidated {} areas, {} px, largest {}x{} at {},{}; panels {}",
                  event["total_frame_count"].get<int64_t>(), event["frame_time_p50_ms"].get<int>(),
                  event["frame_time_p95_ms"].get<int>(), event["frame_time_p99_ms"].get<int>(),
-                 event["dropped_frame_count"].get<int>(), event["panels"].dump());
+                 event["dropped_frame_count"].get<int>(), inv.count, inv.pixels,
+                 lv_area_get_width(&inv.largest), lv_area_get_height(&inv.largest), inv.largest.x1,
+                 inv.largest.y1, event["panels"].dump());
+    g_frame_log_inv = {};
     frame_ring_count_ = 0;
     frame_ring_idx_ = 0;
 }

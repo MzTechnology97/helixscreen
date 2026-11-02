@@ -39,9 +39,20 @@ lv_obj_t* child(lv_obj_t* parent, const char* name) {
     return parent ? lv_obj_find_by_name(parent, name) : nullptr;
 }
 
+// refresh() runs on every temperature update (4 Hz while printing), so the
+// setters below skip unchanged values: each write invalidates the widget, and
+// on the K2's T113 redrawing the whole view cost 10-20 frames over 33 ms per 10 s.
 void set_text(lv_obj_t* parent, const char* name, const std::string& text) {
     if (lv_obj_t* obj = child(parent, name)) {
-        lv_label_set_text(obj, text.c_str());
+        if (std::strcmp(lv_label_get_text(obj), text.c_str()) != 0) {
+            lv_label_set_text(obj, text.c_str());
+        }
+    }
+}
+
+void set_hidden(lv_obj_t* obj, bool hidden) {
+    if (obj && lv_obj_has_flag(obj, LV_OBJ_FLAG_HIDDEN) != hidden) {
+        lv_obj_set_flag(obj, LV_OBJ_FLAG_HIDDEN, hidden);
     }
 }
 
@@ -180,20 +191,18 @@ void K2ohPrintView::refresh() {
                         : "");
     if (lv_obj_t* img = child(root_, "thumb")) {
         const char* path = lv_subject_get_string(ps.get_print_thumbnail_path_subject());
-        if (path && *path) {
+        // Setting the same file again re-reads its header and relayouts the image.
+        const void* src = lv_image_get_src(img);
+        if (path && *path &&
+            (!src || lv_image_src_get_type(src) != LV_IMAGE_SRC_FILE ||
+             std::strcmp(static_cast<const char*>(src), path) != 0)) {
             lv_image_set_src(img, path);
         }
     }
 
     // The start macro's own progress line, between "not started" (0) and "done" (10).
-    if (lv_obj_t* msg = child(root_, "start_message")) {
-        const int phase = lv_subject_get_int(ps.get_print_start_phase_subject());
-        if (phase > 0 && phase < 10) {
-            lv_obj_remove_flag(msg, LV_OBJ_FLAG_HIDDEN);
-        } else {
-            lv_obj_add_flag(msg, LV_OBJ_FLAG_HIDDEN);
-        }
-    }
+    const int phase = lv_subject_get_int(ps.get_print_start_phase_subject());
+    set_hidden(child(root_, "start_message"), !(phase > 0 && phase < 10));
 
     const int elapsed_s = lv_subject_get_int(ps.get_print_elapsed_subject());
     const int left_s = lv_subject_get_int(ps.get_print_time_left_subject());
@@ -235,21 +244,15 @@ void K2ohPrintView::refresh() {
         recovery = K2ohCfsView::recovery_summary(cfs->box_field("recovery"), cfs->box_field("slots"));
     }
 #endif
-    if (lv_obj_t* card = child(root_, "recovery_card")) {
-        if (recovery.empty()) {
-            lv_obj_add_flag(card, LV_OBJ_FLAG_HIDDEN);
-        } else {
-            lv_obj_remove_flag(card, LV_OBJ_FLAG_HIDDEN);
-            set_text(root_, "recovery_detail", recovery);
-        }
+    set_hidden(child(root_, "recovery_card"), recovery.empty());
+    if (!recovery.empty()) {
+        set_text(root_, "recovery_detail", recovery);
     }
 
     // The spool feeding the print, and where the runout swap goes next.
     lv_obj_t* slot_card = child(root_, "slot_card");
     if (!recovery.empty()) {
-        if (slot_card) {
-            lv_obj_add_flag(slot_card, LV_OBJ_FLAG_HIDDEN);
-        }
+        set_hidden(slot_card, true);
         return;
     }
     AmsBackend* backend = AmsState::instance().get_backend();
@@ -262,18 +265,15 @@ void K2ohPrintView::refresh() {
             }
         }
     }
-    if (slot_card) {
-        if (loaded) {
-            lv_obj_remove_flag(slot_card, LV_OBJ_FLAG_HIDDEN);
-        } else {
-            lv_obj_add_flag(slot_card, LV_OBJ_FLAG_HIDDEN);
-        }
-    }
+    set_hidden(slot_card, loaded == nullptr);
     if (!loaded) {
         return;
     }
     if (lv_obj_t* swatch = child(root_, "slot_swatch")) {
-        lv_obj_set_style_bg_color(swatch, lv_color_hex(loaded->color_rgb), LV_PART_MAIN);
+        const lv_color_t color = lv_color_hex(loaded->color_rgb);
+        if (!lv_color_eq(lv_obj_get_style_bg_color(swatch, LV_PART_MAIN), color)) {
+            lv_obj_set_style_bg_color(swatch, color, LV_PART_MAIN);
+        }
     }
     std::string title = std::string(lv_tr("Slot")) + " " + std::to_string(loaded->global_index + 1) +
                         " · " + loaded->material;
