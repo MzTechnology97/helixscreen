@@ -923,10 +923,13 @@ void ui_filament_path_canvas_set_buffer_info(lv_obj_t* obj, bool present, int st
 
 void ui_filament_path_canvas_set_buffer_bias(lv_obj_t* obj, float bias) {
     auto* data = get_data(obj);
-    if (data) {
-        data->buffer_bias = bias;
-        layered_mark_dirty(obj, true, true);
-    }
+    // K2-OpenHost: every slot refresh pushes the bias, and the CFS refreshes the
+    // slots on each remaining-weight update during a print. Repainting both
+    // canvases for an unchanged value cost ~47 ms per update on the K2's T113.
+    if (!data || data->buffer_bias == bias)
+        return;
+    data->buffer_bias = bias;
+    layered_mark_dirty(obj, true, true);
 }
 
 void ui_filament_path_canvas_set_bypass_color(lv_obj_t* obj, uint32_t color) {
