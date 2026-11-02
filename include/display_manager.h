@@ -786,7 +786,8 @@ class DisplayManager : public helix::ICalibrationSink {
     void restore_display_output();
 
     /**
-     * @brief Neutralize LVGL rendering while the panel is powered off (#1049).
+     * @brief Neutralize LVGL rendering while the panel is powered off (#1049)
+     *        or hardware-blanked (K2-OpenHost: no CPU spent on unseen frames).
      *
      * Disables invalidation and replaces the display flush callback with a no-op
      * so no page-flip reaches the panel and re-asserts DPMS-on while it is
@@ -796,8 +797,8 @@ class DisplayManager : public helix::ICalibrationSink {
 
     /**
      * @brief Undo suppress_flush_for_sleep() on wake. Idempotent; safe to call
-     *        even when suppression was never engaged (overlay / hardware-blank
-     *        path), so wake/shutdown paths can call it unconditionally.
+     *        even when suppression was never engaged (overlay path), so
+     *        wake/shutdown paths can call it unconditionally.
      */
     void restore_flush_after_sleep();
 

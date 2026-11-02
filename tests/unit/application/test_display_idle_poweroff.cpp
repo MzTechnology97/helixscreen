@@ -535,10 +535,11 @@ TEST_CASE_METHOD(LVGLTestFixture,
     DisplayManagerTestAccess::set_display(mgr, nullptr);
 }
 
-TEST_CASE_METHOD(LVGLTestFixture, "hardware-blank path keeps the flush live (AD5M/Allwinner)",
-                 "[application][display][sleep][poweroff][1049]") {
-    // Hardware-blank devices blank the panel at the controller; LVGL keeps
-    // rendering normally. The flush must not be suppressed there.
+TEST_CASE_METHOD(LVGLTestFixture, "hardware-blank path stops rendering until wake (K2-OpenHost)",
+                 "[application][display][sleep][poweroff][1049][k2oh]") {
+    // Hardware-blank devices blank the panel at the controller. Nothing drawn
+    // there is visible, so the flush is suppressed while blanked and restored
+    // (before the unblank) on wake.
     DisplayManager mgr;
     auto backend = std::make_unique<FakePowerOffBackend>(/*supports_power_off=*/true);
     FakePowerOffBackend* raw = backend.get();
@@ -554,9 +555,12 @@ TEST_CASE_METHOD(LVGLTestFixture, "hardware-blank path keeps the flush live (AD5
 
     REQUIRE(raw->blank_calls == 1);
     REQUIRE(raw->power_off_calls == 0);
-    REQUIRE_FALSE(DisplayManagerTestAccess::is_flush_suppressed(mgr));
-    REQUIRE(disp->flush_cb == real_cb);
+    REQUIRE(DisplayManagerTestAccess::is_flush_suppressed(mgr));
+    REQUIRE(disp->flush_cb != real_cb);
 
     DisplayManagerTestAccess::restore_display_output(mgr);
+    REQUIRE(raw->unblank_calls == 1);
+    REQUIRE_FALSE(DisplayManagerTestAccess::is_flush_suppressed(mgr));
+    REQUIRE(disp->flush_cb == real_cb);
     DisplayManagerTestAccess::set_display(mgr, nullptr);
 }
