@@ -149,3 +149,40 @@ TEST_CASE_METHOD(LVGLTestFixture, "ui_ams_slot_refresh is safe with null widget"
     // Verify it handles null gracefully as a no-op.
     REQUIRE_NOTHROW(ui_ams_slot_refresh(nullptr));
 }
+
+// ============================================================================
+// K2-OpenHost: the spool is blended straight into its buffer
+// ============================================================================
+
+static int count_dominant(lv_obj_t* canvas, bool want_red) {
+    lv_draw_buf_t* buf = lv_canvas_get_draw_buf(canvas);
+    int n = 0;
+    for (uint32_t y = 0; y < buf->header.h; y++) {
+        auto* row = reinterpret_cast<lv_color32_t*>(buf->data + y * buf->header.stride);
+        for (uint32_t x = 0; x < buf->header.w; x++) {
+            const lv_color32_t& p = row[x];
+            const int main = want_red ? p.red : p.blue;
+            const int other = want_red ? p.blue : p.red;
+            if (p.alpha == 255 && main > other + 60 && main > p.green + 30)
+                n++;
+        }
+    }
+    return n;
+}
+
+TEST_CASE_METHOD(LVGLTestFixture, "Spool canvas draws the filament colour into its buffer",
+                 "[ams][perf][k2oh]") {
+    lv_obj_t* canvas = ui_spool_canvas_create(test_screen(), 64);
+    REQUIRE(canvas != nullptr);
+    ui_spool_canvas_set_fill_level(canvas, 1.0f);
+
+    ui_spool_canvas_set_color(canvas, lv_color_hex(0xE01010));
+    lv_draw_buf_t* buf = lv_canvas_get_draw_buf(canvas);
+    REQUIRE(reinterpret_cast<lv_color32_t*>(buf->data)[0].alpha == 0); // corner stays clear
+    REQUIRE(count_dominant(canvas, true) > 100);
+    REQUIRE(count_dominant(canvas, false) == 0);
+
+    ui_spool_canvas_set_color(canvas, lv_color_hex(0x1010E0));
+    REQUIRE(count_dominant(canvas, true) == 0);
+    REQUIRE(count_dominant(canvas, false) > 100);
+}

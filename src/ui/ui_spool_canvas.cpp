@@ -163,9 +163,35 @@ static SpoolCanvasData* get_data(lv_obj_t* obj) {
     return (it != s_registry.end()) ? it->second : nullptr;
 }
 
+// K2-OpenHost: blend a fill straight into the ARGB8888 buffer. Every scanline used to be
+// its own lv_draw_fill task, so one uncached spool queued hundreds of draw tasks and cost
+// ~70 ms per slot on the K2's T113 when the CFS page opened.
+static void draw_fill(lv_draw_buf_t* buf, const lv_draw_fill_dsc_t* dsc, const lv_area_t* area) {
+    if (dsc->opa <= LV_OPA_MIN)
+        return;
+    const int32_t x1 = LV_MAX(area->x1, 0);
+    const int32_t x2 = LV_MIN(area->x2, (int32_t)buf->header.w - 1);
+    const int32_t y1 = LV_MAX(area->y1, 0);
+    const int32_t y2 = LV_MIN(area->y2, (int32_t)buf->header.h - 1);
+    const uint32_t sa = dsc->opa;
+    for (int32_t y = y1; y <= y2; y++) {
+        auto* row = reinterpret_cast<lv_color32_t*>(buf->data + y * buf->header.stride);
+        for (int32_t x = x1; x <= x2; x++) {
+            lv_color32_t& d = row[x];
+            // Non-premultiplied "source over destination".
+            const uint32_t da = d.alpha * (255 - sa) / 255;
+            const uint32_t oa = sa + da;
+            d.red = (uint8_t)((dsc->color.red * sa + d.red * da) / oa);
+            d.green = (uint8_t)((dsc->color.green * sa + d.green * da) / oa);
+            d.blue = (uint8_t)((dsc->color.blue * sa + d.blue * da) / oa);
+            d.alpha = (uint8_t)oa;
+        }
+    }
+}
+
 // Draw ellipse with vertical gradient (top_color at top, bottom_color at bottom)
 // Includes coverage-based anti-aliasing at left/right edges
-static void draw_gradient_ellipse(lv_layer_t* layer, int32_t cx, int32_t cy, int32_t rx, int32_t ry,
+static void draw_gradient_ellipse(lv_draw_buf_t* buf, int32_t cx, int32_t cy, int32_t rx, int32_t ry,
                                   lv_color_t top_color, lv_color_t bottom_color) {
     lv_draw_fill_dsc_t fill_dsc;
     lv_draw_fill_dsc_init(&fill_dsc);
@@ -185,7 +211,7 @@ static void draw_gradient_ellipse(lv_layer_t* layer, int32_t cx, int32_t cy, int
             float pole_opa = (x_extent > 0.01f) ? (x_extent * 2.0f) : 0.3f;
             fill_dsc.opa = (lv_opa_t)(pole_opa * 255.0f);
             lv_area_t pole_pixel = {cx, cy + y, cx, cy + y};
-            lv_draw_fill(layer, &fill_dsc, &pole_pixel);
+            draw_fill(buf, &fill_dsc, &pole_pixel);
             continue;
         }
 
@@ -197,22 +223,22 @@ static void draw_gradient_ellipse(lv_layer_t* layer, int32_t cx, int32_t cy, int
         if (x_frac > 0.01f) {
             fill_dsc.opa = (lv_opa_t)(x_frac * 255.0f);
             lv_area_t left_edge = {cx - x_inner - 1, cy + y, cx - x_inner - 1, cy + y};
-            lv_draw_fill(layer, &fill_dsc, &left_edge);
+            draw_fill(buf, &fill_dsc, &left_edge);
             lv_area_t right_edge = {cx + x_inner + 1, cy + y, cx + x_inner + 1, cy + y};
-            lv_draw_fill(layer, &fill_dsc, &right_edge);
+            draw_fill(buf, &fill_dsc, &right_edge);
         }
 
         // Draw fully opaque interior
         if (x_inner > 0) {
             fill_dsc.opa = LV_OPA_COVER;
             lv_area_t line_area = {cx - x_inner, cy + y, cx + x_inner, cy + y};
-            lv_draw_fill(layer, &fill_dsc, &line_area);
+            draw_fill(buf, &fill_dsc, &line_area);
         }
     }
 }
 
 // Draw rectangle with vertical gradient (top_color at top, bottom_color at bottom)
-static void draw_gradient_rect(lv_layer_t* layer, int32_t x1, int32_t y1, int32_t x2, int32_t y2,
+static void draw_gradient_rect(lv_draw_buf_t* buf, int32_t x1, int32_t y1, int32_t x2, int32_t y2,
                                lv_color_t top_color, lv_color_t bottom_color) {
     lv_draw_fill_dsc_t fill_dsc;
     lv_draw_fill_dsc_init(&fill_dsc);
@@ -229,13 +255,13 @@ static void draw_gradient_rect(lv_layer_t* layer, int32_t x1, int32_t y1, int32_
         fill_dsc.color = ams_draw::blend_color(top_color, bottom_color, gradient_factor);
 
         lv_area_t line = {x1, y, x2, y};
-        lv_draw_fill(layer, &fill_dsc, &line);
+        draw_fill(buf, &fill_dsc, &line);
     }
 }
 
 // Draw a highlight edge along the LEFT side of an ellipse (simulates 3D thickness)
 // width_px: how many pixels wide the highlight band is
-static void draw_ellipse_left_edge(lv_layer_t* layer, int32_t cx, int32_t cy, int32_t rx,
+static void draw_ellipse_left_edge(lv_draw_buf_t* buf, int32_t cx, int32_t cy, int32_t rx,
                                    int32_t ry, lv_color_t top_color, lv_color_t bottom_color,
                                    int32_t width_px) {
     lv_draw_fill_dsc_t fill_dsc;
@@ -262,7 +288,7 @@ static void draw_ellipse_left_edge(lv_layer_t* layer, int32_t cx, int32_t cy, in
             right_edge = cx; // Don't go past center
 
         lv_area_t edge = {left_edge, cy + y, right_edge, cy + y};
-        lv_draw_fill(layer, &fill_dsc, &edge);
+        draw_fill(buf, &fill_dsc, &edge);
     }
 }
 
@@ -300,8 +326,7 @@ static void render_spool_pixels(SpoolCanvasData* data) {
     // Clear canvas
     lv_canvas_fill_bg(data->canvas, lv_color_black(), LV_OPA_TRANSP);
 
-    lv_layer_t layer;
-    lv_canvas_init_layer(data->canvas, &layer);
+    lv_draw_buf_t* buf = data->draw_buf;
 
     // ========================================
     // STEP 1: Draw BACK FLANGE (left side) with gradient + edge highlight
@@ -310,12 +335,12 @@ static void render_spool_pixels(SpoolCanvasData* data) {
         lv_color_t bf_light = ams_draw::lighten_color(back_color, 40);
         lv_color_t bf_dark = ams_draw::darken_color(back_color, 25);
         // Main flange ellipse with gradient
-        draw_gradient_ellipse(&layer, left_x, cy, flange_rx, flange_ry, bf_light, bf_dark);
+        draw_gradient_ellipse(buf, left_x, cy, flange_rx, flange_ry, bf_light, bf_dark);
         // Edge highlight on left side (gives 3D thickness illusion)
         // Dramatic gradient: very bright at top, dark at bottom
         lv_color_t edge_light = ams_draw::lighten_color(back_color, 100);
         lv_color_t edge_dark = ams_draw::darken_color(back_color, 40);
-        draw_ellipse_left_edge(&layer, left_x, cy, flange_rx, flange_ry, edge_light, edge_dark, 2);
+        draw_ellipse_left_edge(buf, left_x, cy, flange_rx, flange_ry, edge_light, edge_dark, 2);
     }
 
     // ========================================
@@ -329,17 +354,17 @@ static void render_spool_pixels(SpoolCanvasData* data) {
         lv_color_t fil_dark = ams_draw::darken_color(filament_side, 35);   // Bottom: darker
 
         // 2a: Back face ellipse (with gradient)
-        draw_gradient_ellipse(&layer, left_x, cy, filament_rx, filament_ry, fil_light, fil_dark);
+        draw_gradient_ellipse(buf, left_x, cy, filament_rx, filament_ry, fil_light, fil_dark);
 
         // 2b: Rectangle body connecting the two faces (with gradient)
         int32_t fil_top = cy - filament_ry;
         int32_t fil_bottom = cy + filament_ry;
-        draw_gradient_rect(&layer, left_x, fil_top, right_x, fil_bottom, fil_light, fil_dark);
+        draw_gradient_rect(buf, left_x, fil_top, right_x, fil_bottom, fil_light, fil_dark);
 
         // 2c: Front face ellipse (will be covered by front flange anyway)
         lv_color_t front_light = ams_draw::lighten_color(filament_color, 70);
         lv_color_t front_dark = ams_draw::darken_color(filament_color, 35);
-        draw_gradient_ellipse(&layer, right_x, cy, filament_rx, filament_ry, front_light,
+        draw_gradient_ellipse(buf, right_x, cy, filament_rx, filament_ry, front_light,
                               front_dark);
     }
 
@@ -350,12 +375,12 @@ static void render_spool_pixels(SpoolCanvasData* data) {
         lv_color_t ff_light = ams_draw::lighten_color(front_color, 40);
         lv_color_t ff_dark = ams_draw::darken_color(front_color, 25);
         // Main flange ellipse with gradient
-        draw_gradient_ellipse(&layer, right_x, cy, flange_rx, flange_ry, ff_light, ff_dark);
+        draw_gradient_ellipse(buf, right_x, cy, flange_rx, flange_ry, ff_light, ff_dark);
         // Edge highlight on left side (gives 3D thickness illusion)
         // Dramatic gradient: very bright at top, dark at bottom
         lv_color_t edge_light = ams_draw::lighten_color(front_color, 100);
         lv_color_t edge_dark = ams_draw::darken_color(front_color, 40);
-        draw_ellipse_left_edge(&layer, right_x, cy, flange_rx, flange_ry, edge_light, edge_dark, 2);
+        draw_ellipse_left_edge(buf, right_x, cy, flange_rx, flange_ry, edge_light, edge_dark, 2);
     }
 
     // ========================================
@@ -366,9 +391,9 @@ static void render_spool_pixels(SpoolCanvasData* data) {
         theme_manager_get_color("spool_hub_top"); // Nearly black at top (deep in shadow)
     lv_color_t hub_bottom =
         theme_manager_get_color("spool_hub_bottom"); // Noticeably lighter at bottom (light hits it)
-    draw_gradient_ellipse(&layer, right_x, cy, hub_rx, hub_ry, hub_top, hub_bottom);
+    draw_gradient_ellipse(buf, right_x, cy, hub_rx, hub_ry, hub_top, hub_bottom);
 
-    lv_canvas_finish_layer(data->canvas, &layer);
+    lv_obj_invalidate(data->canvas);
 
     spdlog::trace("[SpoolCanvas] Redrawn: size={}, fill={:.0f}%", size, fill * 100.0f);
 }

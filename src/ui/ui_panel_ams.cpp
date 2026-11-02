@@ -339,6 +339,11 @@ void AmsPanel::init_subjects() {
                 self->slot_creation_pending_ = true;
                 self->lifetime_.defer("AmsPanel::create_slots", [self, new_count]() {
                     self->slot_creation_pending_ = false;
+                    // K2-OpenHost: the observer fires once on registration, after which
+                    // on_activate() has usually built the slots already; building them
+                    // a second time cost ~70 ms on every CFS page open on the K2.
+                    if (new_count == self->current_slot_count_)
+                        return;
                     spdlog::debug("[AmsPanel] Slot count changed to {}", new_count);
                     self->create_slots(new_count);
                 });
