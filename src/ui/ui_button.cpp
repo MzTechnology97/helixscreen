@@ -1160,6 +1160,10 @@ void ui_button_set_text(lv_obj_t* btn, const char* text) {
     if (!data || data->magic != UiButtonData::MAGIC || !data->label) {
         return;
     }
+    // K2-OpenHost: callers refresh on every status update; skip the repaint when nothing changed.
+    if (std::strcmp(lv_label_get_text(data->label), text) == 0) {
+        return;
+    }
     lv_label_set_text(data->label, text);
     // Label invalidation only redraws the label area — force the whole button
     // to repaint so the background behind the label is consistent
