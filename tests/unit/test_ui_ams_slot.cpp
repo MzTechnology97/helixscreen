@@ -930,7 +930,10 @@ TEST_CASE_METHOD(LVGLUITestFixture, "ams_slot: a secondary backend's slot shows 
 
     auto primary = AmsBackend::create_mock(4);
     auto secondary = AmsBackend::create_mock(4);
+    // Swap T0 and T3: the mock lets two tools share a lane, and the badge lists
+    // every tool routed through it, so T3 alone on lane 0 needs T0 moved away.
     REQUIRE(secondary->set_tool_mapping(3, 0).success());
+    REQUIRE(secondary->set_tool_mapping(0, 3).success());
 
     ams.set_backend(std::move(primary));
     const int second = ams.add_backend(std::move(secondary));
@@ -947,6 +950,7 @@ TEST_CASE_METHOD(LVGLUITestFixture, "ams_slot: a secondary backend's slot shows 
     // The two backends really disagree on lane 0's tool.
     REQUIRE(ams.get_backend(0)->get_slot_info(0).mapped_tool == 0);
     REQUIRE(ams.get_backend(second)->get_slot_info(0).mapped_tool == 3);
+    REQUIRE(ams.get_backend(second)->get_tool_mapping()[0] == 3);
 
     lv_obj_t* badge_bg = UITest::find_by_name(slot, "tool_badge");
     REQUIRE(badge_bg != nullptr);
